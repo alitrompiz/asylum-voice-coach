@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useMinutesStore } from '@/stores/minutesStore';
 import { trackEvent } from '@/lib/tracking';
+import { trackAICall } from '@/lib/monitoring';
 
 export interface InterviewMessage {
   role: 'user' | 'assistant';
@@ -126,14 +127,33 @@ export const useVoiceInterview = (options: UseVoiceInterviewOptions = {}): UseVo
       
       const base64Audio = await blobToBase64(audioBlob);
       
+      // Track voice-to-text call
+      const whisperStartTime = Date.now();
       const { data, error: whisperError } = await supabase.functions.invoke('voice-to-text', {
         body: {
           audio: base64Audio,
           language: language
         }
       });
+      const whisperLatency = Date.now() - whisperStartTime;
       
-      if (whisperError) throw whisperError;
+      if (whisperError) {
+        trackAICall('voice-to-text', {
+          model: 'whisper-1',
+          latency_ms: whisperLatency,
+          cost_usd: 0.006, // Approximate cost per minute
+          success: false,
+          error: whisperError.message
+        });
+        throw whisperError;
+      }
+      
+      trackAICall('voice-to-text', {
+        model: 'whisper-1',
+        latency_ms: whisperLatency,
+        cost_usd: 0.006, // Approximate cost per minute
+        success: true
+      });
       
       const userText = data.text;
       if (!userText?.trim()) {
@@ -153,6 +173,7 @@ export const useVoiceInterview = (options: UseVoiceInterviewOptions = {}): UseVo
       
       // Get AI response
       const currentMessages = [...messages, userMessage];
+      const aiStartTime = Date.now();
       const { data: aiData, error: aiError } = await supabase.functions.invoke('interview-ai', {
         body: {
           messages: currentMessages,
@@ -161,8 +182,25 @@ export const useVoiceInterview = (options: UseVoiceInterviewOptions = {}): UseVo
           skills
         }
       });
+      const aiLatency = Date.now() - aiStartTime;
       
-      if (aiError) throw aiError;
+      if (aiError) {
+        trackAICall('interview-ai', {
+          model: 'gpt-4o-mini',
+          latency_ms: aiLatency,
+          cost_usd: 0.0015, // Approximate cost per interaction
+          success: false,
+          error: aiError.message
+        });
+        throw aiError;
+      }
+      
+      trackAICall('interview-ai', {
+        model: 'gpt-4o-mini',
+        latency_ms: aiLatency,
+        cost_usd: 0.0015, // Approximate cost per interaction
+        success: true
+      });
       
       const aiMessage: InterviewMessage = {
         role: 'assistant',
@@ -173,6 +211,7 @@ export const useVoiceInterview = (options: UseVoiceInterviewOptions = {}): UseVo
       setMessages(prev => [...prev, aiMessage]);
       
       // Convert AI response to speech
+      const ttsStartTime = Date.now();
       const { data: speechData, error: speechError } = await supabase.functions.invoke('text-to-speech', {
         body: {
           text: aiData.text,
@@ -180,8 +219,25 @@ export const useVoiceInterview = (options: UseVoiceInterviewOptions = {}): UseVo
           language: language === 'en' ? 'en-US' : language
         }
       });
+      const ttsLatency = Date.now() - ttsStartTime;
       
-      if (speechError) throw speechError;
+      if (speechError) {
+        trackAICall('text-to-speech', {
+          model: 'aws-polly',
+          latency_ms: ttsLatency,
+          cost_usd: 0.004, // Approximate cost per request
+          success: false,
+          error: speechError.message
+        });
+        throw speechError;
+      }
+      
+      trackAICall('text-to-speech', {
+        model: 'aws-polly',
+        latency_ms: ttsLatency,
+        cost_usd: 0.004, // Approximate cost per request
+        success: true
+      });
       
       // Play audio
       if (audioRef.current) {
@@ -281,6 +337,7 @@ export const useVoiceInterview = (options: UseVoiceInterviewOptions = {}): UseVo
       });
       
       // Add initial AI message
+      const aiStartTime = Date.now();
       const { data: aiData, error: aiError } = await supabase.functions.invoke('interview-ai', {
         body: {
           messages: [],
@@ -289,8 +346,25 @@ export const useVoiceInterview = (options: UseVoiceInterviewOptions = {}): UseVo
           skills
         }
       });
+      const aiLatency = Date.now() - aiStartTime;
       
-      if (aiError) throw aiError;
+      if (aiError) {
+        trackAICall('interview-ai', {
+          model: 'gpt-4o-mini',
+          latency_ms: aiLatency,
+          cost_usd: 0.0015,
+          success: false,
+          error: aiError.message
+        });
+        throw aiError;
+      }
+      
+      trackAICall('interview-ai', {
+        model: 'gpt-4o-mini',
+        latency_ms: aiLatency,
+        cost_usd: 0.0015,
+        success: true
+      });
       
       const initialMessage: InterviewMessage = {
         role: 'assistant',
@@ -301,6 +375,7 @@ export const useVoiceInterview = (options: UseVoiceInterviewOptions = {}): UseVo
       setMessages([initialMessage]);
       
       // Convert to speech
+      const ttsStartTime = Date.now();
       const { data: speechData, error: speechError } = await supabase.functions.invoke('text-to-speech', {
         body: {
           text: aiData.text,
@@ -308,8 +383,25 @@ export const useVoiceInterview = (options: UseVoiceInterviewOptions = {}): UseVo
           language: language === 'en' ? 'en-US' : language
         }
       });
+      const ttsLatency = Date.now() - ttsStartTime;
       
-      if (speechError) throw speechError;
+      if (speechError) {
+        trackAICall('text-to-speech', {
+          model: 'aws-polly',
+          latency_ms: ttsLatency,
+          cost_usd: 0.004,
+          success: false,
+          error: speechError.message
+        });
+        throw speechError;
+      }
+      
+      trackAICall('text-to-speech', {
+        model: 'aws-polly',
+        latency_ms: ttsLatency,
+        cost_usd: 0.004,
+        success: true
+      });
       
       // Play initial audio
       audioRef.current = new Audio();
