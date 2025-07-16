@@ -3,8 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuthStore } from '@/stores/authStore';
-import { loginSchema, LoginFormData } from '@/lib/validations/auth';
+import { signupSchema, SignupFormData } from '@/lib/validations/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,45 +11,46 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2 } from 'lucide-react';
 
-export default function Login() {
+export default function SignUp() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
   const navigate = useNavigate();
-  const { setSession } = useAuthStore();
 
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<LoginFormData>({
-    resolver: zodResolver(loginSchema),
+  } = useForm<SignupFormData>({
+    resolver: zodResolver(signupSchema),
   });
 
-  const onSubmit = async (data: LoginFormData) => {
+  const onSubmit = async (data: SignupFormData) => {
     setIsLoading(true);
     setError(null);
 
     try {
-      const { data: authData, error: signInError } = await supabase.auth.signInWithPassword({
+      const redirectUrl = `${window.location.origin}/auth/verify`;
+      
+      const { error: signUpError } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
+        options: {
+          emailRedirectTo: redirectUrl,
+        },
       });
 
-      if (signInError) {
-        if (signInError.message === 'Invalid login credentials') {
-          setError('Invalid email or password. Please try again.');
-        } else if (signInError.message === 'Email not confirmed') {
-          setError('Please verify your email address before signing in.');
-        } else {
-          setError(signInError.message);
-        }
+      if (signUpError) {
+        setError(signUpError.message);
         return;
       }
 
-      if (authData.session) {
-        setSession(authData.session);
-        navigate('/dashboard');
-      }
+      setSuccess(true);
+      setTimeout(() => {
+        navigate('/auth/verify', { 
+          state: { email: data.email } 
+        });
+      }, 2000);
     } catch (err) {
       setError('An unexpected error occurred. Please try again.');
     } finally {
@@ -58,13 +58,36 @@ export default function Login() {
     }
   };
 
+  if (success) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle>Check your email</CardTitle>
+            <CardDescription>
+              We've sent you a verification link. Please check your email and click the link to verify your account.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button 
+              onClick={() => navigate('/auth/verify')} 
+              className="w-full"
+            >
+              Continue to Verification
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>Welcome Back</CardTitle>
+          <CardTitle>Create Account</CardTitle>
           <CardDescription>
-            Sign in to your AsylumPrep account
+            Sign up for AsylumPrep to start your interview preparation
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -103,6 +126,20 @@ export default function Login() {
               )}
             </div>
 
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                placeholder="Confirm your password"
+                {...register('confirmPassword')}
+                disabled={isLoading}
+              />
+              {errors.confirmPassword && (
+                <p className="text-sm text-destructive">{errors.confirmPassword.message}</p>
+              )}
+            </div>
+
             <Button 
               type="submit" 
               className="w-full" 
@@ -111,27 +148,19 @@ export default function Login() {
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Signing in...
+                  Creating Account...
                 </>
               ) : (
-                'Sign In'
+                'Create Account'
               )}
             </Button>
           </form>
 
-          <div className="mt-4 space-y-2 text-center text-sm">
-            <Link 
-              to="/auth/forgot-password" 
-              className="text-primary hover:underline block"
-            >
-              Forgot your password?
+          <div className="mt-4 text-center text-sm">
+            Already have an account?{' '}
+            <Link to="/auth/login" className="text-primary hover:underline">
+              Sign in
             </Link>
-            <div>
-              Don't have an account?{' '}
-              <Link to="/auth/signup" className="text-primary hover:underline">
-                Sign up
-              </Link>
-            </div>
           </div>
         </CardContent>
       </Card>
