@@ -136,7 +136,7 @@ const Index = () => {
             © 2024 AsylumPrep. All rights reserved.
           </div>
           <Button variant="ghost" size="sm" asChild>
-            <Link to="/admin/login">Admin Login</Link>
+            <Link to="/admin-login">Admin Login</Link>
           </Button>
         </div>
       </footer>
