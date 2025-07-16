@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      feedback: {
+        Row: {
+          created_at: string
+          id: string
+          improvements: string[]
+          onboarding: Json | null
+          persona_desc: string | null
+          score: number
+          skills_selected: string[] | null
+          strengths: string[]
+          transcript: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          improvements: string[]
+          onboarding?: Json | null
+          persona_desc?: string | null
+          score: number
+          skills_selected?: string[] | null
+          strengths: string[]
+          transcript: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          improvements?: string[]
+          onboarding?: Json | null
+          persona_desc?: string | null
+          score?: number
+          skills_selected?: string[] | null
+          strengths?: string[]
+          transcript?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       minutes_balance: {
         Row: {
           balance_minutes: number
