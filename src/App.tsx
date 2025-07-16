@@ -23,6 +23,7 @@ import Onboarding from "./pages/Onboarding";
 import Dashboard from "./pages/Dashboard";
 import Interview from "./pages/Interview";
 import Settings from "./pages/Settings";
+import ContactUsForm from "./components/ContactUsForm";
 
 // Admin pages
 import AdminLayout from "./pages/admin/AdminLayout";
@@ -58,6 +59,7 @@ const App = () => (
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/interview" element={<ProtectedRoute><Interview /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+            <Route path="/settings/contact" element={<ProtectedRoute><ContactUsForm /></ProtectedRoute>} />
             
             {/* Admin routes */}
             <Route path="/admin" element={<AdminLayout />}>
