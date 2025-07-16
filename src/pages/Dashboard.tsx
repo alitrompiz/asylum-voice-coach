@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { StoryUploader } from '@/components/StoryUploader';
-import { Mic, Clock, FileText, User, Play } from 'lucide-react';
+import { Mic, Clock, FileText, User, Play, Settings } from 'lucide-react';
 
 export default function Dashboard() {
   const [minutesRemaining] = useState(25); // Mock data
@@ -21,11 +21,17 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-background p-4">
       <div className="max-w-6xl mx-auto">
-        <header className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Interview Practice Dashboard</h1>
-          <p className="text-muted-foreground">
-            Prepare for your asylum interview with AI-powered practice sessions
-          </p>
+        <header className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Interview Practice Dashboard</h1>
+            <p className="text-muted-foreground">
+              Prepare for your asylum interview with AI-powered practice sessions
+            </p>
+          </div>
+          <Button variant="outline" onClick={() => navigate('/profile')}>
+            <User className="w-4 h-4 mr-2" />
+            Profile
+          </Button>
         </header>
 
         <div className="grid md:grid-cols-3 gap-6 mb-8">
