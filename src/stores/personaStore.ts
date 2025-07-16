@@ -17,3 +17,30 @@ export const usePersonaStore = create<PersonaState>()(
     }
   )
 );
+
+interface SkillsState {
+  skillsSelected: string[];
+  toggleSkill: (skillId: string) => void;
+  clearSkills: () => void;
+}
+
+export const useSkillsStore = create<SkillsState>()(
+  persist(
+    (set, get) => ({
+      skillsSelected: [],
+      toggleSkill: (skillId) => {
+        const current = get().skillsSelected;
+        const isSelected = current.includes(skillId);
+        set({
+          skillsSelected: isSelected
+            ? current.filter((id) => id !== skillId)
+            : [...current, skillId]
+        });
+      },
+      clearSkills: () => set({ skillsSelected: [] }),
+    }),
+    {
+      name: 'skills-store',
+    }
+  )
+);

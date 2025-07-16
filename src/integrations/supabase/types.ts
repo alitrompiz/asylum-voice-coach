@@ -232,6 +232,7 @@ export type Database = {
           created_at: string
           group_name: string
           id: string
+          is_active: boolean
           name: string
           sort_order: number
           updated_at: string
@@ -240,6 +241,7 @@ export type Database = {
           created_at?: string
           group_name: string
           id?: string
+          is_active?: boolean
           name: string
           sort_order?: number
           updated_at?: string
@@ -248,6 +250,7 @@ export type Database = {
           created_at?: string
           group_name?: string
           id?: string
+          is_active?: boolean
           name?: string
           sort_order?: number
           updated_at?: string
