@@ -25,8 +25,13 @@ import Interview from "./pages/Interview";
 import Settings from "./pages/Settings";
 
 // Admin pages
+import AdminLayout from "./pages/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import UserManagement from "./pages/admin/UserManagement";
+import SkillsManagement from "./pages/admin/SkillsManagement";
+import PersonasManagement from "./pages/admin/PersonasManagement";
+import PromptsManagement from "./pages/admin/PromptsManagement";
+import UsageAnalytics from "./pages/admin/UsageAnalytics";
 
 const queryClient = new QueryClient();
 
@@ -55,8 +60,14 @@ const App = () => (
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             
             {/* Admin routes */}
-            <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
-            <Route path="/admin/users" element={<ProtectedRoute><UserManagement /></ProtectedRoute>} />
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route index element={<AdminDashboard />} />
+              <Route path="users" element={<UserManagement />} />
+              <Route path="skills" element={<SkillsManagement />} />
+              <Route path="personas" element={<PersonasManagement />} />
+              <Route path="prompts" element={<PromptsManagement />} />
+              <Route path="usage" element={<UsageAnalytics />} />
+            </Route>
             
             {/* 404 catch-all route */}
             <Route path="*" element={<NotFound />} />
