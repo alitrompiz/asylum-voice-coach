@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { auth } from '@/lib/supabase';
+import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 
 export default function Register() {
@@ -12,6 +12,7 @@ export default function Register() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const { signUp } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -25,11 +26,11 @@ export default function Register() {
     setLoading(true);
 
     try {
-      const { error } = await auth.signUp(email, password);
+      const { error } = await signUp(email, password);
       if (error) throw error;
       
       toast.success('Account created! Please check your email for verification.');
-      navigate('/auth/login');
+      navigate(`/auth/verify?email=${encodeURIComponent(email)}`);
     } catch (error: any) {
       toast.error(error.message || 'Failed to create account');
     } finally {
