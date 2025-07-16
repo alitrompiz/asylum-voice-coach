@@ -9,13 +9,13 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { User, Bell, Mail, Trash2, MessageSquare, Loader2 } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthStore } from '@/stores/authStore';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 
 export default function Settings() {
-  const { user, signOut } = useAuth();
+  const { user, signOut } = useAuthStore();
   const navigate = useNavigate();
   const [deletingAccount, setDeletingAccount] = useState(false);
 
@@ -25,7 +25,8 @@ export default function Settings() {
     setDeletingAccount(true);
     try {
       // Call the Edge Function to delete user data
-      const { error } = await supabase.functions.invoke('delete-user-data', {
+      const { error } = await supabase.functions.invoke('hard_delete_user', {
+        body: { userId: user.id },
         headers: {
           Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
         }
