@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useMinutesStore } from '@/stores/minutesStore';
-import { trackEvent } from '@/lib/mixpanel';
+import { trackEvent } from '@/lib/tracking';
 
 export interface InterviewMessage {
   role: 'user' | 'assistant';

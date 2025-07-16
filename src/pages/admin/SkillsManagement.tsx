@@ -16,7 +16,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import Papa from 'papaparse';
-import { trackEvent } from '@/lib/mixpanel';
+import { trackEvent } from '@/lib/tracking';
 
 const skillSchema = z.object({
   name: z.string().min(1, 'Name is required'),

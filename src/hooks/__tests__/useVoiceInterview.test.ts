@@ -3,7 +3,7 @@ import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { useVoiceInterview } from '../useVoiceInterview';
 import { useMinutesStore } from '@/stores/minutesStore';
 import { supabase } from '@/integrations/supabase/client';
-import { trackEvent } from '@/lib/mixpanel';
+import { trackEvent } from '@/lib/tracking';
 
 // Mock dependencies
 vi.mock('@/stores/minutesStore', () => ({
@@ -18,7 +18,7 @@ vi.mock('@/integrations/supabase/client', () => ({
   }
 }));
 
-vi.mock('@/lib/mixpanel', () => ({
+vi.mock('@/lib/tracking', () => ({
   trackEvent: vi.fn()
 }));
 

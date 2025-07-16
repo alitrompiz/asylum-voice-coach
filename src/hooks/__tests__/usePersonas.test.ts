@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { usePersonas } from '../usePersonas';
 import { useToast } from '../use-toast';
-import { trackEvent } from '@/lib/mixpanel';
+import { trackEvent } from '@/lib/tracking';
 
 // Mock dependencies
 vi.mock('@/integrations/supabase/client', () => ({
@@ -35,7 +35,9 @@ vi.mock('@/integrations/supabase/client', () => ({
 }));
 
 vi.mock('../use-toast');
-vi.mock('@/lib/mixpanel');
+vi.mock('@/lib/tracking', () => ({
+  trackEvent: vi.fn()
+}));
 
 const mockToast = vi.fn();
 const mockTrackEvent = vi.mocked(trackEvent);

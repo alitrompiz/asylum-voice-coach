@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { trackEvent } from '@/lib/mixpanel';
+import { trackEvent } from '@/lib/tracking';
 
 interface AdminAction {
   admin_user_id: string;
