@@ -1,9 +1,38 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Mic, Shield, Globe, Clock } from 'lucide-react';
+import { useAuthStore } from '@/stores/authStore';
+import { toast } from 'sonner';
 
 const Index = () => {
+  const navigate = useNavigate();
+  const { user, isInitialized } = useAuthStore();
+
+  useEffect(() => {
+    // Check for error parameters in URL hash (from failed verification)
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const error = hashParams.get('error');
+    const errorDescription = hashParams.get('error_description');
+    
+    if (error) {
+      if (error === 'access_denied' && errorDescription?.includes('expired')) {
+        toast.error('Email verification link has expired. Please request a new one.');
+      } else {
+        toast.error(errorDescription || 'Email verification failed');
+      }
+      // Clean up the URL hash
+      window.history.replaceState({}, document.title, window.location.pathname);
+      return;
+    }
+
+    // If user is authenticated after email verification, redirect to dashboard
+    if (isInitialized && user) {
+      toast.success('Email verified successfully! Welcome to AsylumPrep.');
+      navigate('/dashboard');
+    }
+  }, [user, isInitialized, navigate]);
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}

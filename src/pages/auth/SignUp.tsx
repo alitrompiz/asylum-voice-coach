@@ -30,13 +30,11 @@ export default function SignUp() {
     setError(null);
 
     try {
-      const redirectUrl = `${window.location.origin}/auth/verify`;
-      
       const { error: signUpError } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
         options: {
-          emailRedirectTo: redirectUrl,
+          emailRedirectTo: `${window.location.origin}/`,
         },
       });
 

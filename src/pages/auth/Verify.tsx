@@ -15,6 +15,17 @@ export default function Verify() {
   useEffect(() => {
     const handleEmailVerification = async () => {
       try {
+        // Check for error parameters in URL hash (from failed verification)
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        const error = hashParams.get('error');
+        const errorDescription = hashParams.get('error_description');
+        
+        if (error) {
+          setVerificationStatus('error');
+          setError(errorDescription || 'Email verification failed');
+          return;
+        }
+
         // Check if user is already authenticated (verification was successful)
         const { data: { user } } = await supabase.auth.getUser();
         
@@ -25,7 +36,7 @@ export default function Verify() {
           return;
         }
 
-        // If no user, check for OTP verification parameters
+        // If no user and no error, check for OTP verification parameters
         const token = searchParams.get('token');
         const type = searchParams.get('type');
         
