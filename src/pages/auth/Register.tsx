@@ -44,11 +44,6 @@ export default function Register() {
       }
 
       setSuccess(true);
-      setTimeout(() => {
-        navigate('/auth/verify', { 
-          state: { email: data.email } 
-        });
-      }, 2000);
     } catch (err) {
       setError('An unexpected error occurred. Please try again.');
     } finally {
@@ -63,16 +58,13 @@ export default function Register() {
           <CardHeader>
             <CardTitle>Check your email</CardTitle>
             <CardDescription>
-              We've sent you a verification link. Please check your email and click the link to verify your account.
+              We've sent you a verification link. Please check your email and click the link to complete your registration.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button 
-              onClick={() => navigate('/auth/verify')} 
-              className="w-full"
-            >
-              Continue to Verification
-            </Button>
+            <p className="text-sm text-muted-foreground text-center">
+              Once you click the verification link in your email, you'll be automatically signed in.
+            </p>
           </CardContent>
         </Card>
       </div>
