@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
+import { StoryUploader } from '@/components/StoryUploader';
 import { Mic, Clock, FileText, User, Play } from 'lucide-react';
 
 export default function Dashboard() {

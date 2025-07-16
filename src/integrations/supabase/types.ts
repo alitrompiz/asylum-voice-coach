@@ -92,6 +92,42 @@ export type Database = {
         }
         Relationships: []
       }
+      stories: {
+        Row: {
+          created_at: string
+          detected_sections: Json | null
+          file_path: string | null
+          id: string
+          source_type: string
+          story_text: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          detected_sections?: Json | null
+          file_path?: string | null
+          id?: string
+          source_type: string
+          story_text: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          detected_sections?: Json | null
+          file_path?: string | null
+          id?: string
+          source_type?: string
+          story_text?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       story_files: {
         Row: {
           content_type: string | null
