@@ -197,6 +197,36 @@ export type Database = {
         }
         Relationships: []
       }
+      scores: {
+        Row: {
+          case_strength: number
+          created_at: string
+          credibility: number
+          id: string
+          story_clarity: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          case_strength: number
+          created_at?: string
+          credibility: number
+          id?: string
+          story_clarity: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          case_strength?: number
+          created_at?: string
+          credibility?: number
+          id?: string
+          story_clarity?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       skills: {
         Row: {
           created_at: string
