@@ -134,6 +134,33 @@ export type Database = {
         }
         Relationships: []
       }
+      skills: {
+        Row: {
+          created_at: string
+          group_name: string
+          id: string
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          group_name: string
+          id?: string
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          group_name?: string
+          id?: string
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       stories: {
         Row: {
           created_at: string
