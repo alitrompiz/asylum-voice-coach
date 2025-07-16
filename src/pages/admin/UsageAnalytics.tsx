@@ -1,102 +1,178 @@
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
-import { Users, DollarSign, Clock, TrendingUp } from 'lucide-react';
+import { TrendingUp, Users, Clock, DollarSign, Activity } from 'lucide-react';
 
-// Mock data for the last 30 days
-const minutesUsageData = Array.from({ length: 30 }, (_, i) => {
-  const date = new Date();
-  date.setDate(date.getDate() - (29 - i));
-  return {
-    date: date.toISOString().split('T')[0],
-    minutes: Math.floor(Math.random() * 500) + 100,
-    day: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-  };
-});
-
-// Mock revenue data per bundle
-const revenueData = [
-  { bundle: 'Basic (60 min)', revenue: 2890, users: 145 },
-  { bundle: 'Pro (180 min)', revenue: 5670, users: 89 },
-  { bundle: 'Premium (360 min)', revenue: 8940, users: 67 },
-  { bundle: 'Enterprise (720 min)', revenue: 12340, users: 23 },
-];
+interface AdminStats {
+  active_users_7d: number;
+  minutes_used_today: number;
+  total_users: number;
+  avg_minutes_per_user: number;
+}
 
 export default function UsageAnalytics() {
-  // Calculate KPIs
-  const totalActiveUsers = revenueData.reduce((sum, item) => sum + item.users, 0);
-  const totalRevenue = revenueData.reduce((sum, item) => sum + item.revenue, 0);
-  const arpu = totalRevenue / totalActiveUsers;
-  const totalMinutes = minutesUsageData.reduce((sum, item) => sum + item.minutes, 0);
-  const avgCostPerInterview = totalRevenue / (totalMinutes / 15); // Assuming 15 min per interview
+  const { data: stats, isLoading: statsLoading } = useQuery({
+    queryKey: ['admin-stats'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .rpc('get_admin_stats');
+      
+      if (error) throw error;
+      return data[0] as AdminStats;
+    },
+  });
+
+  const { data: dailyUsage } = useQuery({
+    queryKey: ['daily-usage'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('feedback')
+        .select('created_at')
+        .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
+        .order('created_at', { ascending: true });
+      
+      if (error) throw error;
+      
+      // Group by day
+      const dailyData = data.reduce((acc, item) => {
+        const date = new Date(item.created_at).toISOString().split('T')[0];
+        acc[date] = (acc[date] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+
+      return Object.entries(dailyData).map(([date, count]) => ({
+        date,
+        sessions: count,
+      }));
+    },
+  });
+
+  const { data: skillsUsage } = useQuery({
+    queryKey: ['skills-usage'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('feedback')
+        .select('skills_selected')
+        .not('skills_selected', 'is', null);
+      
+      if (error) throw error;
+      
+      // Count skill usage
+      const skillCounts = data.reduce((acc, item) => {
+        if (item.skills_selected) {
+          item.skills_selected.forEach((skill: string) => {
+            acc[skill] = (acc[skill] || 0) + 1;
+          });
+        }
+        return acc;
+      }, {} as Record<string, number>);
+
+      return Object.entries(skillCounts)
+        .map(([skill, count]) => ({ skill, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 10);
+    },
+  });
+
+  if (statsLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-3xl font-bold tracking-tight">Usage Analytics</h2>
-        <p className="text-muted-foreground">Monitor usage patterns and revenue metrics</p>
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold">Usage Analytics</h1>
+        <Badge variant="secondary">Last 30 Days</Badge>
       </div>
 
       {/* KPI Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Active Users (7d)</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalActiveUsers}</div>
-            <p className="text-xs text-muted-foreground">+12% from last week</p>
+            <div className="text-2xl font-bold">{stats?.active_users_7d || 0}</div>
+            <p className="text-xs text-muted-foreground">
+              Users who completed sessions
+            </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">ARPU</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">${arpu.toFixed(2)}</div>
-            <p className="text-xs text-muted-foreground">Average revenue per user</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Avg Cost / Interview</CardTitle>
+            <CardTitle className="text-sm font-medium">Minutes Today</CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${avgCostPerInterview.toFixed(2)}</div>
-            <p className="text-xs text-muted-foreground">Cost per interview session</p>
+            <div className="text-2xl font-bold">{stats?.minutes_used_today || 0}</div>
+            <p className="text-xs text-muted-foreground">
+              Total practice minutes
+            </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+            <Activity className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats?.total_users || 0}</div>
+            <p className="text-xs text-muted-foreground">
+              Registered accounts
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Avg Minutes/User</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${totalRevenue.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground">This month</p>
+            <div className="text-2xl font-bold">
+              {stats?.avg_minutes_per_user ? Number(stats.avg_minutes_per_user).toFixed(1) : '0.0'}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Average balance
+            </p>
           </CardContent>
         </Card>
       </div>
 
       {/* Charts */}
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
-            <CardTitle>Minutes Used (Last 30 Days)</CardTitle>
+            <CardTitle>Daily Sessions (Last 30 Days)</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={minutesUsageData}>
+              <LineChart data={dailyUsage}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="day" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `${value}m`} />
-                <Tooltip formatter={(value) => [`${value} minutes`, 'Usage']} />
-                <Line type="monotone" dataKey="minutes" stroke="hsl(var(--primary))" strokeWidth={2} />
+                <XAxis 
+                  dataKey="date" 
+                  tickFormatter={(value) => new Date(value).toLocaleDateString()}
+                />
+                <YAxis />
+                <Tooltip 
+                  labelFormatter={(value) => new Date(value).toLocaleDateString()}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="sessions" 
+                  stroke="hsl(var(--primary))" 
+                  strokeWidth={2}
+                />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
@@ -104,16 +180,16 @@ export default function UsageAnalytics() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Revenue per Bundle</CardTitle>
+            <CardTitle>Top Skills Practiced</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={revenueData}>
+              <BarChart data={skillsUsage}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="bundle" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `$${value}`} />
-                <Tooltip formatter={(value) => [`$${value}`, 'Revenue']} />
-                <Bar dataKey="revenue" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                <XAxis dataKey="skill" />
+                <YAxis />
+                <Tooltip />
+                <Bar dataKey="count" fill="hsl(var(--primary))" />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
