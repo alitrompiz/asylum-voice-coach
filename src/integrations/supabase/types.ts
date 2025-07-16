@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_actions: {
+        Row: {
+          action_details: Json | null
+          action_type: string
+          admin_user_id: string
+          created_at: string
+          id: string
+          target_user_id: string
+        }
+        Insert: {
+          action_details?: Json | null
+          action_type: string
+          admin_user_id: string
+          created_at?: string
+          id?: string
+          target_user_id: string
+        }
+        Update: {
+          action_details?: Json | null
+          action_type?: string
+          admin_user_id?: string
+          created_at?: string
+          id?: string
+          target_user_id?: string
+        }
+        Relationships: []
+      }
       feedback: {
         Row: {
           created_at: string
@@ -123,6 +150,7 @@ export type Database = {
           display_name: string | null
           id: string
           interview_date: string | null
+          is_banned: boolean
           language_preference: string | null
           legal_name: string | null
           notifications_opted_in: boolean | null
@@ -140,6 +168,7 @@ export type Database = {
           display_name?: string | null
           id?: string
           interview_date?: string | null
+          is_banned?: boolean
           language_preference?: string | null
           legal_name?: string | null
           notifications_opted_in?: boolean | null
@@ -157,6 +186,7 @@ export type Database = {
           display_name?: string | null
           id?: string
           interview_date?: string | null
+          is_banned?: boolean
           language_preference?: string | null
           legal_name?: string | null
           notifications_opted_in?: boolean | null
