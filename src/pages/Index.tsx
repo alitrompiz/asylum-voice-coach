@@ -128,6 +128,18 @@ const Index = () => {
           </Button>
         </div>
       </section>
+
+      {/* Footer */}
+      <footer className="py-8 px-4 border-t bg-muted/20">
+        <div className="max-w-6xl mx-auto flex items-center justify-between">
+          <div className="text-sm text-muted-foreground">
+            © 2024 AsylumPrep. All rights reserved.
+          </div>
+          <Button variant="ghost" size="sm" asChild>
+            <Link to="/admin/login">Admin Login</Link>
+          </Button>
+        </div>
+      </footer>
     </div>
   );
 };
