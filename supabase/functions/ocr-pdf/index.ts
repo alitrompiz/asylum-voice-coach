@@ -42,47 +42,119 @@ serve(async (req) => {
     const fileBuffer = await fileData.arrayBuffer();
     const base64Data = btoa(String.fromCharCode(...new Uint8Array(fileBuffer)));
     
-    // Create AWS Textract request
-    const textractEndpoint = `https://textract.${awsRegion}.amazonaws.com/`;
-    
-    // Create AWS signature v4 (simplified for this example)
+    // Create AWS signature v4 for Textract
     const timestamp = new Date().toISOString().replace(/[:\-]|\.\d{3}/g, '');
     const date = timestamp.substring(0, 8);
-    
-    const textractRequest = {
-      Document: {
-        Bytes: base64Data
-      },
+    const service = 'textract';
+    const method = 'POST';
+    const canonicalUri = '/';
+    const canonicalQueryString = '';
+    const payloadHash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify({
+      Document: { Bytes: base64Data },
       FeatureTypes: ["FORMS", "TABLES"]
+    }))).then(hash => Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join(''));
+    
+    const canonicalHeaders = [
+      `host:textract.${awsRegion}.amazonaws.com`,
+      `x-amz-date:${timestamp}`,
+      `x-amz-target:Textract.AnalyzeDocument`
+    ].join('\n') + '\n';
+    
+    const signedHeaders = 'host;x-amz-date;x-amz-target';
+    const canonicalRequest = [method, canonicalUri, canonicalQueryString, canonicalHeaders, signedHeaders, payloadHash].join('\n');
+    
+    const algorithm = 'AWS4-HMAC-SHA256';
+    const credentialScope = `${date}/${awsRegion}/${service}/aws4_request`;
+    const stringToSign = [algorithm, timestamp, credentialScope, await crypto.subtle.digest('SHA-256', new TextEncoder().encode(canonicalRequest)).then(hash => Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join(''))].join('\n');
+    
+    // Create signature
+    const getSignatureKey = async (key: string, dateStamp: string, regionName: string, serviceName: string) => {
+      const kDate = await crypto.subtle.importKey('raw', new TextEncoder().encode('AWS4' + key), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+      const kRegion = await crypto.subtle.importKey('raw', new Uint8Array(await crypto.subtle.sign('HMAC', kDate, new TextEncoder().encode(dateStamp))), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+      const kService = await crypto.subtle.importKey('raw', new Uint8Array(await crypto.subtle.sign('HMAC', kRegion, new TextEncoder().encode(regionName))), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+      const kSigning = await crypto.subtle.importKey('raw', new Uint8Array(await crypto.subtle.sign('HMAC', kService, new TextEncoder().encode(serviceName))), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+      return await crypto.subtle.importKey('raw', new Uint8Array(await crypto.subtle.sign('HMAC', kSigning, new TextEncoder().encode('aws4_request'))), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
     };
     
-    // For production, you'd need to implement proper AWS signature v4
-    // For now, we'll simulate OCR processing
-    const mockOcrResult = {
-      text: `Extracted text from ${fileName}:\n\nThis is a simulated OCR result. In a real implementation, this would contain the actual text extracted from the PDF using AWS Textract.\n\nThe document appears to be an I-589 form with various sections for asylum application information.`,
-      sections: {
-        personalInfo: {
-          name: "Sample Name",
-          dateOfBirth: "01/01/1990",
-          countryOfBirth: "Sample Country"
-        },
-        asylumClaim: {
-          countryOfFear: "Sample Country",
-          reasonForFear: "Sample reason for persecution"
-        },
-        narrative: {
-          statementOfClaim: "This is where the detailed asylum narrative would appear after OCR processing."
+    const signingKey = await getSignatureKey(awsSecretAccessKey, date, awsRegion, service);
+    const signature = Array.from(new Uint8Array(await crypto.subtle.sign('HMAC', signingKey, new TextEncoder().encode(stringToSign)))).map(b => b.toString(16).padStart(2, '0')).join('');
+    
+    const authorizationHeader = `${algorithm} Credential=${awsAccessKeyId}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
+    
+    // Call AWS Textract
+    const textractResponse = await fetch(`https://textract.${awsRegion}.amazonaws.com/`, {
+      method: 'POST',
+      headers: {
+        'Authorization': authorizationHeader,
+        'Content-Type': 'application/x-amz-json-1.1',
+        'X-Amz-Date': timestamp,
+        'X-Amz-Target': 'Textract.AnalyzeDocument'
+      },
+      body: JSON.stringify({
+        Document: { Bytes: base64Data },
+        FeatureTypes: ["FORMS", "TABLES"]
+      })
+    });
+    
+    if (!textractResponse.ok) {
+      const errorText = await textractResponse.text();
+      console.error('Textract error:', errorText);
+      throw new Error(`Textract API error: ${textractResponse.status} ${errorText}`);
+    }
+    
+    const textractData = await textractResponse.json();
+    
+    // Parse Textract response to extract text and form data
+    let extractedText = '';
+    const sections: any = {
+      personalInfo: {},
+      asylumClaim: {},
+      narrative: {}
+    };
+    
+    if (textractData.Blocks) {
+      // Extract LINE blocks for text
+      const lineBlocks = textractData.Blocks.filter((block: any) => block.BlockType === 'LINE');
+      extractedText = lineBlocks.map((block: any) => block.Text).join('\n');
+      
+      // Extract form data from KEY_VALUE_SET blocks
+      const keyValueSets = textractData.Blocks.filter((block: any) => block.BlockType === 'KEY_VALUE_SET');
+      const keyBlocks = keyValueSets.filter((block: any) => block.EntityTypes?.includes('KEY'));
+      const valueBlocks = keyValueSets.filter((block: any) => block.EntityTypes?.includes('VALUE'));
+      
+      // Map keys to values based on relationships
+      keyBlocks.forEach((keyBlock: any) => {
+        const keyText = keyBlock.Text || '';
+        const relationships = keyBlock.Relationships || [];
+        const valueRelationship = relationships.find((rel: any) => rel.Type === 'VALUE');
+        
+        if (valueRelationship) {
+          const valueBlock = valueBlocks.find((vb: any) => vb.Id === valueRelationship.Ids[0]);
+          if (valueBlock) {
+            const valueText = valueBlock.Text || '';
+            
+            // Categorize form fields based on common I-589 patterns
+            if (keyText.toLowerCase().includes('name') || keyText.toLowerCase().includes('apellido')) {
+              sections.personalInfo.name = valueText;
+            } else if (keyText.toLowerCase().includes('birth') || keyText.toLowerCase().includes('nacimiento')) {
+              sections.personalInfo.dateOfBirth = valueText;
+            } else if (keyText.toLowerCase().includes('country') && keyText.toLowerCase().includes('birth')) {
+              sections.personalInfo.countryOfBirth = valueText;
+            } else if (keyText.toLowerCase().includes('fear') || keyText.toLowerCase().includes('persecution')) {
+              sections.asylumClaim.countryOfFear = valueText;
+            }
+          }
         }
-      }
-    };
+      });
+    }
     
-    // In a real implementation, you would:
-    // 1. Use AWS SDK to call Textract
-    // 2. Parse the Textract response
-    // 3. Extract structured data from I-589 form
+    const ocrResult = {
+      text: extractedText,
+      sections: sections
+    };
     
     return new Response(
-      JSON.stringify(mockOcrResult),
+      JSON.stringify(ocrResult),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
