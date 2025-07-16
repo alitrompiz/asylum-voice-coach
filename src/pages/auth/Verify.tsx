@@ -14,28 +14,39 @@ export default function Verify() {
 
   useEffect(() => {
     const handleEmailVerification = async () => {
-      const token = searchParams.get('token');
-      const type = searchParams.get('type');
-      
-      if (!token || type !== 'signup') {
-        setVerificationStatus('error');
-        setError('Invalid verification link');
-        return;
-      }
-
       try {
-        const { error } = await supabase.auth.verifyOtp({
-          token_hash: token,
-          type: 'signup'
-        });
-
-        if (error) {
-          setVerificationStatus('error');
-          setError(error.message);
-        } else {
+        // Check if user is already authenticated (verification was successful)
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (user) {
           setVerificationStatus('success');
           toast.success('Email verified successfully!');
           setTimeout(() => navigate('/dashboard'), 2000);
+          return;
+        }
+
+        // If no user, check for OTP verification parameters
+        const token = searchParams.get('token');
+        const type = searchParams.get('type');
+        
+        if (token && type === 'signup') {
+          const { error } = await supabase.auth.verifyOtp({
+            token_hash: token,
+            type: 'signup'
+          });
+
+          if (error) {
+            setVerificationStatus('error');
+            setError(error.message);
+          } else {
+            setVerificationStatus('success');
+            toast.success('Email verified successfully!');
+            setTimeout(() => navigate('/dashboard'), 2000);
+          }
+        } else {
+          // No verification parameters and no user - show waiting state
+          setVerificationStatus('error');
+          setError('Please check your email and click the verification link');
         }
       } catch (err: any) {
         setVerificationStatus('error');
