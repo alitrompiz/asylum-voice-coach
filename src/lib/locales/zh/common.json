@@ -1,0 +1,50 @@
+{
+  "onboarding": {
+    "title": "欢迎来到AsylumPrep",
+    "subtitle": "让我们开始快速设置",
+    "progress": "第{{current}}步，共{{total}}步",
+    "next": "下一步",
+    "back": "返回",
+    "skip": "跳过并稍后完成",
+    "finish": "完成设置",
+    "legal_name": {
+      "title": "法律信息",
+      "subtitle": "请提供您的法定姓名信息",
+      "legal_name_label": "法定姓名",
+      "legal_name_placeholder": "输入您的完整法定姓名",
+      "preferred_name_label": "首选姓名（可选）",
+      "preferred_name_placeholder": "输入您的首选姓名"
+    },
+    "country": {
+      "title": "恐惧迫害国家",
+      "subtitle": "请选择您害怕遭受迫害的国家",
+      "country_label": "国家",
+      "country_placeholder": "选择一个国家"
+    },
+    "asylum_office": {
+      "title": "庇护办公室信息",
+      "subtitle": "请提供您的庇护办公室详细信息",
+      "office_label": "提交的庇护办公室",
+      "office_placeholder": "输入庇护办公室名称"
+    },
+    "dates": {
+      "title": "重要日期",
+      "subtitle": "请提供您的案件时间线",
+      "date_filed_label": "提交日期",
+      "date_filed_placeholder": "选择提交日期",
+      "interview_date_label": "面试日期（可选）",
+      "interview_date_placeholder": "选择面试日期"
+    },
+    "notifications": {
+      "title": "保持更新",
+      "subtitle": "获取关于您案件的重要通知",
+      "description": "我们将向您发送重要截止日期的提醒、新功能和帮助您准备庇护面试的提示。",
+      "allow_button": "允许通知",
+      "skip_button": "暂时跳过"
+    }
+  },
+  "validation": {
+    "required": "此字段为必填项",
+    "invalid_date": "请输入有效日期"
+  }
+}

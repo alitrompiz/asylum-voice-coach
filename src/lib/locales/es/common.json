@@ -1,0 +1,50 @@
+{
+  "onboarding": {
+    "title": "Bienvenido a AsylumPrep",
+    "subtitle": "Comencemos con una configuración rápida",
+    "progress": "Paso {{current}} de {{total}}",
+    "next": "Siguiente",
+    "back": "Atrás",
+    "skip": "Omitir y Terminar Más Tarde",
+    "finish": "Completar Configuración",
+    "legal_name": {
+      "title": "Información Legal",
+      "subtitle": "Por favor proporcione su información de nombre legal",
+      "legal_name_label": "Nombre Legal",
+      "legal_name_placeholder": "Ingrese su nombre legal completo",
+      "preferred_name_label": "Nombre Preferido (Opcional)",
+      "preferred_name_placeholder": "Ingrese su nombre preferido"
+    },
+    "country": {
+      "title": "País de Persecución Temida",
+      "subtitle": "Por favor seleccione el país del cual teme persecución",
+      "country_label": "País",
+      "country_placeholder": "Seleccione un país"
+    },
+    "asylum_office": {
+      "title": "Información de Oficina de Asilo",
+      "subtitle": "Por favor proporcione los detalles de su oficina de asilo",
+      "office_label": "Oficina de Asilo Presentada",
+      "office_placeholder": "Ingrese el nombre de la oficina de asilo"
+    },
+    "dates": {
+      "title": "Fechas Importantes",
+      "subtitle": "Por favor proporcione el cronograma de su caso",
+      "date_filed_label": "Fecha Presentada",
+      "date_filed_placeholder": "Seleccione fecha presentada",
+      "interview_date_label": "Fecha de Entrevista (Opcional)",
+      "interview_date_placeholder": "Seleccione fecha de entrevista"
+    },
+    "notifications": {
+      "title": "Manténgase Actualizado",
+      "subtitle": "Reciba notificaciones importantes sobre su caso",
+      "description": "Le enviaremos recordatorios sobre fechas límite importantes, nuevas características y consejos para ayudarle a prepararse para su entrevista de asilo.",
+      "allow_button": "Permitir Notificaciones",
+      "skip_button": "Omitir por Ahora"
+    }
+  },
+  "validation": {
+    "required": "Este campo es obligatorio",
+    "invalid_date": "Por favor ingrese una fecha válida"
+  }
+}

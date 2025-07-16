@@ -1,0 +1,50 @@
+{
+  "onboarding": {
+    "title": "Byenvini nan AsylumPrep",
+    "subtitle": "Ann kòmanse ak yon konfigirasyon rapid",
+    "progress": "Etap {{current}} nan {{total}}",
+    "next": "Apre",
+    "back": "Tounen",
+    "skip": "Sote ak Fini Pita",
+    "finish": "Konplete Konfigirasyon",
+    "legal_name": {
+      "title": "Enfòmasyon Legal",
+      "subtitle": "Tanpri bay enfòmasyon non legal ou",
+      "legal_name_label": "Non Legal",
+      "legal_name_placeholder": "Ekri non legal konplè ou",
+      "preferred_name_label": "Non ou Prefere (Opsyonèl)",
+      "preferred_name_placeholder": "Ekri non ou prefere"
+    },
+    "country": {
+      "title": "Peyi Pè Pèsekisyon",
+      "subtitle": "Tanpri chwazi peyi ou pè pèsekisyon nan",
+      "country_label": "Peyi",
+      "country_placeholder": "Chwazi yon peyi"
+    },
+    "asylum_office": {
+      "title": "Enfòmasyon Biwo Azil",
+      "subtitle": "Tanpri bay detay biwo azil ou",
+      "office_label": "Biwo Azil Depoze",
+      "office_placeholder": "Ekri non biwo azil la"
+    },
+    "dates": {
+      "title": "Dat Enpòtan",
+      "subtitle": "Tanpri bay kalandriye ka ou",
+      "date_filed_label": "Dat Depoze",
+      "date_filed_placeholder": "Chwazi dat depoze",
+      "interview_date_label": "Dat Entèvyou (Opsyonèl)",
+      "interview_date_placeholder": "Chwazi dat entèvyou"
+    },
+    "notifications": {
+      "title": "Rete Ajou",
+      "subtitle": "Resevwa notifikasyon enpòtan konsènan ka ou",
+      "description": "Nou pral voye ou rapèl konsènan dat limit enpòtan, nouvo karakteristik ak konsèy pou ede ou prepare pou entèvyou azil ou.",
+      "allow_button": "Pèmèt Notifikasyon",
+      "skip_button": "Sote Pou Koulye a"
+    }
+  },
+  "validation": {
+    "required": "Jaden sa a obligatwa",
+    "invalid_date": "Tanpri antre yon dat valab"
+  }
+}

@@ -40,26 +40,53 @@ export type Database = {
       }
       profiles: {
         Row: {
+          asylum_office_filed: string | null
           avatar_url: string | null
+          country_of_feared_persecution: string | null
           created_at: string | null
+          date_filed: string | null
           display_name: string | null
           id: string
+          interview_date: string | null
+          language_preference: string | null
+          legal_name: string | null
+          notifications_opted_in: boolean | null
+          onboarding_status: string | null
+          preferred_name: string | null
           updated_at: string | null
           user_id: string
         }
         Insert: {
+          asylum_office_filed?: string | null
           avatar_url?: string | null
+          country_of_feared_persecution?: string | null
           created_at?: string | null
+          date_filed?: string | null
           display_name?: string | null
           id?: string
+          interview_date?: string | null
+          language_preference?: string | null
+          legal_name?: string | null
+          notifications_opted_in?: boolean | null
+          onboarding_status?: string | null
+          preferred_name?: string | null
           updated_at?: string | null
           user_id: string
         }
         Update: {
+          asylum_office_filed?: string | null
           avatar_url?: string | null
+          country_of_feared_persecution?: string | null
           created_at?: string | null
+          date_filed?: string | null
           display_name?: string | null
           id?: string
+          interview_date?: string | null
+          language_preference?: string | null
+          legal_name?: string | null
+          notifications_opted_in?: boolean | null
+          onboarding_status?: string | null
+          preferred_name?: string | null
           updated_at?: string | null
           user_id?: string
         }
