@@ -329,7 +329,7 @@ export default function Interview() {
           <div className="max-w-md mx-auto h-16 flex items-center justify-center relative">
             {showSubtitles && (displayedSubtitle || isProcessing) && (
               <div className="flex items-center gap-2">
-                <p className="text-center text-white/90 bg-black/30 px-4 py-2 rounded-lg backdrop-blur-sm animate-fade-in">
+                <p className="text-center text-white/90 bg-black/30 px-4 py-2 rounded-lg backdrop-blur-sm animate-fade-in text-sm">
                   {isProcessing ? 'Processing...' : displayedSubtitle}
                 </p>
                 {displayedSubtitle && (
