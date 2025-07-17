@@ -12,14 +12,10 @@ import { cn } from '@/lib/utils';
 
 export default function Interview() {
   const [isAiSpeaking, setIsAiSpeaking] = useState(true);
-  const [isMuted, setIsMuted] = useState(false);
   const [showSubtitles, setShowSubtitles] = useState(true);
   const [currentSubtitle, setCurrentSubtitle] = useState('');
   const [isPaused, setIsPaused] = useState(false);
-  const [isTextMode, setIsTextMode] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
-  const [messages, setMessages] = useState<Array<{id: string, text: string, isUser: boolean}>>([]);
-  const [currentMessage, setCurrentMessage] = useState('');
   const navigate = useNavigate();
   
   const { selectedPersona } = usePersonaStore();
@@ -29,7 +25,7 @@ export default function Interview() {
 
   // Demo subtitle simulation
   useEffect(() => {
-    if (isAiSpeaking && showSubtitles && !isPaused && !isTextMode) {
+    if (isAiSpeaking && showSubtitles && !isPaused) {
       const subtitles = [
         "Hello, I'm here to help you practice for your asylum interview.",
         "Let's begin with some basic questions about your background.",
@@ -47,73 +43,16 @@ export default function Interview() {
     } else {
       setCurrentSubtitle('');
     }
-  }, [isAiSpeaking, showSubtitles, isPaused, isTextMode]);
+  }, [isAiSpeaking, showSubtitles, isPaused]);
 
-  const handleInterrupt = () => {
-    setIsAiSpeaking(false);
-    // Here you would implement the logic to interrupt the AI
-  };
-
-  const handleSwitchMode = () => {
-    setIsTextMode(!isTextMode);
-    if (!isTextMode) {
-      // Switching to text mode
-      setIsAiSpeaking(false);
-      setCurrentSubtitle('');
-    } else {
-      // Switching to voice mode
-      setIsAiSpeaking(true);
-      setMessages([]);
-      setCurrentMessage('');
-    }
-  };
-
-  const handleToggleMute = () => {
-    setIsMuted(!isMuted);
-    // Here you would implement actual microphone muting
-  };
-
-  const handleTogglePause = () => {
-    setIsPaused(!isPaused);
-    if (!isPaused) {
-      setIsAiSpeaking(false);
-    } else {
-      setIsAiSpeaking(true);
-    }
+  const handlePressToTalk = () => {
+    // Here you would implement press to talk functionality
+    console.log('Press to talk activated');
   };
 
   const handleEndSession = () => {
     setIsAiSpeaking(false);
     setShowFeedback(true);
-  };
-
-  const handleSendMessage = () => {
-    if (!currentMessage.trim()) return;
-    
-    const newMessage = {
-      id: Date.now().toString(),
-      text: currentMessage,
-      isUser: true
-    };
-    
-    setMessages(prev => [...prev, newMessage]);
-    setCurrentMessage('');
-    
-    // Simulate AI response
-    setTimeout(() => {
-      const aiResponse = {
-        id: (Date.now() + 1).toString(),
-        text: "Thank you for your response. Can you provide more details about your experience?",
-        isUser: false
-      };
-      setMessages(prev => [...prev, aiResponse]);
-    }, 1000);
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleSendMessage();
-    }
   };
 
   const feedbackData = {
@@ -135,6 +74,17 @@ export default function Interview() {
       
       {/* Content */}
       <div className="relative z-10 flex flex-col h-screen p-6">
+        {/* End Session Button - Top Left */}
+        <div className="absolute top-6 left-6 z-20">
+          <button
+            onClick={handleEndSession}
+            className="flex items-center gap-2 bg-red-600 hover:bg-red-500 px-4 py-2 rounded-lg transition-colors"
+          >
+            <X className="w-5 h-5 text-white" />
+            <span className="text-white text-sm font-medium">End Session</span>
+          </button>
+        </div>
+
         {/* App Name */}
         <div className="text-center pt-4 mb-2">
           <h1 className="text-white text-base font-medium">Asylum Prep</h1>
@@ -149,180 +99,65 @@ export default function Interview() {
 
         {/* Main Content Area */}
         <div className="flex-1 flex flex-col items-center justify-center space-y-8">
-          {!isTextMode ? (
-            <>
-              {/* Profile Picture with AI Badge */}
-              <div className="relative">
-                <div className="w-96 h-96 rounded-full overflow-hidden border-4 border-white/20 shadow-2xl">
-                  <img
-                    src={selectedPersonaData?.image_url || '/placeholder.svg'}
-                    alt={selectedPersonaData?.alt_text || 'AI Interviewer'}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                
-                {/* AI Badge */}
-                <div className="absolute -bottom-2 -right-2 bg-gray-800 rounded-full p-2 border-2 border-white/20">
-                  <Badge className="bg-gray-700 text-white text-xs px-2 py-1">
-                    AI ✨
-                  </Badge>
-                </div>
-              </div>
-
-              {/* Interviewer Name */}
-              <div className="text-center">
-                <h1 className="text-2xl font-semibold">
-                  {selectedPersonaData?.name || 'AI Interviewer'}
-                </h1>
-                {/* Personality/Mood */}
-                {selectedPersonaData?.mood && (
-                  <p className="text-gray-300 text-sm mt-2">
-                    {selectedPersonaData.mood}
-                  </p>
-                )}
-              </div>
-
-              {/* Speak to Interrupt Text */}
-              <p className="text-white/80 text-center px-8 py-3">
-                Speak to interrupt
-              </p>
-
-              {/* Subtitles */}
-              <div className="max-w-md mx-auto h-16 flex items-center justify-center">
-                {showSubtitles && currentSubtitle && (
-                  <p className="text-center text-white/90 bg-black/30 px-4 py-2 rounded-lg backdrop-blur-sm">
-                    {currentSubtitle}
-                  </p>
-                )}
-              </div>
-            </>
-          ) : (
-            /* Text Mode Chat Interface */
-            <div className="w-full max-w-2xl mx-auto flex flex-col h-full">
-              {/* Chat Header */}
-              <div className="text-center mb-4">
-                <h2 className="text-lg font-semibold">Chat with {selectedPersonaData?.name || 'AI Interviewer'}</h2>
-              </div>
-
-              {/* Chat Messages */}
-              <div className="flex-1 bg-gray-800/50 rounded-lg p-4 mb-4 overflow-y-auto min-h-[400px]">
-                {messages.length === 0 ? (
-                  <div className="text-center text-gray-400 mt-8">
-                    <p>Start typing to begin your text interview...</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {messages.map((message) => (
-                      <div
-                        key={message.id}
-                        className={cn(
-                          "flex",
-                          message.isUser ? "justify-end" : "justify-start"
-                        )}
-                      >
-                        <div
-                          className={cn(
-                            "max-w-xs lg:max-w-md px-4 py-2 rounded-lg",
-                            message.isUser
-                              ? "bg-blue-600 text-white"
-                              : "bg-gray-700 text-white"
-                          )}
-                        >
-                          {message.text}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Chat Input */}
-              <div className="flex gap-2">
-                <Input
-                  value={currentMessage}
-                  onChange={(e) => setCurrentMessage(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  placeholder="Type your message..."
-                  className="flex-1 bg-gray-800 border-gray-600 text-white placeholder-gray-400"
-                />
-                <Button
-                  onClick={handleSendMessage}
-                  className="px-4 py-2"
-                  disabled={!currentMessage.trim()}
-                >
-                  <Send className="w-4 h-4" />
-                </Button>
-              </div>
+          {/* Profile Picture with AI Badge and Waveform */}
+          <div className="relative">
+            <div className="w-96 h-96 rounded-full overflow-hidden border-4 border-white/20 shadow-2xl">
+              <img
+                src={selectedPersonaData?.image_url || '/placeholder.svg'}
+                alt={selectedPersonaData?.alt_text || 'AI Interviewer'}
+                className="w-full h-full object-cover"
+              />
             </div>
-          )}
+            
+            {/* AI Badge */}
+            <div className="absolute -bottom-2 -right-2 bg-gray-800 rounded-full p-2 border-2 border-white/20">
+              <Badge className="bg-gray-700 text-white text-xs px-2 py-1">
+                AI ✨
+              </Badge>
+            </div>
+
+            {/* Waveform - positioned in front of officer's picture at 25% height */}
+            <div className="absolute bottom-24 left-1/2 transform -translate-x-1/2 w-80">
+              <Waveform 
+                isActive={isAiSpeaking && !isPaused} 
+                className="h-16"
+              />
+            </div>
+          </div>
+
+          {/* Interviewer Name */}
+          <div className="text-center">
+            <h1 className="text-2xl font-semibold">
+              {selectedPersonaData?.name || 'AI Interviewer'}
+            </h1>
+            {/* Personality/Mood */}
+            {selectedPersonaData?.mood && (
+              <p className="text-gray-300 text-sm mt-2">
+                {selectedPersonaData.mood}
+              </p>
+            )}
+          </div>
+
+          {/* Subtitles */}
+          <div className="max-w-md mx-auto h-16 flex items-center justify-center">
+            {showSubtitles && currentSubtitle && (
+              <p className="text-center text-white/90 bg-black/30 px-4 py-2 rounded-lg backdrop-blur-sm">
+                {currentSubtitle}
+              </p>
+            )}
+          </div>
         </div>
 
-        {/* Waveform Animation - Only show in voice mode */}
-        {!isTextMode && (
-          <div className="mb-8">
-            <Waveform 
-              isActive={isAiSpeaking && !isPaused} 
-              className="h-20"
-            />
-          </div>
-        )}
-
-        {/* Bottom Controls */}
-        <div className="flex justify-center items-center gap-8 pb-8">
-          {/* Switch Mode */}
+        {/* Press to Talk Button - Bottom Middle */}
+        <div className="flex justify-center pb-8">
           <button
-            onClick={handleSwitchMode}
-            className="flex flex-col items-center gap-2 group"
+            onClick={handlePressToTalk}
+            className="flex flex-col items-center gap-3 group"
           >
-            <div className="w-16 h-16 rounded-full bg-gray-700 flex items-center justify-center group-hover:bg-gray-600 transition-colors">
-              <MessageSquare className="w-6 h-6 text-white" />
+            <div className="w-20 h-20 rounded-full bg-blue-600 flex items-center justify-center group-hover:bg-blue-500 transition-colors shadow-lg">
+              <Mic className="w-8 h-8 text-white" />
             </div>
-            <span className="text-white text-sm">
-              {isTextMode ? "Switch to Voice" : "Switch to Text"}
-            </span>
-          </button>
-
-          {/* Mute */}
-          <button
-            onClick={handleToggleMute}
-            className="flex flex-col items-center gap-2 group"
-          >
-            <div className={cn(
-              "w-16 h-16 rounded-full flex items-center justify-center transition-colors",
-              isMuted ? "bg-red-600 hover:bg-red-500" : "bg-gray-700 hover:bg-gray-600"
-            )}>
-              {isMuted ? (
-                <MicOff className="w-6 h-6 text-white" />
-              ) : (
-                <Mic className="w-6 h-6 text-white" />
-              )}
-            </div>
-            <span className="text-white text-sm">{isMuted ? "Unmute" : "Mute"}</span>
-          </button>
-
-          {/* Pause */}
-          <button
-            onClick={handleTogglePause}
-            className="flex flex-col items-center gap-2 group"
-          >
-            <div className={cn(
-              "w-16 h-16 rounded-full flex items-center justify-center transition-colors",
-              isPaused ? "bg-green-600 hover:bg-green-500" : "bg-gray-700 hover:bg-gray-600"
-            )}>
-              {isPaused ? <Play className="w-6 h-6 text-white" /> : <Pause className="w-6 h-6 text-white" />}
-            </div>
-            <span className="text-white text-sm">{isPaused ? "Resume" : "Pause"}</span>
-          </button>
-
-          {/* End Session */}
-          <button
-            onClick={handleEndSession}
-            className="flex flex-col items-center gap-2 group"
-          >
-            <div className="w-16 h-16 rounded-full bg-red-600 flex items-center justify-center group-hover:bg-red-500 transition-colors">
-              <X className="w-6 h-6 text-white" />
-            </div>
-            <span className="text-white text-sm">End Session</span>
+            <span className="text-white text-sm font-medium">Press to talk</span>
           </button>
         </div>
       </div>
