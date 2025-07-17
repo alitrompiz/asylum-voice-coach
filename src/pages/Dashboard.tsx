@@ -40,7 +40,7 @@ export default function Dashboard() {
           <div>
             <h1 className="text-2xl md:text-3xl font-bold mb-1">AsylumPrep</h1>
             <p className="text-muted-foreground text-sm">
-              Prepare for your asylum interview with AI-powered practice sessions
+              Speak your truth — with confidence
             </p>
           </div>
           <div className="flex items-center gap-2">
