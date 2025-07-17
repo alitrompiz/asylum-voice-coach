@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -9,6 +10,7 @@ export interface Persona {
   mood: string;
   alt_text: string;
   image_url: string;
+  position: number;
   is_visible: boolean;
   created_at: string;
   updated_at: string;
@@ -32,7 +34,8 @@ export const usePersonas = () => {
       const { data, error } = await supabase
         .from('personas')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('position', { ascending: true })
+        .order('id', { ascending: true });
 
       if (error) throw error;
       setPersonas(data || []);
@@ -68,6 +71,9 @@ export const usePersonas = () => {
   const createPersona = async (persona: PersonaUpload): Promise<Persona> => {
     const imageUrl = await uploadPersonaImage(persona.image_file, persona.name);
 
+    // Get the highest position to add new persona at the end
+    const maxPosition = personas.reduce((max, p) => Math.max(max, p.position), 0);
+
     const { data, error } = await supabase
       .from('personas')
       .insert([
@@ -76,6 +82,7 @@ export const usePersonas = () => {
           mood: persona.mood,
           alt_text: persona.alt_text,
           image_url: imageUrl,
+          position: maxPosition + 1,
         },
       ])
       .select()

@@ -116,6 +116,7 @@ export type Database = {
           is_visible: boolean
           mood: string
           name: string
+          position: number
           updated_at: string
         }
         Insert: {
@@ -126,6 +127,7 @@ export type Database = {
           is_visible?: boolean
           mood: string
           name: string
+          position?: number
           updated_at?: string
         }
         Update: {
@@ -136,6 +138,7 @@ export type Database = {
           is_visible?: boolean
           mood?: string
           name?: string
+          position?: number
           updated_at?: string
         }
         Relationships: []

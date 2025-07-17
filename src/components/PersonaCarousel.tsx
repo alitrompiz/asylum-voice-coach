@@ -1,3 +1,4 @@
+
 import { useQuery } from '@tanstack/react-query';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
@@ -10,6 +11,7 @@ interface Persona {
   image_url: string;
   alt_text: string;
   mood: string;
+  position: number;
   is_visible: boolean;
 }
 
@@ -25,7 +27,8 @@ const usePersonas = () => {
         .from('personas')
         .select('*')
         .eq('is_visible', true)
-        .order('name');
+        .order('position', { ascending: true })
+        .order('id', { ascending: true });
       
       if (error) throw error;
       return data as Persona[];
