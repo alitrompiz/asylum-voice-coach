@@ -368,11 +368,11 @@ export default function Interview() {
           {/* Timer and Recording Indicator */}
           {isRecording && (
             <div className="flex flex-col items-center gap-2">
-              <div className="w-32 bg-black/30 rounded-lg p-2 backdrop-blur-sm overflow-hidden">
+              <div className="w-32 h-8 bg-black/30 rounded-lg backdrop-blur-sm overflow-hidden flex items-center justify-center">
                 <Waveform 
-                  isActive={audioLevel > 0.01}
+                  isActive={true}
                   intensity={audioLevel}
-                  className="h-4 animate-fade-in"
+                  className="h-full scale-y-75"
                 />
               </div>
               <div className="bg-black/50 px-4 py-2 rounded-lg backdrop-blur-sm">

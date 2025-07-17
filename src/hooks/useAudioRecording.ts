@@ -72,6 +72,7 @@ export const useAudioRecording = () => {
       audioContextRef.current = new AudioContext();
       analyserRef.current = audioContextRef.current.createAnalyser();
       analyserRef.current.fftSize = 256;
+      analyserRef.current.smoothingTimeConstant = 0.8;
       
       const source = audioContextRef.current.createMediaStreamSource(stream);
       source.connect(analyserRef.current);
@@ -83,10 +84,11 @@ export const useAudioRecording = () => {
         const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
         analyserRef.current.getByteFrequencyData(dataArray);
         
-        // Calculate average volume level
+        // Calculate average volume level (more sensitive)
         const average = dataArray.reduce((acc, val) => acc + val, 0) / dataArray.length;
-        const normalizedLevel = average / 255; // Normalize to 0-1 range
+        const normalizedLevel = Math.min(1, (average / 128) * 2); // More sensitive scaling
         
+        console.log('Audio level:', normalizedLevel); // Debug log
         setAudioLevel(normalizedLevel);
         animationFrameRef.current = requestAnimationFrame(monitorAudioLevel);
       };
