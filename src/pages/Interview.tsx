@@ -54,10 +54,18 @@ export default function Interview() {
     // Here you would implement the logic to interrupt the AI
   };
 
-  const handleSwitchToText = () => {
-    setIsTextMode(true);
-    setIsAiSpeaking(false);
-    setCurrentSubtitle('');
+  const handleSwitchMode = () => {
+    setIsTextMode(!isTextMode);
+    if (!isTextMode) {
+      // Switching to text mode
+      setIsAiSpeaking(false);
+      setCurrentSubtitle('');
+    } else {
+      // Switching to voice mode
+      setIsAiSpeaking(true);
+      setMessages([]);
+      setCurrentMessage('');
+    }
   };
 
   const handleToggleMute = () => {
@@ -261,15 +269,17 @@ export default function Interview() {
 
         {/* Bottom Controls */}
         <div className="flex justify-center items-center gap-8 pb-8">
-          {/* Switch to Text */}
+          {/* Switch Mode */}
           <button
-            onClick={handleSwitchToText}
+            onClick={handleSwitchMode}
             className="flex flex-col items-center gap-2 group"
           >
             <div className="w-16 h-16 rounded-full bg-gray-700 flex items-center justify-center group-hover:bg-gray-600 transition-colors">
               <MessageSquare className="w-6 h-6 text-white" />
             </div>
-            <span className="text-white text-sm">Switch to Text</span>
+            <span className="text-white text-sm">
+              {isTextMode ? "Switch to Voice" : "Switch to Text"}
+            </span>
           </button>
 
           {/* Mute */}
