@@ -34,69 +34,69 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-background p-4 pb-24 md:pb-4">
+    <div className="min-h-screen bg-background p-3 pb-20 md:pb-3">
       <div className="max-w-6xl mx-auto">
-        <header className="mb-8 flex items-center justify-between">
+        <header className="mb-4 flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold mb-2">Interview Practice Dashboard</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-2xl md:text-3xl font-bold mb-1">Interview Practice Dashboard</h1>
+            <p className="text-muted-foreground text-sm">
               Prepare for your asylum interview with AI-powered practice sessions
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => navigate('/profile')}>
+            <Button variant="outline" size="sm" onClick={() => navigate('/profile')}>
               <User className="w-4 h-4 mr-2" />
               Profile
             </Button>
           </div>
         </header>
 
-        <div className="mb-8">
+        <div className="mb-4">
           <UserScoreCard />
         </div>
 
-        <div className="mb-8">
+        <div className="mb-4">
           <PersonaCarousel />
         </div>
 
-        <div className="mb-8">
+        <div className="mb-4">
           <SkillsScroller />
         </div>
       </div>
 
       {/* Fixed Start Interview Button */}
-      <div className="fixed bottom-4 left-4 right-4 md:relative md:bottom-auto md:left-auto md:right-auto md:max-w-6xl md:mx-auto">
+      <div className="fixed bottom-3 left-3 right-3 md:relative md:bottom-auto md:left-auto md:right-auto md:max-w-6xl md:mx-auto">
         <Button 
           size="lg" 
           onClick={handleStartInterview}
-          className="w-full"
+          className="w-full shadow-lg"
           disabled={skillsSelected.length === 0}
         >
           <Play className="w-5 h-5 mr-2" />
           Start Interview
           {skillsSelected.length > 0 && (
-            <span className="ml-2 text-xs">({skillsSelected.length} skills)</span>
+            <span className="ml-2 text-xs">({skillsSelected.length} areas)</span>
           )}
         </Button>
         {skillsSelected.length === 0 && (
-          <p className="text-sm text-muted-foreground text-center mt-2">
-            Select at least one skill to begin
+          <p className="text-sm text-muted-foreground text-center mt-1">
+            Select at least one area of focus to begin
           </p>
         )}
       </div>
 
       {/* Admin Panel Button - Fixed position bottom right */}
       {!loading && isAdmin && (
-        <div className="fixed bottom-20 right-4 md:bottom-4 md:right-4 z-50">
+        <div className="fixed bottom-16 right-3 md:bottom-3 md:right-3 z-50">
           <Tooltip>
             <TooltipTrigger asChild>
               <Button 
                 variant="outline" 
                 size="icon"
                 onClick={handleAdminPanel}
-                className="w-12 h-12 rounded-full shadow-lg border-2"
+                className="w-11 h-11 rounded-full shadow-lg border-2"
               >
-                <Shield className="w-5 h-5" />
+                <Shield className="w-4 h-4" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>

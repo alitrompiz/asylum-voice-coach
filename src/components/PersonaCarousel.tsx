@@ -47,12 +47,12 @@ export const PersonaCarousel = ({ onSelect }: PersonaCarouselProps) => {
 
   if (isLoading) {
     return (
-      <div className="bg-card rounded-lg p-6 border">
-        <h3 className="text-lg font-semibold mb-4">Select Your Interviewer</h3>
+      <div className="bg-card rounded-lg p-4 border">
+        <h3 className="text-lg font-semibold mb-3">Select an officer</h3>
         <div className="flex gap-4">
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="flex flex-col items-center animate-pulse">
-              <div className="w-20 h-20 bg-muted rounded-full mb-2" />
+              <div className="w-32 h-32 bg-muted rounded-full mb-2" />
               <div className="w-16 h-3 bg-muted rounded mb-1" />
               <div className="w-12 h-3 bg-muted rounded" />
             </div>
@@ -64,43 +64,43 @@ export const PersonaCarousel = ({ onSelect }: PersonaCarouselProps) => {
 
   if (error || !personas || personas.length === 0) {
     return (
-      <div className="bg-card rounded-lg p-6 border">
-        <h3 className="text-lg font-semibold mb-4">Select Your Interviewer</h3>
-        <p className="text-muted-foreground">No interviewers available at the moment.</p>
+      <div className="bg-card rounded-lg p-4 border">
+        <h3 className="text-lg font-semibold mb-3">Select an officer</h3>
+        <p className="text-muted-foreground">No officers available at the moment.</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-card rounded-lg p-6 border">
-      <h3 className="text-lg font-semibold mb-4">Select Your Interviewer</h3>
+    <div className="bg-card rounded-lg p-4 border">
+      <h3 className="text-lg font-semibold mb-3">Select an officer</h3>
       <ScrollArea className="w-full">
         <div className="flex gap-6 pb-4 snap-x snap-mandatory overflow-x-auto">
           {personas.map((persona) => (
             <div
               key={persona.id}
-              className="flex flex-col items-center min-w-[120px] cursor-pointer snap-center"
+              className="flex flex-col items-center min-w-[160px] cursor-pointer snap-center"
               onClick={() => handlePersonaSelect(persona.id)}
               data-testid={`persona-${persona.id}`}
             >
               <div
                 className={cn(
-                  "relative mb-3 rounded-full overflow-hidden transition-all duration-200",
+                  "relative mb-3 rounded-full overflow-hidden transition-all duration-200 shadow-lg",
                   selectedPersona === persona.id
-                    ? "ring-2 ring-primary ring-offset-2 scale-105"
-                    : "hover:scale-105"
+                    ? "ring-3 ring-primary ring-offset-2 scale-105"
+                    : "hover:scale-105 hover:shadow-xl"
                 )}
               >
                 <img
                   src={persona.image_url}
                   alt={persona.alt_text}
-                  className="w-20 h-20 object-cover rounded-full"
+                  className="w-32 h-32 object-cover rounded-full"
                   loading="lazy"
                 />
                 {selectedPersona === persona.id && (
                   <div className="absolute inset-0 bg-primary/10 rounded-full flex items-center justify-center">
-                    <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
-                      <div className="w-2 h-2 bg-white rounded-full"></div>
+                    <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                      <div className="w-3 h-3 bg-white rounded-full"></div>
                     </div>
                   </div>
                 )}

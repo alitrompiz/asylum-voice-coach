@@ -47,9 +47,9 @@ export const SkillsScroller = () => {
 
   if (isLoading) {
     return (
-      <div className="bg-card rounded-lg p-6 border">
-        <h3 className="text-lg font-semibold mb-4">Select Skills to Practice</h3>
-        <div className="space-y-4">
+      <div className="bg-card rounded-lg p-4 border">
+        <h3 className="text-lg font-semibold mb-3">Pick areas of focus</h3>
+        <div className="space-y-3">
           {[1, 2].map((row) => (
             <div key={row} className="flex gap-2 animate-pulse">
               {[1, 2, 3, 4, 5].map((i) => (
@@ -64,14 +64,14 @@ export const SkillsScroller = () => {
 
   if (error || !skills || skills.length === 0) {
     return (
-      <div className="bg-card rounded-lg p-6 border">
-        <h3 className="text-lg font-semibold mb-4">Select Skills to Practice</h3>
-        <div className="flex flex-col items-center justify-center py-8">
+      <div className="bg-card rounded-lg p-4 border">
+        <h3 className="text-lg font-semibold mb-3">Pick areas of focus</h3>
+        <div className="flex flex-col items-center justify-center py-6">
           <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
             <ChevronRight className="w-8 h-8 text-muted-foreground" />
           </div>
-          <p className="text-muted-foreground text-center">No skills are currently active.</p>
-          <p className="text-sm text-muted-foreground mt-1">Contact your administrator to add skills.</p>
+          <p className="text-muted-foreground text-center">No focus areas are currently active.</p>
+          <p className="text-sm text-muted-foreground mt-1">Contact your administrator to add areas.</p>
         </div>
       </div>
     );
@@ -83,9 +83,9 @@ export const SkillsScroller = () => {
   const row2Skills = skills.slice(midpoint);
 
   return (
-    <div className="bg-card rounded-lg p-6 border">
-      <h3 className="text-lg font-semibold mb-4">Select Skills to Practice</h3>
-      <div className="space-y-4">
+    <div className="bg-card rounded-lg p-4 border">
+      <h3 className="text-lg font-semibold mb-3">Pick areas of focus</h3>
+      <div className="space-y-3">
         {/* Row 1 */}
         <ScrollArea className="w-full">
           <div className="flex gap-2 pb-2 snap-x snap-mandatory overflow-x-auto">
@@ -142,8 +142,8 @@ export const SkillsScroller = () => {
       </div>
       
       {skillsSelected.length > 0 && (
-        <div className="mt-4 text-sm text-muted-foreground">
-          {skillsSelected.length} skill{skillsSelected.length === 1 ? '' : 's'} selected
+        <div className="mt-3 text-sm text-muted-foreground">
+          {skillsSelected.length} area{skillsSelected.length === 1 ? '' : 's'} selected
         </div>
       )}
     </div>
