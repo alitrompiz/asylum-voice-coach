@@ -38,7 +38,7 @@ export default function Dashboard() {
       <div className="max-w-6xl mx-auto">
         <header className="mb-3 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold mb-1">Interview Practice Dashboard</h1>
+            <h1 className="text-2xl md:text-3xl font-bold mb-1">AsylumPrep</h1>
             <p className="text-muted-foreground text-sm">
               Prepare for your asylum interview with AI-powered practice sessions
             </p>
