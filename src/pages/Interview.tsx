@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { MessageSquare, Volume2, X, Pause, Play } from 'lucide-react';
+import { MessageSquare, Mic, X, Pause, Play } from 'lucide-react';
 import { usePersonaStore } from '@/stores/personaStore';
 import { usePersonas } from '@/hooks/usePersonas';
 import { Waveform } from '@/components/Waveform';
@@ -105,18 +105,22 @@ export default function Interview() {
           </div>
 
           {/* Interviewer Name */}
-          <h1 className="text-2xl font-semibold text-center">
-            {selectedPersonaData?.name || 'AI Interviewer'}
-          </h1>
+          <div className="text-center">
+            <h1 className="text-2xl font-semibold">
+              {selectedPersonaData?.name || 'AI Interviewer'}
+            </h1>
+            {/* Personality/Mood */}
+            {selectedPersonaData?.mood && (
+              <p className="text-gray-300 text-sm mt-2">
+                {selectedPersonaData.mood}
+              </p>
+            )}
+          </div>
 
-          {/* Speak to Interrupt Button */}
-          <Button
-            onClick={handleInterrupt}
-            variant="outline"
-            className="bg-white/10 border-white/20 text-white hover:bg-white/20 px-8 py-3 rounded-full"
-          >
+          {/* Speak to Interrupt Text */}
+          <p className="text-white/80 text-center px-8 py-3">
             Speak to interrupt
-          </Button>
+          </p>
 
           {/* Subtitles */}
           {showSubtitles && currentSubtitle && (
@@ -158,7 +162,7 @@ export default function Interview() {
               "w-16 h-16 rounded-full flex items-center justify-center transition-colors",
               isMuted ? "bg-yellow-600 hover:bg-yellow-500" : "bg-gray-700 hover:bg-gray-600"
             )}>
-              <Volume2 className={cn(
+              <Mic className={cn(
                 "w-6 h-6",
                 isMuted ? "text-white" : "text-white"
               )} />
