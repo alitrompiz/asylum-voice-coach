@@ -336,7 +336,7 @@ export default function Interview() {
 
           {/* Subtitles with TTS Controls */}
           <div className="max-w-md mx-auto h-16 flex items-center justify-center relative">
-            {showSubtitles && displayedSubtitle && !isProcessing && (
+            {showSubtitles && isTTSPlaying && !isPaused && (
               <div className="flex items-center gap-2">
                 <p className="text-center text-white/90 bg-black/30 px-4 py-2 rounded-lg backdrop-blur-sm animate-fade-in text-sm">
                   {displayedSubtitle}
