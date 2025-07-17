@@ -49,6 +49,7 @@ export const useVoiceInterview = (options: UseVoiceInterviewOptions = {}): UseVo
   const [error, setError] = useState<string | null>(null);
   const [interviewActive, setInterviewActive] = useState(false);
   const [interviewId, setInterviewId] = useState<string | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(null);
   
   // Refs
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -179,7 +180,8 @@ export const useVoiceInterview = (options: UseVoiceInterviewOptions = {}): UseVo
           messages: currentMessages,
           personaId,
           language,
-          skills
+          skills,
+          sessionId
         }
       });
       const aiLatency = Date.now() - aiStartTime;
@@ -321,6 +323,10 @@ export const useVoiceInterview = (options: UseVoiceInterviewOptions = {}): UseVo
       const newInterviewId = `interview_${Date.now()}`;
       setInterviewId(newInterviewId);
       
+      // Generate session ID for tracking
+      const newSessionId = crypto.randomUUID();
+      setSessionId(newSessionId);
+      
       // Fetch current minutes balance
       await fetchMinutesBalance();
       
@@ -333,7 +339,8 @@ export const useVoiceInterview = (options: UseVoiceInterviewOptions = {}): UseVo
         language,
         skills,
         minutesRemaining: currentMinutes,
-        interviewId: newInterviewId
+        interviewId: newInterviewId,
+        sessionId: newSessionId
       });
       
       // Add initial AI message
@@ -343,7 +350,8 @@ export const useVoiceInterview = (options: UseVoiceInterviewOptions = {}): UseVo
           messages: [],
           personaId,
           language,
-          skills
+          skills,
+          sessionId: newSessionId
         }
       });
       const aiLatency = Date.now() - aiStartTime;

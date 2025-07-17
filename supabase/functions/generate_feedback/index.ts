@@ -14,7 +14,7 @@ serve(async (req) => {
   }
 
   try {
-    const { transcript, onboarding, personaDesc, skillsSelected } = await req.json();
+    const { transcript, onboarding, personaDesc, skillsSelected, sessionId } = await req.json();
     
     if (!transcript) {
       throw new Error('Transcript is required');
@@ -44,8 +44,65 @@ serve(async (req) => {
       throw new Error('Authentication failed');
     }
 
-    // Create comprehensive system prompt for feedback generation
-    const systemPrompt = `You are an expert asylum interview evaluator providing constructive feedback to help asylum seekers improve their interview performance.
+    // Fetch user context data
+    let userContext: any = {};
+    
+    // Get user profile
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
+
+    // Get user's asylum story
+    const { data: stories } = await supabase
+      .from('stories')
+      .select('story_text, title')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    userContext = {
+      profile,
+      userStory: stories?.[0]?.story_text || 'No story provided',
+      storyTitle: stories?.[0]?.title || 'Untitled'
+    };
+
+    // Update interview session with transcript if sessionId provided
+    if (sessionId) {
+      await supabase
+        .from('interview_sessions')
+        .update({
+          full_transcript: transcript,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', sessionId)
+        .eq('user_id', user.id);
+    }
+
+    // Get active feedback generation prompt
+    const { data: promptData } = await supabase
+      .from('prompts')
+      .select('*')
+      .eq('prompt_type', 'feedback_generation')
+      .eq('is_active', true)
+      .single();
+
+    let systemPrompt = '';
+    
+    if (promptData) {
+      // Use admin-defined prompt with variable substitution
+      const promptVariables = {
+        user_story: userContext.userStory || 'No story provided',
+        skills_selected: skillsSelected?.join(', ') || 'General interview skills',
+        persona_mood: personaDesc || 'Professional officer',
+        transcript: transcript
+      };
+
+      systemPrompt = processPromptTemplate(promptData.content, promptVariables);
+    } else {
+      // Fallback to default prompt construction
+      systemPrompt = `You are an expert asylum interview evaluator providing constructive feedback to help asylum seekers improve their interview performance.
 
 EVALUATION CRITERIA:
 - Clarity and coherence of storytelling
@@ -58,6 +115,7 @@ PERSONA CONTEXT: ${personaDesc || 'Professional interview setting'}
 SKILLS BEING ASSESSED: ${skillsSelected && skillsSelected.length > 0 ? skillsSelected.join(', ') : 'General interview skills'}
 
 ONBOARDING INFO: ${onboarding ? JSON.stringify(onboarding) : 'No additional context provided'}
+USER STORY CONTEXT: ${userContext.userStory}
 
 INSTRUCTIONS:
 1. Analyze the interview transcript carefully
@@ -77,6 +135,20 @@ You must respond with a valid JSON object containing:
 }
 
 Do not include any text outside of this JSON structure.`;
+    }
+
+    // Template engine for replacing prompt variables
+    function processPromptTemplate(template: string, variables: Record<string, any>): string {
+      let processed = template;
+      
+      // Replace template variables like {{variable_name}}
+      Object.entries(variables).forEach(([key, value]) => {
+        const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
+        processed = processed.replace(regex, String(value || ''));
+      });
+      
+      return processed;
+    }
 
     console.log('Generating feedback for user:', user.id);
 
@@ -146,7 +218,8 @@ Do not include any text outside of this JSON structure.`;
         skills_selected: skillsSelected,
         strengths: feedback.strengths,
         improvements: feedback.improvements,
-        score: feedback.score
+        score: feedback.score,
+        interview_session_id: sessionId || null
       })
       .select()
       .single();

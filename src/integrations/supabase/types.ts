@@ -46,6 +46,7 @@ export type Database = {
           created_at: string
           id: string
           improvements: string[]
+          interview_session_id: string | null
           onboarding: Json | null
           persona_desc: string | null
           score: number
@@ -59,6 +60,7 @@ export type Database = {
           created_at?: string
           id?: string
           improvements: string[]
+          interview_session_id?: string | null
           onboarding?: Json | null
           persona_desc?: string | null
           score: number
@@ -72,6 +74,7 @@ export type Database = {
           created_at?: string
           id?: string
           improvements?: string[]
+          interview_session_id?: string | null
           onboarding?: Json | null
           persona_desc?: string | null
           score?: number
@@ -79,6 +82,56 @@ export type Database = {
           strengths?: string[]
           transcript?: string
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feedback_interview_session_id_fkey"
+            columns: ["interview_session_id"]
+            isOneToOne: false
+            referencedRelation: "interview_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      interview_sessions: {
+        Row: {
+          created_at: string
+          full_transcript: string | null
+          id: string
+          language: string | null
+          persona_id: string | null
+          prompt_version_used: string | null
+          session_duration_seconds: number | null
+          skills_selected: string[] | null
+          updated_at: string
+          user_context: Json | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          full_transcript?: string | null
+          id?: string
+          language?: string | null
+          persona_id?: string | null
+          prompt_version_used?: string | null
+          session_duration_seconds?: number | null
+          skills_selected?: string[] | null
+          updated_at?: string
+          user_context?: Json | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          full_transcript?: string | null
+          id?: string
+          language?: string | null
+          persona_id?: string | null
+          prompt_version_used?: string | null
+          session_duration_seconds?: number | null
+          skills_selected?: string[] | null
+          updated_at?: string
+          user_context?: Json | null
           user_id?: string
         }
         Relationships: []
@@ -205,9 +258,12 @@ export type Database = {
           content: string
           created_at: string
           created_by: string
+          description: string | null
           id: string
           is_active: boolean
           name: string
+          prompt_type: Database["public"]["Enums"]["prompt_type"] | null
+          prompt_variables: Json | null
           updated_at: string
           version: number
         }
@@ -215,9 +271,12 @@ export type Database = {
           content: string
           created_at?: string
           created_by: string
+          description?: string | null
           id?: string
           is_active?: boolean
           name: string
+          prompt_type?: Database["public"]["Enums"]["prompt_type"] | null
+          prompt_variables?: Json | null
           updated_at?: string
           version?: number
         }
@@ -225,9 +284,12 @@ export type Database = {
           content?: string
           created_at?: string
           created_by?: string
+          description?: string | null
           id?: string
           is_active?: boolean
           name?: string
+          prompt_type?: Database["public"]["Enums"]["prompt_type"] | null
+          prompt_variables?: Json | null
           updated_at?: string
           version?: number
         }
@@ -456,6 +518,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
+      prompt_type: "interview_conduct" | "feedback_generation"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -584,6 +647,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      prompt_type: ["interview_conduct", "feedback_generation"],
     },
   },
 } as const
