@@ -33,12 +33,15 @@ export default function Interview() {
 
   // Handle press-to-talk functionality
   const handlePressStart = async () => {
+    console.log('NEW handlePressStart called', { isProcessing, pressToTalkRef: pressToTalkRef.current });
     if (isProcessing || pressToTalkRef.current) return;
     
     pressToTalkRef.current = true;
     try {
+      console.log('Starting recording...');
       await startRecording();
       setIsAiSpeaking(false); // Stop AI speaking when user starts talking
+      console.log('Recording started successfully');
     } catch (error) {
       console.error('Failed to start recording:', error);
       pressToTalkRef.current = false;
@@ -46,12 +49,15 @@ export default function Interview() {
   };
 
   const handlePressEnd = async () => {
+    console.log('NEW handlePressEnd called', { pressToTalkRef: pressToTalkRef.current, isRecording });
     if (!pressToTalkRef.current || !isRecording) return;
     
     pressToTalkRef.current = false;
     try {
+      console.log('Stopping recording...');
       const recording = await stopRecording();
       if (recording.duration > 0) {
+        console.log('Processing audio message...');
         await processAudioMessage(recording);
       }
     } catch (error) {
@@ -60,6 +66,7 @@ export default function Interview() {
   };
 
   const handlePressCancel = () => {
+    console.log('NEW handlePressCancel called');
     if (pressToTalkRef.current) {
       pressToTalkRef.current = false;
       cancelRecording();
