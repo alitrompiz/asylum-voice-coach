@@ -141,11 +141,6 @@ export const SkillsScroller = () => {
         </ScrollArea>
       </div>
       
-      {skillsSelected.length > 0 && (
-        <div className="mt-3 text-sm text-muted-foreground">
-          {skillsSelected.length} area{skillsSelected.length === 1 ? '' : 's'} selected
-        </div>
-      )}
     </div>
   );
 };
