@@ -327,10 +327,10 @@ export default function Interview() {
 
           {/* Subtitles with TTS Controls */}
           <div className="max-w-md mx-auto h-16 flex items-center justify-center relative">
-            {showSubtitles && (displayedSubtitle || isProcessing) && (
+            {showSubtitles && displayedSubtitle && !isProcessing && (
               <div className="flex items-center gap-2">
                 <p className="text-center text-white/90 bg-black/30 px-4 py-2 rounded-lg backdrop-blur-sm animate-fade-in text-sm">
-                  {isProcessing ? 'Processing...' : displayedSubtitle}
+                  {displayedSubtitle}
                 </p>
               </div>
             )}
@@ -340,10 +340,10 @@ export default function Interview() {
         {/* Press to Talk Button - Bottom Middle */}
         <div className="flex flex-col items-center pb-8 gap-4">
           {/* Timer Display */}
-          {(isRecording || isProcessing) && (
+          {isRecording && (
             <div className="bg-black/50 px-4 py-2 rounded-lg backdrop-blur-sm">
               <span className="text-white text-lg font-mono">
-                {isRecording ? formatTime(duration) : (isProcessing ? 'Processing...' : '')}
+                {formatTime(duration)}
               </span>
             </div>
           )}
