@@ -20,9 +20,10 @@ export default function Interview() {
   const [displayedSubtitle, setDisplayedSubtitle] = useState('');
   const [isPaused, setIsPaused] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
+  const [showWaveform, setShowWaveform] = useState(false);
   const subtitleTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const waveformTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const navigate = useNavigate();
-  
   // Audio recording and conversation hooks
   const { isRecording, duration, error: recordingError, startRecording, stopRecording, cancelRecording } = useAudioRecording();
   const { messages, isProcessing, currentSubtitle, processAudioMessage, clearConversation, formatTime } = useInterviewConversation();
@@ -60,22 +61,32 @@ export default function Interview() {
           
           // Set subtitle after speech actually starts
           setDisplayedSubtitle(currentSubtitle);
+          
+          // Start waveform animation 0.5 seconds after speech starts
+          waveformTimeoutRef.current = setTimeout(() => {
+            setShowWaveform(true);
+          }, 500);
         },
         onEnd: () => {
           setIsAiSpeaking(false);
+          setShowWaveform(false);
         },
         onError: (error) => {
           console.error('TTS error:', error);
           setIsAiSpeaking(false);
+          setShowWaveform(false);
           setDisplayedSubtitle(currentSubtitle); // Show subtitle immediately on error
         }
       });
     }
     
-    // Cleanup function to clear timeout
+    // Cleanup function to clear timeouts
     return () => {
       if (subtitleTimeoutRef.current) {
         clearTimeout(subtitleTimeoutRef.current);
+      }
+      if (waveformTimeoutRef.current) {
+        clearTimeout(waveformTimeoutRef.current);
       }
     };
   }, [currentSubtitle, selectedPersonaData?.tts_voice, speak]);
@@ -217,11 +228,20 @@ export default function Interview() {
           
           // Set subtitle after speech actually starts
           setDisplayedSubtitle(currentSubtitle);
+          
+          // Start waveform animation 0.5 seconds after speech starts
+          waveformTimeoutRef.current = setTimeout(() => {
+            setShowWaveform(true);
+          }, 500);
         },
-        onEnd: () => setIsAiSpeaking(false),
+        onEnd: () => {
+          setIsAiSpeaking(false);
+          setShowWaveform(false);
+        },
         onError: (error) => {
           console.error('TTS error:', error);
           setIsAiSpeaking(false);
+          setShowWaveform(false);
           setDisplayedSubtitle(currentSubtitle); // Show subtitle immediately on error
         }
       });
@@ -306,7 +326,7 @@ export default function Interview() {
             {/* Waveform - positioned in front of officer's picture at 25% height */}
             <div className="absolute bottom-24 left-1/2 transform -translate-x-1/2 w-80">
               <Waveform 
-                isActive={(isAiSpeaking || isTTSPlaying) && !isPaused} 
+                isActive={showWaveform && !isPaused} 
                 className="h-16"
               />
             </div>
