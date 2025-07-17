@@ -23,7 +23,7 @@ export const useAudioRecording = () => {
       // Request microphone permission
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
-          sampleRate: 16000,
+          sampleRate: 44100, // Higher sample rate for better quality
           channelCount: 1,
           echoCancellation: true,
           noiseSuppression: true,
@@ -34,18 +34,17 @@ export const useAudioRecording = () => {
       streamRef.current = stream;
       chunksRef.current = [];
       
-      // Create MediaRecorder with supported format
-      let mediaRecorder;
+      // Create MediaRecorder with supported format (prioritize formats OpenAI accepts)
       const supportedMimeTypes = [
-        'audio/wav',
-        'audio/mp4',
+        'audio/mp3',
         'audio/mpeg',
-        'audio/ogg',
+        'audio/wav',
+        'audio/ogg;codecs=opus',
         'audio/webm;codecs=opus'
       ];
 
       // Find the first supported MIME type
-      let selectedMimeType = 'audio/webm;codecs=opus'; // fallback
+      let selectedMimeType = null;
       for (const mimeType of supportedMimeTypes) {
         if (MediaRecorder.isTypeSupported(mimeType)) {
           selectedMimeType = mimeType;
@@ -53,10 +52,15 @@ export const useAudioRecording = () => {
         }
       }
 
-      console.log('Using MIME type:', selectedMimeType);
-      mediaRecorder = new MediaRecorder(stream, {
-        mimeType: selectedMimeType
-      });
+      if (!selectedMimeType) {
+        selectedMimeType = ''; // Use browser default if none of our preferred types are supported
+      }
+
+      console.log('Using audio MIME type:', selectedMimeType);
+      
+      // Create MediaRecorder with optimal options
+      const options = selectedMimeType ? { mimeType: selectedMimeType } : {};
+      const mediaRecorder = new MediaRecorder(stream, options);
       
       mediaRecorderRef.current = mediaRecorder;
 

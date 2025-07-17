@@ -54,34 +54,69 @@ serve(async (req) => {
       throw new Error('OpenAI API key not configured');
     }
 
+    console.log('Processing audio data for transcription...');
+
     // Process audio in chunks
     const binaryAudio = processBase64Chunks(audio);
     
-    // Prepare form data - use a supported format
-    const formData = new FormData();
-    // Use audio/wav format which is supported by OpenAI Whisper
-    const blob = new Blob([binaryAudio], { type: 'audio/wav' });
-    formData.append('file', blob, 'audio.wav');
-    formData.append('model', 'whisper-1');
-    formData.append('language', language);
+    // Try multiple approaches to ensure format compatibility
+    let attempts = 0;
+    let result;
+    let lastError;
+    
+    // OpenAI supports 'mp3', 'mp4', 'mpeg', 'mpga', 'wav', 'webm'
+    // Try different formats in order of likelihood of success
+    const formats = [
+      { type: 'audio/mp3', ext: 'mp3' },
+      { type: 'audio/wav', ext: 'wav' },
+      { type: 'audio/webm', ext: 'webm' },
+      { type: 'audio/mpeg', ext: 'mpeg' }
+    ];
+    
+    // Try each format until one works
+    for (const format of formats) {
+      attempts++;
+      try {
+        console.log(`Transcription attempt ${attempts} with format ${format.ext}...`);
+        
+        // Prepare form data with the current format
+        const formData = new FormData();
+        const blob = new Blob([binaryAudio], { type: format.type });
+        formData.append('file', blob, `audio.${format.ext}`);
+        formData.append('model', 'whisper-1');
+        formData.append('language', language);
 
-    // Send to OpenAI Whisper
-    const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openaiApiKey}`,
-      },
-      body: formData,
-    });
+        // Send to OpenAI Whisper
+        const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${openaiApiKey}`,
+          },
+          body: formData,
+        });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('OpenAI API error:', errorText);
-      throw new Error(`OpenAI API error: ${response.status} ${errorText}`);
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`Attempt ${attempts} failed: ${errorText}`);
+          lastError = `OpenAI API error (${format.ext}): ${response.status} ${errorText}`;
+          // Continue to next format
+          continue;
+        }
+
+        // If we get here, the format worked
+        result = await response.json();
+        console.log('Whisper transcription result:', result);
+        break;
+      } catch (error) {
+        console.error(`Attempt ${attempts} exception:`, error);
+        lastError = error.message;
+        // Continue to next format
+      }
     }
-
-    const result = await response.json();
-    console.log('Whisper transcription result:', result);
+    
+    if (!result) {
+      throw new Error(`All transcription attempts failed: ${lastError}`);
+    }
 
     return new Response(
       JSON.stringify({ 
