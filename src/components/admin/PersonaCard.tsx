@@ -91,106 +91,108 @@ export const PersonaCard = ({ persona, onDelete, onToggleVisibility }: PersonaCa
   };
 
   return (
-    <div className="bg-card border rounded-lg p-4 space-y-4">
-      <div className="relative">
-        <img
-          src={persona.image_url}
-          alt={persona.alt_text}
-          className="aspect-square w-[40rem] object-cover rounded-lg"
-        />
-        <div className="absolute top-2 right-2">
-          <Badge variant={persona.is_visible ? 'default' : 'secondary'}>
-            {persona.is_visible ? 'Visible' : 'Hidden'}
-          </Badge>
-        </div>
-      </div>
-
-      <div className="space-y-3">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <Label htmlFor={`name-${persona.id}`} className="text-sm font-medium">
-              Name
-            </Label>
-            {getSaveIcon('name')}
+    <div className="w-40">
+      <div className="bg-card border rounded-lg p-4 space-y-4">
+        <div className="relative">
+          <img
+            src={persona.image_url}
+            alt={persona.alt_text}
+            className="w-full h-auto aspect-square object-cover rounded-lg"
+          />
+          <div className="absolute top-2 right-2">
+            <Badge variant={persona.is_visible ? 'default' : 'secondary'}>
+              {persona.is_visible ? 'Visible' : 'Hidden'}
+            </Badge>
           </div>
-          <Input
-            id={`name-${persona.id}`}
-            value={getCurrentValue('name')}
-            onChange={(e) => handleFieldChange('name', e.target.value)}
-            className="h-8"
-          />
         </div>
 
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <Label htmlFor={`mood-${persona.id}`} className="text-sm font-medium">
-              Mood
-            </Label>
-            {getSaveIcon('mood')}
+        <div className="space-y-3">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <Label htmlFor={`name-${persona.id}`} className="text-sm font-medium">
+                Name
+              </Label>
+              {getSaveIcon('name')}
+            </div>
+            <Input
+              id={`name-${persona.id}`}
+              value={getCurrentValue('name')}
+              onChange={(e) => handleFieldChange('name', e.target.value)}
+              className="h-8"
+            />
           </div>
-          <Input
-            id={`mood-${persona.id}`}
-            value={getCurrentValue('mood')}
-            onChange={(e) => handleFieldChange('mood', e.target.value)}
-            className="h-8"
-          />
-        </div>
 
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <Label htmlFor={`position-${persona.id}`} className="text-sm font-medium">
-              Position
-            </Label>
-            {getSaveIcon('position')}
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <Label htmlFor={`mood-${persona.id}`} className="text-sm font-medium">
+                Mood
+              </Label>
+              {getSaveIcon('mood')}
+            </div>
+            <Input
+              id={`mood-${persona.id}`}
+              value={getCurrentValue('mood')}
+              onChange={(e) => handleFieldChange('mood', e.target.value)}
+              className="h-8"
+            />
           </div>
-          <Input
-            id={`position-${persona.id}`}
-            type="number"
-            min="1"
-            value={getCurrentValue('position')}
-            onChange={(e) => handleFieldChange('position', parseInt(e.target.value) || 1)}
-            className="h-8"
-          />
+
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <Label htmlFor={`position-${persona.id}`} className="text-sm font-medium">
+                Position
+              </Label>
+              {getSaveIcon('position')}
+            </div>
+            <Input
+              id={`position-${persona.id}`}
+              type="number"
+              min="1"
+              value={getCurrentValue('position')}
+              onChange={(e) => handleFieldChange('position', parseInt(e.target.value) || 1)}
+              className="h-8"
+            />
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Switch
+              id={`visible-${persona.id}`}
+              checked={persona.is_visible}
+              onCheckedChange={(checked) => onToggleVisibility(persona.id, checked)}
+            />
+            <Label htmlFor={`visible-${persona.id}`} className="text-sm">
+              Visible to users
+            </Label>
+          </div>
+
+          <div className="flex gap-2 pt-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onToggleVisibility(persona.id, !persona.is_visible)}
+              className="flex-1"
+            >
+              {persona.is_visible ? (
+                <><EyeOff className="w-4 h-4 mr-1" /> Hide</>
+              ) : (
+                <><Eye className="w-4 h-4 mr-1" /> Show</>
+              )}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onDelete(persona.id)}
+              className="flex-1"
+            >
+              <Trash2 className="w-4 h-4 mr-1" />
+              Delete
+            </Button>
+          </div>
         </div>
 
-        <div className="flex items-center space-x-2">
-          <Switch
-            id={`visible-${persona.id}`}
-            checked={persona.is_visible}
-            onCheckedChange={(checked) => onToggleVisibility(persona.id, checked)}
-          />
-          <Label htmlFor={`visible-${persona.id}`} className="text-sm">
-            Visible to users
-          </Label>
+        <div className="text-xs text-muted-foreground">
+          Created: {new Date(persona.created_at).toLocaleDateString()}
         </div>
-
-        <div className="flex gap-2 pt-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onToggleVisibility(persona.id, !persona.is_visible)}
-            className="flex-1"
-          >
-            {persona.is_visible ? (
-              <><EyeOff className="w-4 h-4 mr-1" /> Hide</>
-            ) : (
-              <><Eye className="w-4 h-4 mr-1" /> Show</>
-            )}
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onDelete(persona.id)}
-            className="flex-1"
-          >
-            <Trash2 className="w-4 h-4 mr-1" />
-            Delete
-          </Button>
-        </div>
-      </div>
-
-      <div className="text-xs text-muted-foreground">
-        Created: {new Date(persona.created_at).toLocaleDateString()}
       </div>
     </div>
   );

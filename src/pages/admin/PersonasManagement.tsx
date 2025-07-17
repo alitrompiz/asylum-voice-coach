@@ -171,7 +171,7 @@ export default function PersonasManagement() {
         </Button>
       </div>
 
-      <div className="grid gap-6 sm:grid-cols-[repeat(auto-fill,minmax(20rem,1fr))]">
+      <div className="grid gap-6 sm:grid-cols-[repeat(auto-fill,minmax(10rem,1fr))]">
         {personas?.map((persona) => (
           <PersonaCard
             key={persona.id}
