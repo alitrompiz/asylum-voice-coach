@@ -1,152 +1,172 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { Mic, MicOff, Pause, Square, Volume2 } from 'lucide-react';
+import { MessageSquare, Volume2, X } from 'lucide-react';
+import { usePersonaStore } from '@/stores/personaStore';
+import { usePersonas } from '@/hooks/usePersonas';
+import { Waveform } from '@/components/Waveform';
+import { cn } from '@/lib/utils';
 
 export default function Interview() {
-  const [isRecording, setIsRecording] = useState(false);
-  const [isPaused, setIsPaused] = useState(false);
+  const [isAiSpeaking, setIsAiSpeaking] = useState(true);
+  const [isMuted, setIsMuted] = useState(false);
   const [showSubtitles, setShowSubtitles] = useState(true);
-  const [timeElapsed, setTimeElapsed] = useState(0);
+  const [currentSubtitle, setCurrentSubtitle] = useState('');
   const navigate = useNavigate();
+  
+  const { selectedPersona } = usePersonaStore();
+  const { personas } = usePersonas();
+  
+  const selectedPersonaData = personas.find(p => p.id === selectedPersona);
 
-  const handleToggleRecording = () => {
-    setIsRecording(!isRecording);
+  // Demo subtitle simulation
+  useEffect(() => {
+    if (isAiSpeaking && showSubtitles) {
+      const subtitles = [
+        "Hello, I'm here to help you practice for your asylum interview.",
+        "Let's begin with some basic questions about your background.",
+        "Can you tell me your name and where you're from?",
+        "Take your time to think about your response."
+      ];
+      
+      let currentIndex = 0;
+      const interval = setInterval(() => {
+        setCurrentSubtitle(subtitles[currentIndex]);
+        currentIndex = (currentIndex + 1) % subtitles.length;
+      }, 3000);
+      
+      return () => clearInterval(interval);
+    } else {
+      setCurrentSubtitle('');
+    }
+  }, [isAiSpeaking, showSubtitles]);
+
+  const handleInterrupt = () => {
+    setIsAiSpeaking(false);
+    // Here you would implement the logic to interrupt the AI
   };
 
-  const handlePause = () => {
-    setIsPaused(!isPaused);
+  const handleSwitchToText = () => {
+    // Navigate to text-based interview or toggle mode
+    navigate('/interview?mode=text');
   };
 
-  const handleEnd = () => {
+  const handleToggleMute = () => {
+    setIsMuted(!isMuted);
+  };
+
+  const handleEndCall = () => {
     navigate('/dashboard');
   };
 
-  const formatTime = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-  };
-
   return (
-    <div className="min-h-screen bg-background p-4">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-bold">Interview Practice</h1>
-            <p className="text-muted-foreground">
-              Practice your asylum interview with AI guidance
-            </p>
-          </div>
-          <div className="flex items-center gap-4">
-            <Badge variant="outline">{formatTime(timeElapsed)}</Badge>
-            <Badge variant="secondary">25 min remaining</Badge>
-          </div>
+    <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 text-white relative overflow-hidden">
+      {/* Background gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-b from-purple-900/20 via-transparent to-blue-900/20" />
+      
+      {/* Content */}
+      <div className="relative z-10 flex flex-col h-screen p-6">
+        {/* Header Warning */}
+        <div className="text-center mb-8 pt-12">
+          <p className="text-gray-300 text-sm">
+            You are speaking with an AI. Check for errors.
+          </p>
         </div>
 
-        {/* Main Interview Interface */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Volume2 className="w-5 h-5" />
-              AI Interviewer
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {/* AI Response */}
-              <div className="bg-muted p-4 rounded-lg">
-                <p className="text-sm font-medium mb-2">AI Interviewer:</p>
-                <p>
-                  Hello, I'm here to help you practice for your asylum interview. 
-                  Let's begin with some basic questions about your background. 
-                  Can you tell me your name and where you're from?
-                </p>
-              </div>
-
-              {/* Subtitles Toggle */}
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="subtitles"
-                  checked={showSubtitles}
-                  onCheckedChange={setShowSubtitles}
-                />
-                <Label htmlFor="subtitles">Show subtitles</Label>
-              </div>
-
-              {/* User Response Area */}
-              {showSubtitles && (
-                <div className="bg-primary/10 p-4 rounded-lg">
-                  <p className="text-sm font-medium mb-2">Your Response:</p>
-                  <p className="text-muted-foreground">
-                    {isRecording ? 'Listening...' : 'Click the microphone to respond'}
-                  </p>
-                </div>
-              )}
+        {/* Main Content Area */}
+        <div className="flex-1 flex flex-col items-center justify-center space-y-8">
+          {/* Profile Picture with AI Badge */}
+          <div className="relative">
+            <div className="w-48 h-48 rounded-full overflow-hidden border-4 border-white/20 shadow-2xl">
+              <img
+                src={selectedPersonaData?.image_url || '/placeholder.svg'}
+                alt={selectedPersonaData?.alt_text || 'AI Interviewer'}
+                className="w-full h-full object-cover"
+              />
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Controls */}
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-center gap-4">
-              <Button
-                size="lg"
-                variant={isRecording ? "destructive" : "default"}
-                onClick={handleToggleRecording}
-              >
-                {isRecording ? (
-                  <>
-                    <MicOff className="w-5 h-5 mr-2" />
-                    Stop Recording
-                  </>
-                ) : (
-                  <>
-                    <Mic className="w-5 h-5 mr-2" />
-                    Start Recording
-                  </>
-                )}
-              </Button>
-              
-              <Button
-                size="lg"
-                variant="outline"
-                onClick={handlePause}
-                disabled={!isRecording}
-              >
-                <Pause className="w-5 h-5 mr-2" />
-                {isPaused ? 'Resume' : 'Pause'}
-              </Button>
-              
-              <Button
-                size="lg"
-                variant="outline"
-                onClick={handleEnd}
-              >
-                <Square className="w-5 h-5 mr-2" />
-                End Interview
-              </Button>
+            
+            {/* AI Badge */}
+            <div className="absolute -bottom-2 -right-2 bg-gray-800 rounded-full p-2 border-2 border-white/20">
+              <Badge className="bg-gray-700 text-white text-xs px-2 py-1">
+                AI ✨
+              </Badge>
             </div>
-          </CardContent>
-        </Card>
+          </div>
 
-        {/* Waveform Visualization Placeholder */}
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle>Audio Levels</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-20 bg-muted rounded-lg flex items-center justify-center">
-              <p className="text-muted-foreground">Audio waveform will appear here</p>
+          {/* Interviewer Name */}
+          <h1 className="text-2xl font-semibold text-center">
+            {selectedPersonaData?.name || 'AI Interviewer'}
+          </h1>
+
+          {/* Speak to Interrupt Button */}
+          <Button
+            onClick={handleInterrupt}
+            variant="outline"
+            className="bg-white/10 border-white/20 text-white hover:bg-white/20 px-8 py-3 rounded-full"
+          >
+            Speak to interrupt
+          </Button>
+
+          {/* Subtitles */}
+          {showSubtitles && currentSubtitle && (
+            <div className="max-w-md mx-auto">
+              <p className="text-center text-white/90 bg-black/30 px-4 py-2 rounded-lg backdrop-blur-sm">
+                {currentSubtitle}
+              </p>
             </div>
-          </CardContent>
-        </Card>
+          )}
+        </div>
+
+        {/* Waveform Animation */}
+        <div className="mb-8">
+          <Waveform 
+            isActive={isAiSpeaking} 
+            className="h-20"
+          />
+        </div>
+
+        {/* Bottom Controls */}
+        <div className="flex justify-center items-center gap-8 pb-8">
+          {/* Switch to Text */}
+          <button
+            onClick={handleSwitchToText}
+            className="flex flex-col items-center gap-2 group"
+          >
+            <div className="w-16 h-16 rounded-full bg-gray-700 flex items-center justify-center group-hover:bg-gray-600 transition-colors">
+              <MessageSquare className="w-6 h-6 text-white" />
+            </div>
+            <span className="text-white text-sm">Switch to Text</span>
+          </button>
+
+          {/* Mute */}
+          <button
+            onClick={handleToggleMute}
+            className="flex flex-col items-center gap-2 group"
+          >
+            <div className={cn(
+              "w-16 h-16 rounded-full flex items-center justify-center transition-colors",
+              isMuted ? "bg-yellow-600 hover:bg-yellow-500" : "bg-gray-700 hover:bg-gray-600"
+            )}>
+              <Volume2 className={cn(
+                "w-6 h-6",
+                isMuted ? "text-white" : "text-white"
+              )} />
+            </div>
+            <span className="text-white text-sm">Mute</span>
+          </button>
+
+          {/* End Call */}
+          <button
+            onClick={handleEndCall}
+            className="flex flex-col items-center gap-2 group"
+          >
+            <div className="w-16 h-16 rounded-full bg-red-600 flex items-center justify-center group-hover:bg-red-500 transition-colors">
+              <X className="w-6 h-6 text-white" />
+            </div>
+            <span className="text-white text-sm">End Call</span>
+          </button>
+        </div>
       </div>
     </div>
   );
