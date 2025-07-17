@@ -13,12 +13,17 @@ import { useEffect } from 'react';
 export default function Dashboard() {
   const navigate = useNavigate();
   const { skillsSelected } = useSkillsStore();
-  const { isAdmin } = useAdminAccess();
+  const { isAdmin, loading, error } = useAdminAccess();
 
   // Clean up old localStorage admin code on component mount
   useEffect(() => {
     localStorage.removeItem('isAdminUnlocked');
   }, []);
+
+  // Debug logging to help identify the issue
+  useEffect(() => {
+    console.log('Admin access status:', { isAdmin, loading, error });
+  }, [isAdmin, loading, error]);
 
   const handleStartInterview = () => {
     navigate('/interview');
@@ -43,18 +48,6 @@ export default function Dashboard() {
               <User className="w-4 h-4 mr-2" />
               Profile
             </Button>
-            {isAdmin && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="outline" size="icon" onClick={handleAdminPanel}>
-                    <Shield className="w-4 h-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Admin Panel</p>
-                </TooltipContent>
-              </Tooltip>
-            )}
           </div>
         </header>
 
@@ -91,6 +84,35 @@ export default function Dashboard() {
           </p>
         )}
       </div>
+
+      {/* Admin Panel Button - Fixed position bottom right */}
+      {!loading && isAdmin && (
+        <div className="fixed bottom-20 right-4 md:bottom-4 md:right-4 z-50">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                variant="outline" 
+                size="icon"
+                onClick={handleAdminPanel}
+                className="w-12 h-12 rounded-full shadow-lg border-2"
+              >
+                <Shield className="w-5 h-5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Admin Panel</p>
+            </TooltipContent>
+          </Tooltip>
+        </div>
+      )}
+
+      {/* Debug info for development */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="fixed top-4 right-4 bg-black/80 text-white p-2 rounded text-xs">
+          Admin: {loading ? 'Loading...' : isAdmin ? 'Yes' : 'No'}
+          {error && <div className="text-red-400">Error: {error}</div>}
+        </div>
+      )}
     </div>
   );
 }

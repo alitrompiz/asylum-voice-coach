@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthStore } from '@/stores/authStore';
@@ -20,6 +21,8 @@ export const useAdminAccess = () => {
         setLoading(true);
         setError(null);
 
+        console.log('Checking admin access for user:', user.id);
+
         // Check if user has admin role
         const { data, error } = await supabase
           .from('user_roles')
@@ -29,10 +32,14 @@ export const useAdminAccess = () => {
           .maybeSingle();
 
         if (error) {
+          console.error('Error checking admin role:', error);
           throw error;
         }
 
-        setIsAdmin(!!data);
+        const hasAdminRole = !!data;
+        console.log('Admin role check result:', { hasAdminRole, data });
+        
+        setIsAdmin(hasAdminRole);
       } catch (error: any) {
         console.error('Error checking admin access:', error);
         setError(error.message);
