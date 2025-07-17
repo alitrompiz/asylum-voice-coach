@@ -378,7 +378,7 @@ export default function PromptsManagement() {
                 <TableHead>Description</TableHead>
                 <TableHead>Version</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Created</TableHead>
+                <TableHead>Modified</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -413,7 +413,7 @@ export default function PromptsManagement() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {new Date(prompt.created_at).toLocaleDateString()}
+                      {new Date(prompt.updated_at).toLocaleDateString()}
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
