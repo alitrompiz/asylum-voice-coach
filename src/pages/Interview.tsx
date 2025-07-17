@@ -201,14 +201,28 @@ export default function Interview() {
       
       {/* Content */}
       <div className="relative z-10 flex flex-col h-screen p-6">
-        {/* End Session Button - Top Left */}
-        <div className="absolute top-6 left-6 z-20">
+        {/* Top Controls */}
+        <div className="absolute top-6 left-6 z-20 flex gap-4">
           <button
             onClick={handleEndSession}
             className="flex items-center gap-2 bg-red-600 hover:bg-red-500 px-4 py-2 rounded-lg transition-colors"
           >
             <X className="w-5 h-5 text-white" />
             <span className="text-white text-sm font-medium">End Session</span>
+          </button>
+          
+          <button
+            onClick={() => setShowSubtitles(!showSubtitles)}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+              showSubtitles 
+                ? "bg-blue-600 hover:bg-blue-500" 
+                : "bg-gray-600 hover:bg-gray-500"
+            }`}
+          >
+            <MessageSquare className="w-5 h-5 text-white" />
+            <span className="text-white text-sm font-medium">
+              {showSubtitles ? "Hide Subtitles" : "Show Subtitles"}
+            </span>
           </button>
         </div>
 
