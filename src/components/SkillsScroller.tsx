@@ -88,7 +88,7 @@ export const SkillsScroller = () => {
       <div className="space-y-3">
         {/* Row 1 */}
         <ScrollArea className="w-full h-[52px]">
-          <div className="flex gap-2 pb-2 snap-x snap-mandatory overflow-x-auto h-[52px]">
+          <div className="flex gap-2 pb-2 snap-x snap-mandatory overflow-x-auto h-[52px] justify-center">
             {row1Skills.map((skill) => (
               <Badge
                 key={skill.id}
@@ -115,7 +115,7 @@ export const SkillsScroller = () => {
 
         {/* Row 2 */}
         <ScrollArea className="w-full h-[52px]">
-          <div className="flex gap-2 pb-2 snap-x snap-mandatory overflow-x-auto h-[52px]">
+          <div className="flex gap-2 pb-2 snap-x snap-mandatory overflow-x-auto h-[52px] justify-center">
             {row2Skills.map((skill) => (
               <Badge
                 key={skill.id}
