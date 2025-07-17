@@ -31,17 +31,18 @@ export default function Interview() {
   
   const selectedPersonaData = personas.find(p => p.id === selectedPersona);
 
-  // Handle press-to-talk functionality
-  const handlePressStart = async (e: React.MouseEvent | React.TouchEvent) => {
+  // Handle press-to-talk functionality for mouse events
+  const handleMousePressStart = async (e: React.MouseEvent) => {
     e.preventDefault();
-    console.log('NEW handlePressStart called', { isProcessing, pressToTalkRef: pressToTalkRef.current });
+    e.stopPropagation();
+    console.log('Mouse press start called', { isProcessing, pressToTalkRef: pressToTalkRef.current });
     if (isProcessing || pressToTalkRef.current) return;
     
     pressToTalkRef.current = true;
     try {
       console.log('Starting recording...');
       await startRecording();
-      setIsAiSpeaking(false); // Stop AI speaking when user starts talking
+      setIsAiSpeaking(false);
       console.log('Recording started successfully');
     } catch (error) {
       console.error('Failed to start recording:', error);
@@ -49,9 +50,10 @@ export default function Interview() {
     }
   };
 
-  const handlePressEnd = async (e: React.MouseEvent | React.TouchEvent) => {
+  const handleMousePressEnd = async (e: React.MouseEvent) => {
     e.preventDefault();
-    console.log('NEW handlePressEnd called', { pressToTalkRef: pressToTalkRef.current, isRecording });
+    e.stopPropagation();
+    console.log('Mouse press end called', { pressToTalkRef: pressToTalkRef.current, isRecording });
     if (!pressToTalkRef.current || !isRecording) return;
     
     pressToTalkRef.current = false;
@@ -67,9 +69,58 @@ export default function Interview() {
     }
   };
 
-  const handlePressCancel = (e: React.MouseEvent | React.TouchEvent) => {
+  const handleMousePressCancel = (e: React.MouseEvent) => {
     e.preventDefault();
-    console.log('NEW handlePressCancel called');
+    e.stopPropagation();
+    console.log('Mouse press cancel called');
+    if (pressToTalkRef.current) {
+      pressToTalkRef.current = false;
+      cancelRecording();
+    }
+  };
+
+  // Handle press-to-talk functionality for touch events
+  const handleTouchPressStart = async (e: React.TouchEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log('Touch press start called', { isProcessing, pressToTalkRef: pressToTalkRef.current });
+    if (isProcessing || pressToTalkRef.current) return;
+    
+    pressToTalkRef.current = true;
+    try {
+      console.log('Starting recording...');
+      await startRecording();
+      setIsAiSpeaking(false);
+      console.log('Recording started successfully');
+    } catch (error) {
+      console.error('Failed to start recording:', error);
+      pressToTalkRef.current = false;
+    }
+  };
+
+  const handleTouchPressEnd = async (e: React.TouchEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log('Touch press end called', { pressToTalkRef: pressToTalkRef.current, isRecording });
+    if (!pressToTalkRef.current || !isRecording) return;
+    
+    pressToTalkRef.current = false;
+    try {
+      console.log('Stopping recording...');
+      const recording = await stopRecording();
+      if (recording.duration > 0) {
+        console.log('Processing audio message...');
+        await processAudioMessage(recording);
+      }
+    } catch (error) {
+      console.error('Failed to stop recording:', error);
+    }
+  };
+
+  const handleTouchPressCancel = (e: React.TouchEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log('Touch press cancel called');
     if (pressToTalkRef.current) {
       pressToTalkRef.current = false;
       cancelRecording();
@@ -186,15 +237,19 @@ export default function Interview() {
             </div>
           )}
           
-          {/* Press to Talk Button */}
+           {/* Press to Talk Button */}
           <div className="flex justify-center">
             <button
-              onPointerDown={handlePressStart}
-              onPointerUp={handlePressEnd}
-              onPointerLeave={handlePressCancel}
+              onMouseDown={handleMousePressStart}
+              onMouseUp={handleMousePressEnd}
+              onMouseLeave={handleMousePressCancel}
+              onTouchStart={handleTouchPressStart}
+              onTouchEnd={handleTouchPressEnd}
+              onTouchCancel={handleTouchPressCancel}
+              onContextMenu={(e) => e.preventDefault()}
               disabled={isProcessing}
               className={cn(
-                "flex flex-col items-center gap-3 group select-none",
+                "flex flex-col items-center gap-3 group select-none touch-none",
                 "transition-all duration-200",
                 isRecording && "scale-110"
               )}
