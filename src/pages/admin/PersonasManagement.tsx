@@ -18,6 +18,7 @@ interface Persona {
   mood: string;
   position: number;
   is_visible: boolean;
+  tts_voice: string;
   created_at: string;
   updated_at: string;
 }
@@ -113,7 +114,8 @@ export default function PersonasManagement() {
             alt_text: `${name} profile picture`,
             mood: 'Professional',
             position: maxPosition + i + 1,
-            is_visible: true
+            is_visible: true,
+            tts_voice: 'alloy' // Default voice
           })
           .select()
           .single();

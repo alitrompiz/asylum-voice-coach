@@ -21,6 +21,15 @@ vi.mock('@/integrations/supabase/client', () => ({
   },
 }));
 
+vi.mock('@/hooks/useTextToSpeech', () => ({
+  useTextToSpeech: () => ({
+    speak: vi.fn(),
+    stop: vi.fn(),
+    isPlaying: false,
+    isLoading: false,
+  }),
+}));
+
 const mockPersona = {
   id: '1',
   name: 'Test Persona',
@@ -29,6 +38,7 @@ const mockPersona = {
   mood: 'Professional',
   position: 1,
   is_visible: true,
+  tts_voice: 'alloy',
   created_at: '2024-01-01T00:00:00Z',
   updated_at: '2024-01-01T00:00:00Z',
 };

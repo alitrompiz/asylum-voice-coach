@@ -12,6 +12,7 @@ export interface Persona {
   image_url: string;
   position: number;
   is_visible: boolean;
+  tts_voice: string;
   created_at: string;
   updated_at: string;
 }
@@ -83,6 +84,7 @@ export const usePersonas = () => {
           alt_text: persona.alt_text,
           image_url: imageUrl,
           position: maxPosition + 1,
+          tts_voice: 'alloy', // Default voice
         },
       ])
       .select()
