@@ -123,13 +123,13 @@ export default function Interview() {
           </p>
 
           {/* Subtitles */}
-          {showSubtitles && currentSubtitle && (
-            <div className="max-w-md mx-auto">
+          <div className="max-w-md mx-auto h-16 flex items-center justify-center">
+            {showSubtitles && currentSubtitle && (
               <p className="text-center text-white/90 bg-black/30 px-4 py-2 rounded-lg backdrop-blur-sm">
                 {currentSubtitle}
               </p>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
         {/* Waveform Animation */}
