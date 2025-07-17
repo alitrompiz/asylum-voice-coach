@@ -36,7 +36,13 @@ export const useAuthStore = create<AuthState>()(
       },
       
       initialize: async () => {
+        const state = get();
+        if (state.isInitialized) return;
+        
         set({ isLoading: true });
+        
+        // Get initial session first
+        const { data: { session } } = await supabase.auth.getSession();
         
         // Set up auth state listener
         supabase.auth.onAuthStateChange(
@@ -50,8 +56,7 @@ export const useAuthStore = create<AuthState>()(
           }
         );
         
-        // Get initial session
-        const { data: { session } } = await supabase.auth.getSession();
+        // Set initial state
         set({ 
           session, 
           user: session?.user ?? null,
