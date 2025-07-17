@@ -19,7 +19,7 @@ import { CalendarIcon, ChevronLeft, ChevronRight, Globe, Bell, Check } from 'luc
 import { cn } from '@/lib/utils';
 
 import { supabase } from '@/integrations/supabase/client';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 
 const COUNTRIES = [
@@ -59,7 +59,7 @@ type OnboardingFormData = z.infer<typeof onboardingSchema>;
 export default function OnboardingWizard() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const { user } = useAuthStore();
+  const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

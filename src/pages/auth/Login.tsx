@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuth } from '@/hooks/useAuth';
 import { loginSchema, LoginFormData } from '@/lib/validations/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,7 +16,7 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
-  const { setSession } = useAuthStore();
+  const { signIn } = useAuth();
 
   const {
     register,
@@ -31,10 +31,7 @@ export default function Login() {
     setError(null);
 
     try {
-      const { data: authData, error: signInError } = await supabase.auth.signInWithPassword({
-        email: data.email,
-        password: data.password,
-      });
+      const { error: signInError } = await signIn(data.email, data.password);
 
       if (signInError) {
         if (signInError.message === 'Invalid login credentials') {
@@ -47,10 +44,8 @@ export default function Login() {
         return;
       }
 
-      if (authData.session) {
-        setSession(authData.session);
-        navigate('/dashboard');
-      }
+      // Navigation will be handled by the auth provider
+      navigate('/dashboard');
     } catch (err) {
       setError('An unexpected error occurred. Please try again.');
     } finally {

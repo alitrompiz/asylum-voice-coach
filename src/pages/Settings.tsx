@@ -9,13 +9,13 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { User, Bell, Mail, Trash2, MessageSquare, Loader2 } from 'lucide-react';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 
 export default function Settings() {
-  const { user, signOut } = useAuthStore();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [deletingAccount, setDeletingAccount] = useState(false);
 

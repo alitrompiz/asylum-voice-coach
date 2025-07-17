@@ -4,12 +4,12 @@ import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Mic, Shield, Globe, Clock } from 'lucide-react';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 
 const Index = () => {
   const navigate = useNavigate();
-  const { user, isInitialized } = useAuthStore();
+  const { user, loading } = useAuth();
 
   useEffect(() => {
     // Check for error parameters in URL hash (from failed verification)
@@ -29,11 +29,11 @@ const Index = () => {
     }
 
     // If user is authenticated after email verification, redirect to dashboard
-    if (isInitialized && user) {
+    if (!loading && user) {
       toast.success('Email verified successfully! Welcome to AsylumPrep.');
       navigate('/dashboard');
     }
-  }, [user, isInitialized, navigate]);
+  }, [user, loading, navigate]);
 
   return (
     <div className="min-h-screen bg-background">

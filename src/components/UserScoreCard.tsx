@@ -3,7 +3,7 @@ import { Progress } from "@/components/ui/progress";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuthStore } from "@/stores/authStore";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Score {
   credibility: number;
@@ -12,7 +12,7 @@ interface Score {
 }
 
 const useUserScores = () => {
-  const { user } = useAuthStore();
+  const { user } = useAuth();
   
   
   return useQuery({

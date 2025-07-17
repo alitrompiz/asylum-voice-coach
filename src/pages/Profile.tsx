@@ -15,7 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { User, FileText, LogOut, Save, Plus, Trash2, Edit } from 'lucide-react';
 import { toast } from 'sonner';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuth } from '@/hooks/useAuth';
 
 const profileSchema = z.object({
   display_name: z.string().optional(),
@@ -38,7 +38,7 @@ type StoryFormData = z.infer<typeof storySchema>;
 
 export default function Profile() {
   const navigate = useNavigate();
-  const { user, signOut } = useAuthStore();
+  const { user, signOut } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [profile, setProfile] = useState<any>(null);
   const [stories, setStories] = useState<any[]>([]);

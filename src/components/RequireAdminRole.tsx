@@ -1,7 +1,7 @@
 
 import { ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuth } from '@/hooks/useAuth';
 import { useAdminAccess } from '@/hooks/useAdminAccess';
 import { Loader2 } from 'lucide-react';
 
@@ -10,7 +10,7 @@ interface RequireAdminRoleProps {
 }
 
 export const RequireAdminRole = ({ children }: RequireAdminRoleProps) => {
-  const { user } = useAuthStore();
+  const { user } = useAuth();
   const { isAdmin, loading } = useAdminAccess();
 
   // If no user, redirect to login
