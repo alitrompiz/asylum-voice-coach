@@ -418,6 +418,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      assign_admin_role: {
+        Args: { _user_id: string }
+        Returns: undefined
+      }
       get_admin_stats: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -431,12 +435,20 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      has_any_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _user_id: string
           _role: Database["public"]["Enums"]["app_role"]
         }
         Returns: boolean
+      }
+      remove_admin_role: {
+        Args: { _user_id: string }
+        Returns: undefined
       }
     }
     Enums: {

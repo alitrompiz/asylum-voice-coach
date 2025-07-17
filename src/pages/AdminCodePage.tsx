@@ -4,21 +4,52 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Loader2 } from 'lucide-react';
+import { useAuthStore } from '@/stores/authStore';
+import { useAdminRole } from '@/hooks/useAdminRole';
+import { toast } from 'sonner';
 
 export default function AdminCodePage() {
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
+  const { user } = useAuthStore();
+  const { assignAdminRole } = useAdminRole();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (code === '18433540') {
-      localStorage.setItem('isAdminUnlocked', 'true');
-      navigate('/admin');
-    } else {
+    if (code !== '18433540') {
       setError('Incorrect code');
+      return;
+    }
+
+    if (!user) {
+      setError('You must be logged in to access admin panel');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setError('');
+
+    try {
+      // Assign admin role in database
+      const success = await assignAdminRole();
+      
+      if (success) {
+        // Set local storage flag
+        localStorage.setItem('isAdminUnlocked', 'true');
+        toast.success('Admin access granted');
+        navigate('/admin');
+      } else {
+        setError('Failed to assign admin role');
+      }
+    } catch (error: any) {
+      console.error('Error in admin code submission:', error);
+      setError('An error occurred while granting admin access');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -58,10 +89,30 @@ export default function AdminCodePage() {
                   <p className="text-sm text-destructive">{error}</p>
                 )}
               </div>
-              <Button type="submit" className="w-full">
-                Submit
+              <Button type="submit" className="w-full" disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Granting Access...
+                  </>
+                ) : (
+                  'Submit'
+                )}
               </Button>
             </form>
+            
+            {!user && (
+              <div className="text-center p-4 border border-muted rounded-lg bg-muted/20">
+                <p className="text-sm text-muted-foreground mb-2">
+                  You must be logged in to access the admin panel
+                </p>
+                <Button variant="outline" size="sm" asChild>
+                  <Link to="/auth/login">
+                    Login to Continue
+                  </Link>
+                </Button>
+              </div>
+            )}
             
             <div className="text-center">
               <Button variant="ghost" size="sm" asChild>

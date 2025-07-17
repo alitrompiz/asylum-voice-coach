@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import { Users, Brain, UserCheck, MessageSquare, BarChart3 } from 'lucide-react';
+import { Users, Brain, UserCheck, MessageSquare, BarChart3, Shield } from 'lucide-react';
 import {
   Sidebar,
   SidebarContent,
@@ -33,6 +33,11 @@ const adminItems = [
     title: 'Prompts',
     url: '/admin/prompts',
     icon: MessageSquare,
+  },
+  {
+    title: 'Roles',
+    url: '/admin/roles',
+    icon: Shield,
   },
   {
     title: 'Usage',
