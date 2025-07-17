@@ -42,30 +42,30 @@ const ScoreRing = ({ score, label, tooltip }: { score: number; label: string; to
   };
 
   return (
-    <div className="flex flex-col items-center gap-2">
-      <div className="relative w-16 h-16">
-        <svg className="w-16 h-16 transform -rotate-90" viewBox="0 0 64 64">
+    <div className="flex flex-col items-center gap-1">
+      <div className="relative w-12 h-12">
+        <svg className="w-12 h-12 transform -rotate-90" viewBox="0 0 48 48">
           <circle
-            cx="32"
-            cy="32"
-            r="28"
+            cx="24"
+            cy="24"
+            r="20"
             fill="none"
             stroke="hsl(var(--muted))"
-            strokeWidth="4"
+            strokeWidth="3"
           />
           <circle
-            cx="32"
-            cy="32"
-            r="28"
+            cx="24"
+            cy="24"
+            r="20"
             fill="none"
             stroke={getScoreColor(score)}
-            strokeWidth="4"
-            strokeDasharray={`${(score / 100) * 175.929} 175.929`}
+            strokeWidth="3"
+            strokeDasharray={`${(score / 100) * 125.66} 125.66`}
             strokeLinecap="round"
           />
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-sm font-semibold">{score}</span>
+          <span className="text-xs font-semibold">{score}</span>
         </div>
       </div>
       <div className="flex items-center gap-1">
@@ -73,7 +73,7 @@ const ScoreRing = ({ score, label, tooltip }: { score: number; label: string; to
         <Popover>
           <PopoverTrigger asChild>
             <Info 
-              className="w-3 h-3 text-muted-foreground cursor-help hover:text-foreground" 
+              className="w-2.5 h-2.5 text-muted-foreground cursor-help hover:text-foreground" 
               data-testid="info-icon"
             />
           </PopoverTrigger>
@@ -91,17 +91,17 @@ export const UserScoreCard = () => {
 
   if (isLoading) {
     return (
-      <div className="bg-card rounded-lg p-6 border animate-pulse">
-        <div className="flex justify-center gap-8">
+      <div className="bg-card rounded-lg p-3 border animate-pulse">
+        <div className="flex justify-center gap-4">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="flex flex-col items-center gap-2">
-              <div className="w-16 h-16 bg-muted rounded-full" />
-              <div className="w-16 h-4 bg-muted rounded" />
+            <div key={i} className="flex flex-col items-center gap-1">
+              <div className="w-12 h-12 bg-muted rounded-full" />
+              <div className="w-12 h-3 bg-muted rounded" />
             </div>
           ))}
         </div>
-        <div className="mt-4 text-center">
-          <div className="w-48 h-4 bg-muted rounded mx-auto" />
+        <div className="mt-2 text-center">
+          <div className="w-32 h-3 bg-muted rounded mx-auto" />
         </div>
       </div>
     );
@@ -109,13 +109,13 @@ export const UserScoreCard = () => {
 
   if (error || !scores || scores.length === 0) {
     return (
-      <div className="bg-card rounded-lg p-6 border">
-        <div className="flex justify-center gap-8">
+      <div className="bg-card rounded-lg p-3 border">
+        <div className="flex justify-center gap-4">
           <ScoreRing score={0} label="Credibility" tooltip="Perceived honesty of your answers" />
           <ScoreRing score={0} label="Story Clarity" tooltip="How clearly you narrate events" />
           <ScoreRing score={0} label="Case Strength" tooltip="Match between your story and asylum criteria" />
         </div>
-        <div className="mt-4 text-center">
+        <div className="mt-2 text-center">
           <p className="text-sm text-muted-foreground">
             Your overall readiness: 0/100
           </p>
@@ -134,8 +134,8 @@ export const UserScoreCard = () => {
   const overallAverage = Math.round((avgCredibility + avgStoryClarity + avgCaseStrength) / 3);
 
   return (
-    <div className="bg-card rounded-lg p-6 border">
-      <div className="flex justify-center gap-8">
+    <div className="bg-card rounded-lg p-3 border">
+      <div className="flex justify-center gap-4">
         <ScoreRing 
           score={avgCredibility} 
           label="Credibility" 
@@ -152,7 +152,7 @@ export const UserScoreCard = () => {
           tooltip="Match between your story and asylum criteria" 
         />
       </div>
-      <div className="mt-4 text-center">
+      <div className="mt-2 text-center">
         <p className="text-sm font-medium">
           Your overall readiness: {overallAverage}/100
         </p>

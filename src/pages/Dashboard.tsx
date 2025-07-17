@@ -34,9 +34,9 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-background p-3 pb-20 md:pb-3">
+    <div className="min-h-screen bg-background p-2 pb-16 md:pb-2">
       <div className="max-w-6xl mx-auto">
-        <header className="mb-4 flex items-center justify-between">
+        <header className="mb-3 flex items-center justify-between">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold mb-1">Interview Practice Dashboard</h1>
             <p className="text-muted-foreground text-sm">
@@ -51,21 +51,21 @@ export default function Dashboard() {
           </div>
         </header>
 
-        <div className="mb-4">
+        <div className="mb-3">
           <UserScoreCard />
         </div>
 
-        <div className="mb-4">
+        <div className="mb-3">
           <PersonaCarousel />
         </div>
 
-        <div className="mb-4">
+        <div className="mb-3">
           <SkillsScroller />
         </div>
       </div>
 
       {/* Fixed Start Interview Button */}
-      <div className="fixed bottom-3 left-3 right-3 md:relative md:bottom-auto md:left-auto md:right-auto md:max-w-6xl md:mx-auto">
+      <div className="fixed bottom-2 left-2 right-2 md:relative md:bottom-auto md:left-auto md:right-auto md:max-w-6xl md:mx-auto">
         <Button 
           size="lg" 
           onClick={handleStartInterview}
@@ -87,7 +87,7 @@ export default function Dashboard() {
 
       {/* Admin Panel Button - Fixed position bottom right */}
       {!loading && isAdmin && (
-        <div className="fixed bottom-16 right-3 md:bottom-3 md:right-3 z-50">
+        <div className="fixed bottom-14 right-2 md:bottom-2 md:right-2 z-50">
           <Tooltip>
             <TooltipTrigger asChild>
               <Button 

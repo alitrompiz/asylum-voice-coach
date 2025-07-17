@@ -47,7 +47,7 @@ export const SkillsScroller = () => {
 
   if (isLoading) {
     return (
-      <div className="bg-card rounded-lg p-4 border">
+      <div className="bg-card rounded-lg p-3 border">
         <h3 className="text-lg font-semibold mb-3">Pick areas of focus</h3>
         <div className="space-y-3">
           {[1, 2].map((row) => (
@@ -64,7 +64,7 @@ export const SkillsScroller = () => {
 
   if (error || !skills || skills.length === 0) {
     return (
-      <div className="bg-card rounded-lg p-4 border">
+      <div className="bg-card rounded-lg p-3 border">
         <h3 className="text-lg font-semibold mb-3">Pick areas of focus</h3>
         <div className="flex flex-col items-center justify-center py-6">
           <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
@@ -83,12 +83,12 @@ export const SkillsScroller = () => {
   const row2Skills = skills.slice(midpoint);
 
   return (
-    <div className="bg-card rounded-lg p-4 border">
+    <div className="bg-card rounded-lg p-3 border">
       <h3 className="text-lg font-semibold mb-3">Pick areas of focus</h3>
       <div className="space-y-3">
         {/* Row 1 */}
-        <ScrollArea className="w-full">
-          <div className="flex gap-2 pb-2 snap-x snap-mandatory overflow-x-auto">
+        <ScrollArea className="w-full h-12">
+          <div className="flex gap-2 pb-2 snap-x snap-mandatory overflow-x-auto h-10">
             {row1Skills.map((skill) => (
               <Badge
                 key={skill.id}
@@ -114,8 +114,8 @@ export const SkillsScroller = () => {
         </ScrollArea>
 
         {/* Row 2 */}
-        <ScrollArea className="w-full">
-          <div className="flex gap-2 pb-2 snap-x snap-mandatory overflow-x-auto">
+        <ScrollArea className="w-full h-12">
+          <div className="flex gap-2 pb-2 snap-x snap-mandatory overflow-x-auto h-10">
             {row2Skills.map((skill) => (
               <Badge
                 key={skill.id}
