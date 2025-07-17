@@ -59,10 +59,11 @@ export default function Interview() {
         onStart: () => {
           setIsAiSpeaking(true);
           
-          // Set subtitle after speech actually starts
-          setDisplayedSubtitle(currentSubtitle);
+          // Start subtitles and waveform 0.5 seconds after speech starts
+          subtitleTimeoutRef.current = setTimeout(() => {
+            setDisplayedSubtitle(currentSubtitle);
+          }, 500);
           
-          // Start waveform animation 0.5 seconds after speech starts
           waveformTimeoutRef.current = setTimeout(() => {
             setShowWaveform(true);
           }, 500);
@@ -70,6 +71,7 @@ export default function Interview() {
         onEnd: () => {
           setIsAiSpeaking(false);
           setShowWaveform(false);
+          setDisplayedSubtitle('');
         },
         onError: (error) => {
           console.error('TTS error:', error);
@@ -226,10 +228,11 @@ export default function Interview() {
         onStart: () => {
           setIsAiSpeaking(true);
           
-          // Set subtitle after speech actually starts
-          setDisplayedSubtitle(currentSubtitle);
+          // Start subtitles and waveform 0.5 seconds after speech starts
+          subtitleTimeoutRef.current = setTimeout(() => {
+            setDisplayedSubtitle(currentSubtitle);
+          }, 500);
           
-          // Start waveform animation 0.5 seconds after speech starts
           waveformTimeoutRef.current = setTimeout(() => {
             setShowWaveform(true);
           }, 500);
@@ -237,6 +240,7 @@ export default function Interview() {
         onEnd: () => {
           setIsAiSpeaking(false);
           setShowWaveform(false);
+          setDisplayedSubtitle('');
         },
         onError: (error) => {
           console.error('TTS error:', error);
