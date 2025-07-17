@@ -28,6 +28,7 @@ export const useTextToSpeech = () => {
       }
 
       // Call the TTS edge function
+      console.log('Calling text-to-speech edge function with:', { textLength: text.length, voice: options.voice });
       const { data, error } = await supabase.functions.invoke('text-to-speech', {
         body: {
           text,
@@ -35,7 +36,15 @@ export const useTextToSpeech = () => {
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Edge function error:', error);
+        throw error;
+      }
+
+      console.log('TTS response received:', { 
+        success: !!data?.audioContent,
+        contentLength: data?.audioContent?.length || 0
+      });
 
       if (data?.audioContent) {
         // Create audio element and play

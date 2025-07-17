@@ -45,9 +45,14 @@ serve(async (req) => {
       throw new Error(`OpenAI TTS API error: ${response.status}`);
     }
 
-    // Convert audio to base64
+    // Convert audio to base64 - using a safe approach for binary data
     const audioBuffer = await response.arrayBuffer();
-    const base64Audio = btoa(String.fromCharCode(...new Uint8Array(audioBuffer)));
+    // Use Deno's built-in encoder for safe binary to base64 conversion
+    const base64Audio = btoa(
+      Array.from(new Uint8Array(audioBuffer))
+        .map(b => String.fromCharCode(b))
+        .join('')
+    );
 
     return new Response(
       JSON.stringify({ 

@@ -214,20 +214,19 @@ export const useVoiceInterview = (options: UseVoiceInterviewOptions = {}): UseVo
       
       // Convert AI response to speech
       const ttsStartTime = Date.now();
-      const { data: speechData, error: speechError } = await supabase.functions.invoke('text-to-speech', {
-        body: {
-          text: aiData.text,
-          voice: 'Joanna',
-          language: language === 'en' ? 'en-US' : language
-        }
-      });
+        const { data: speechData, error: speechError } = await supabase.functions.invoke('text-to-speech', {
+          body: {
+            text: aiData.text,
+            voice: 'alloy' // Using OpenAI's default voice
+          }
+        });
       const ttsLatency = Date.now() - ttsStartTime;
       
       if (speechError) {
         trackAICall('text-to-speech', {
-          model: 'aws-polly',
+          model: 'tts-1',
           latency_ms: ttsLatency,
-          cost_usd: 0.004, // Approximate cost per request
+          cost_usd: 0.0015, // Approximate cost per request
           success: false,
           error: speechError.message
         });
@@ -235,9 +234,9 @@ export const useVoiceInterview = (options: UseVoiceInterviewOptions = {}): UseVo
       }
       
       trackAICall('text-to-speech', {
-        model: 'aws-polly',
+        model: 'tts-1',
         latency_ms: ttsLatency,
-        cost_usd: 0.004, // Approximate cost per request
+        cost_usd: 0.0015, // Approximate cost per request
         success: true
       });
       
@@ -387,17 +386,16 @@ export const useVoiceInterview = (options: UseVoiceInterviewOptions = {}): UseVo
       const { data: speechData, error: speechError } = await supabase.functions.invoke('text-to-speech', {
         body: {
           text: aiData.text,
-          voice: 'Joanna',
-          language: language === 'en' ? 'en-US' : language
+          voice: 'alloy' // Using OpenAI's default voice
         }
       });
       const ttsLatency = Date.now() - ttsStartTime;
       
       if (speechError) {
         trackAICall('text-to-speech', {
-          model: 'aws-polly',
+          model: 'tts-1',
           latency_ms: ttsLatency,
-          cost_usd: 0.004,
+          cost_usd: 0.0015,
           success: false,
           error: speechError.message
         });
@@ -405,9 +403,9 @@ export const useVoiceInterview = (options: UseVoiceInterviewOptions = {}): UseVo
       }
       
       trackAICall('text-to-speech', {
-        model: 'aws-polly',
+        model: 'tts-1',
         latency_ms: ttsLatency,
-        cost_usd: 0.004,
+        cost_usd: 0.0015,
         success: true
       });
       
