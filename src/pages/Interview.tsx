@@ -32,7 +32,8 @@ export default function Interview() {
   const selectedPersonaData = personas.find(p => p.id === selectedPersona);
 
   // Handle press-to-talk functionality
-  const handlePressStart = async () => {
+  const handlePressStart = async (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
     console.log('NEW handlePressStart called', { isProcessing, pressToTalkRef: pressToTalkRef.current });
     if (isProcessing || pressToTalkRef.current) return;
     
@@ -48,7 +49,8 @@ export default function Interview() {
     }
   };
 
-  const handlePressEnd = async () => {
+  const handlePressEnd = async (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
     console.log('NEW handlePressEnd called', { pressToTalkRef: pressToTalkRef.current, isRecording });
     if (!pressToTalkRef.current || !isRecording) return;
     
@@ -65,7 +67,8 @@ export default function Interview() {
     }
   };
 
-  const handlePressCancel = () => {
+  const handlePressCancel = (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
     console.log('NEW handlePressCancel called');
     if (pressToTalkRef.current) {
       pressToTalkRef.current = false;
@@ -186,12 +189,9 @@ export default function Interview() {
           {/* Press to Talk Button */}
           <div className="flex justify-center">
             <button
-              onMouseDown={handlePressStart}
-              onMouseUp={handlePressEnd}
-              onMouseLeave={handlePressCancel}
-              onTouchStart={handlePressStart}
-              onTouchEnd={handlePressEnd}
-              onTouchCancel={handlePressCancel}
+              onPointerDown={handlePressStart}
+              onPointerUp={handlePressEnd}
+              onPointerLeave={handlePressCancel}
               disabled={isProcessing}
               className={cn(
                 "flex flex-col items-center gap-3 group select-none",
