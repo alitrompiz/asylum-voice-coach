@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { MessageSquare, Volume2, X } from 'lucide-react';
+import { MessageSquare, Volume2, X, Pause, Play } from 'lucide-react';
 import { usePersonaStore } from '@/stores/personaStore';
 import { usePersonas } from '@/hooks/usePersonas';
 import { Waveform } from '@/components/Waveform';
@@ -13,6 +13,7 @@ export default function Interview() {
   const [isMuted, setIsMuted] = useState(false);
   const [showSubtitles, setShowSubtitles] = useState(true);
   const [currentSubtitle, setCurrentSubtitle] = useState('');
+  const [isPaused, setIsPaused] = useState(false);
   const navigate = useNavigate();
   
   const { selectedPersona } = usePersonaStore();
@@ -56,6 +57,10 @@ export default function Interview() {
     setIsMuted(!isMuted);
   };
 
+  const handleTogglePause = () => {
+    setIsPaused(!isPaused);
+  };
+
   const handleEndCall = () => {
     navigate('/dashboard');
   };
@@ -67,10 +72,15 @@ export default function Interview() {
       
       {/* Content */}
       <div className="relative z-10 flex flex-col h-screen p-6">
+        {/* App Name */}
+        <div className="text-center pt-4 mb-2">
+          <h1 className="text-white text-base font-medium">Asylum Prep</h1>
+        </div>
+        
         {/* Header Warning */}
-        <div className="text-center mb-8 pt-12">
+        <div className="text-center mb-8">
           <p className="text-gray-300 text-sm">
-            You are speaking with an AI. Check for errors.
+            This is not legal advice
           </p>
         </div>
 
@@ -78,7 +88,7 @@ export default function Interview() {
         <div className="flex-1 flex flex-col items-center justify-center space-y-8">
           {/* Profile Picture with AI Badge */}
           <div className="relative">
-            <div className="w-48 h-48 rounded-full overflow-hidden border-4 border-white/20 shadow-2xl">
+            <div className="w-96 h-96 rounded-full overflow-hidden border-4 border-white/20 shadow-2xl">
               <img
                 src={selectedPersonaData?.image_url || '/placeholder.svg'}
                 alt={selectedPersonaData?.alt_text || 'AI Interviewer'}
@@ -154,6 +164,20 @@ export default function Interview() {
               )} />
             </div>
             <span className="text-white text-sm">Mute</span>
+          </button>
+
+          {/* Pause */}
+          <button
+            onClick={handleTogglePause}
+            className="flex flex-col items-center gap-2 group"
+          >
+            <div className={cn(
+              "w-16 h-16 rounded-full flex items-center justify-center transition-colors",
+              isPaused ? "bg-green-600 hover:bg-green-500" : "bg-gray-700 hover:bg-gray-600"
+            )}>
+              {isPaused ? <Play className="w-6 h-6 text-white" /> : <Pause className="w-6 h-6 text-white" />}
+            </div>
+            <span className="text-white text-sm">{isPaused ? "Resume" : "Pause"}</span>
           </button>
 
           {/* End Call */}
