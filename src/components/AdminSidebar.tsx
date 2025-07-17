@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import { Users, Brain, UserCheck, MessageSquare, BarChart3, Shield } from 'lucide-react';
+import { Users, Brain, UserCheck, MessageSquare, BarChart3, Shield, ArrowLeft } from 'lucide-react';
 import {
   Sidebar,
   SidebarContent,
@@ -63,7 +63,16 @@ export function AdminSidebar() {
     >
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Admin Panel</SidebarGroupLabel>
+          <div className="flex items-center justify-between px-2 py-1.5 text-xs font-semibold text-sidebar-foreground/70">
+            <span>Admin Panel</span>
+            <NavLink
+              to="/dashboard"
+              className="p-1 hover:bg-muted/50 rounded-sm transition-colors"
+              title="Back to Dashboard"
+            >
+              <ArrowLeft className="h-3 w-3" />
+            </NavLink>
+          </div>
 
           <SidebarGroupContent>
             <SidebarMenu>
