@@ -79,7 +79,7 @@ export const PersonaCarousel = ({ onSelect }: PersonaCarouselProps) => {
           {personas.map((persona) => (
             <div
               key={persona.id}
-              className="flex flex-col items-center min-w-[180px] cursor-pointer snap-center"
+              className="flex flex-col items-center min-w-[180px] cursor-pointer snap-center relative"
               onClick={() => handlePersonaSelect(persona.id)}
               data-testid={`persona-${persona.id}`}
             >
@@ -104,12 +104,12 @@ export const PersonaCarousel = ({ onSelect }: PersonaCarouselProps) => {
                     </div>
                   </div>
                 )}
-                
-                {/* Overlay pill with name and mood */}
-                <div className="absolute bottom-0 left-0 right-0 h-11 bg-muted/90 backdrop-blur-sm rounded-b-full border border-border/50 flex flex-col items-center justify-center">
-                  <p className="font-medium text-xs leading-tight">{persona.name}</p>
-                  <p className="text-xs text-muted-foreground leading-tight">{persona.mood}</p>
-                </div>
+              </div>
+              
+              {/* Overlay pill with name and mood - positioned outside image container */}
+              <div className="absolute bottom-0 left-0 right-0 h-11 bg-muted/90 backdrop-blur-sm rounded-full border border-border/50 flex flex-col items-center justify-center z-10">
+                <p className="font-medium text-xs leading-tight">{persona.name}</p>
+                <p className="text-xs text-muted-foreground leading-tight">{persona.mood}</p>
               </div>
             </div>
           ))}
