@@ -87,8 +87,8 @@ export const SkillsScroller = () => {
       <h3 className="text-lg font-semibold mb-3">Pick areas of focus</h3>
       <div className="space-y-3">
         {/* Row 1 */}
-        <ScrollArea className="w-full h-[52px]">
-          <div className="flex gap-2 pb-2 snap-x snap-mandatory overflow-x-auto h-[52px]">
+        <ScrollArea className="w-full h-[60px]">
+          <div className="flex gap-2 py-1 snap-x snap-mandatory overflow-x-auto min-h-[52px]">
             {row1Skills.map((skill) => (
               <Badge
                 key={skill.id}
@@ -114,8 +114,8 @@ export const SkillsScroller = () => {
         </ScrollArea>
 
         {/* Row 2 */}
-        <ScrollArea className="w-full h-[52px]">
-          <div className="flex gap-2 pb-2 snap-x snap-mandatory overflow-x-auto h-[52px]">
+        <ScrollArea className="w-full h-[60px]">
+          <div className="flex gap-2 py-1 snap-x snap-mandatory overflow-x-auto min-h-[52px]">
             {row2Skills.map((skill) => (
               <Badge
                 key={skill.id}
