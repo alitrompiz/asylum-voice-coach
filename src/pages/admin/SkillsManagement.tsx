@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Edit, Trash2, Upload, GripVertical } from 'lucide-react';
+import { Plus, Edit, Trash2, Upload, GripVertical, RefreshCw } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -42,7 +42,10 @@ const SKILL_GROUPS = [
   'Cultural Awareness',
   'Documentation',
   'Emotional Intelligence',
-  'Advocacy'
+  'Advocacy',
+  'Case Strength',
+  'Clarity',
+  'Consistency'
 ];
 
 export default function SkillsManagement() {
@@ -87,6 +90,15 @@ export default function SkillsManagement() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleRefresh = async () => {
+    setLoading(true);
+    await loadSkills();
+    toast({
+      title: 'Success',
+      description: 'Skills refreshed successfully',
+    });
   };
 
   const handleSubmit = async (data: SkillFormData) => {
@@ -319,6 +331,14 @@ export default function SkillsManagement() {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={handleRefresh}
+            disabled={loading}
+          >
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Refresh
+          </Button>
           <Button
             variant="outline"
             onClick={() => fileInputRef.current?.click()}
