@@ -332,18 +332,6 @@ export default function Interview() {
                 <p className="text-center text-white/90 bg-black/30 px-4 py-2 rounded-lg backdrop-blur-sm animate-fade-in text-sm">
                   {isProcessing ? 'Processing...' : displayedSubtitle}
                 </p>
-                {displayedSubtitle && (
-                  <button
-                    onClick={handleTTSToggle}
-                    disabled={isTTSLoading}
-                    className={cn(
-                      "p-2 rounded-full bg-black/30 backdrop-blur-sm transition-colors",
-                      isTTSPlaying ? "text-red-400 hover:text-red-300" : "text-white/70 hover:text-white"
-                    )}
-                  >
-                    <Volume2 className="w-4 h-4" />
-                  </button>
-                )}
               </div>
             )}
           </div>
