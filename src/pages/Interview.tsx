@@ -17,8 +17,10 @@ import { cn } from '@/lib/utils';
 export default function Interview() {
   const [isAiSpeaking, setIsAiSpeaking] = useState(true);
   const [showSubtitles, setShowSubtitles] = useState(true);
+  const [displayedSubtitle, setDisplayedSubtitle] = useState('');
   const [isPaused, setIsPaused] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
+  const subtitleTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const navigate = useNavigate();
   
   // Audio recording and conversation hooks
@@ -42,16 +44,42 @@ export default function Interview() {
         !currentSubtitle.includes("Transcribing your message") &&
         selectedPersonaData?.tts_voice) {
       
+      // Clear any existing subtitle timeout
+      if (subtitleTimeoutRef.current) {
+        clearTimeout(subtitleTimeoutRef.current);
+        subtitleTimeoutRef.current = null;
+      }
+      
+      // Hide subtitle initially
+      setDisplayedSubtitle('');
+      
       speak(currentSubtitle, {
         voice: selectedPersonaData.tts_voice,
-        onStart: () => setIsAiSpeaking(true),
-        onEnd: () => setIsAiSpeaking(false),
+        onStart: () => {
+          setIsAiSpeaking(true);
+          
+          // Set subtitle after 2 second delay
+          subtitleTimeoutRef.current = setTimeout(() => {
+            setDisplayedSubtitle(currentSubtitle);
+          }, 2000);
+        },
+        onEnd: () => {
+          setIsAiSpeaking(false);
+        },
         onError: (error) => {
           console.error('TTS error:', error);
           setIsAiSpeaking(false);
+          setDisplayedSubtitle(currentSubtitle); // Show subtitle immediately on error
         }
       });
     }
+    
+    // Cleanup function to clear timeout
+    return () => {
+      if (subtitleTimeoutRef.current) {
+        clearTimeout(subtitleTimeoutRef.current);
+      }
+    };
   }, [currentSubtitle, selectedPersonaData?.tts_voice, speak]);
 
   // Handle press-to-talk functionality for mouse events
@@ -174,9 +202,26 @@ export default function Interview() {
                !currentSubtitle.includes("Processing your message") && 
                !currentSubtitle.includes("Transcribing your message") &&
                selectedPersonaData?.tts_voice) {
+      
+      // Clear any existing subtitle timeout
+      if (subtitleTimeoutRef.current) {
+        clearTimeout(subtitleTimeoutRef.current);
+        subtitleTimeoutRef.current = null;
+      }
+      
+      // Hide subtitle initially
+      setDisplayedSubtitle('');
+      
       speak(currentSubtitle, {
         voice: selectedPersonaData.tts_voice,
-        onStart: () => setIsAiSpeaking(true),
+        onStart: () => {
+          setIsAiSpeaking(true);
+          
+          // Set subtitle after 2 second delay
+          subtitleTimeoutRef.current = setTimeout(() => {
+            setDisplayedSubtitle(currentSubtitle);
+          }, 2000);
+        },
         onEnd: () => setIsAiSpeaking(false),
       });
     }
@@ -281,12 +326,12 @@ export default function Interview() {
 
           {/* Subtitles with TTS Controls */}
           <div className="max-w-md mx-auto h-16 flex items-center justify-center relative">
-            {showSubtitles && (currentSubtitle || isProcessing) && (
+            {showSubtitles && (displayedSubtitle || isProcessing) && (
               <div className="flex items-center gap-2">
-                <p className="text-center text-white/90 bg-black/30 px-4 py-2 rounded-lg backdrop-blur-sm">
-                  {isProcessing ? 'Processing...' : currentSubtitle}
+                <p className="text-center text-white/90 bg-black/30 px-4 py-2 rounded-lg backdrop-blur-sm animate-fade-in">
+                  {isProcessing ? 'Processing...' : displayedSubtitle}
                 </p>
-                {currentSubtitle && (
+                {displayedSubtitle && (
                   <button
                     onClick={handleTTSToggle}
                     disabled={isTTSLoading}
