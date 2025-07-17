@@ -57,10 +57,11 @@ serve(async (req) => {
     // Process audio in chunks
     const binaryAudio = processBase64Chunks(audio);
     
-    // Prepare form data
+    // Prepare form data - use a supported format
     const formData = new FormData();
-    const blob = new Blob([binaryAudio], { type: 'audio/webm' });
-    formData.append('file', blob, 'audio.webm');
+    // Use audio/wav format which is supported by OpenAI Whisper
+    const blob = new Blob([binaryAudio], { type: 'audio/wav' });
+    formData.append('file', blob, 'audio.wav');
     formData.append('model', 'whisper-1');
     formData.append('language', language);
 

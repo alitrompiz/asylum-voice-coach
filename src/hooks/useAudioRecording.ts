@@ -34,9 +34,28 @@ export const useAudioRecording = () => {
       streamRef.current = stream;
       chunksRef.current = [];
       
-      // Create MediaRecorder
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'audio/webm;codecs=opus'
+      // Create MediaRecorder with supported format
+      let mediaRecorder;
+      const supportedMimeTypes = [
+        'audio/wav',
+        'audio/mp4',
+        'audio/mpeg',
+        'audio/ogg',
+        'audio/webm;codecs=opus'
+      ];
+
+      // Find the first supported MIME type
+      let selectedMimeType = 'audio/webm;codecs=opus'; // fallback
+      for (const mimeType of supportedMimeTypes) {
+        if (MediaRecorder.isTypeSupported(mimeType)) {
+          selectedMimeType = mimeType;
+          break;
+        }
+      }
+
+      console.log('Using MIME type:', selectedMimeType);
+      mediaRecorder = new MediaRecorder(stream, {
+        mimeType: selectedMimeType
       });
       
       mediaRecorderRef.current = mediaRecorder;
@@ -85,8 +104,31 @@ export const useAudioRecording = () => {
             streamRef.current = null;
           }
 
-          // Create blob from chunks
-          const audioBlob = new Blob(chunksRef.current, { type: 'audio/webm' });
+          // Create blob from chunks - use wav if possible, otherwise keep original
+          const originalBlob = new Blob(chunksRef.current);
+          let finalBlob;
+          let mimeType = 'audio/wav';
+
+          // Try to create a WAV blob, fallback to original if not supported
+          if (chunksRef.current.length > 0 && chunksRef.current[0].type) {
+            const originalType = chunksRef.current[0].type;
+            console.log('Original audio type:', originalType);
+            
+            // If it's already a supported format, use it
+            if (originalType.includes('wav') || originalType.includes('mp4') || 
+                originalType.includes('mpeg') || originalType.includes('ogg')) {
+              finalBlob = originalBlob;
+              mimeType = originalType;
+            } else {
+              // For webm, we'll send it but update the edge function to handle it
+              finalBlob = originalBlob;
+              mimeType = originalType;
+            }
+          } else {
+            finalBlob = originalBlob;
+          }
+
+          console.log('Final audio blob type:', mimeType, 'size:', finalBlob.size);
           
           // Convert to base64 for API
           const base64Audio = await new Promise<string>((resolve) => {
@@ -97,11 +139,11 @@ export const useAudioRecording = () => {
               const base64Data = base64.split(',')[1];
               resolve(base64Data);
             };
-            reader.readAsDataURL(audioBlob);
+            reader.readAsDataURL(finalBlob);
           });
 
           const result: AudioRecordingResult = {
-            audioBlob,
+            audioBlob: finalBlob,
             duration,
             base64Audio
           };
