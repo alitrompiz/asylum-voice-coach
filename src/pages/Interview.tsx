@@ -58,10 +58,8 @@ export default function Interview() {
         onStart: () => {
           setIsAiSpeaking(true);
           
-          // Set subtitle after 2 second delay
-          subtitleTimeoutRef.current = setTimeout(() => {
-            setDisplayedSubtitle(currentSubtitle);
-          }, 2000);
+          // Set subtitle after speech actually starts
+          setDisplayedSubtitle(currentSubtitle);
         },
         onEnd: () => {
           setIsAiSpeaking(false);
@@ -195,7 +193,7 @@ export default function Interview() {
     setShowFeedback(true);
   };
 
-  const handleTTSToggle = () => {
+   const handleTTSToggle = () => {
     if (isTTSPlaying) {
       stopTTS();
     } else if (currentSubtitle && 
@@ -217,12 +215,15 @@ export default function Interview() {
         onStart: () => {
           setIsAiSpeaking(true);
           
-          // Set subtitle after 2 second delay
-          subtitleTimeoutRef.current = setTimeout(() => {
-            setDisplayedSubtitle(currentSubtitle);
-          }, 2000);
+          // Set subtitle after speech actually starts
+          setDisplayedSubtitle(currentSubtitle);
         },
         onEnd: () => setIsAiSpeaking(false),
+        onError: (error) => {
+          console.error('TTS error:', error);
+          setIsAiSpeaking(false);
+          setDisplayedSubtitle(currentSubtitle); // Show subtitle immediately on error
+        }
       });
     }
   };
