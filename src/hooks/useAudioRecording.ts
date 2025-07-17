@@ -10,11 +10,15 @@ export const useAudioRecording = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [duration, setDuration] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [audioLevel, setAudioLevel] = useState(0);
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
 
   const startRecording = useCallback(async () => {
     try {
@@ -63,6 +67,31 @@ export const useAudioRecording = () => {
       const mediaRecorder = new MediaRecorder(stream, options);
       
       mediaRecorderRef.current = mediaRecorder;
+
+      // Set up audio analysis
+      audioContextRef.current = new AudioContext();
+      analyserRef.current = audioContextRef.current.createAnalyser();
+      analyserRef.current.fftSize = 256;
+      
+      const source = audioContextRef.current.createMediaStreamSource(stream);
+      source.connect(analyserRef.current);
+      
+      // Start audio level monitoring
+      const monitorAudioLevel = () => {
+        if (!analyserRef.current) return;
+        
+        const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
+        analyserRef.current.getByteFrequencyData(dataArray);
+        
+        // Calculate average volume level
+        const average = dataArray.reduce((acc, val) => acc + val, 0) / dataArray.length;
+        const normalizedLevel = average / 255; // Normalize to 0-1 range
+        
+        setAudioLevel(normalizedLevel);
+        animationFrameRef.current = requestAnimationFrame(monitorAudioLevel);
+      };
+      
+      monitorAudioLevel();
 
       // Handle data available
       mediaRecorder.ondataavailable = (event) => {
@@ -183,6 +212,17 @@ export const useAudioRecording = () => {
 
       setIsRecording(false);
       setDuration(0);
+      setAudioLevel(0);
+      
+      // Clean up audio monitoring
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+        audioContextRef.current = null;
+      }
     }
   }, [isRecording]);
 
@@ -190,6 +230,7 @@ export const useAudioRecording = () => {
     isRecording,
     duration,
     error,
+    audioLevel,
     startRecording,
     stopRecording,
     cancelRecording

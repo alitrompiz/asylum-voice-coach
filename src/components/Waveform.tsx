@@ -4,17 +4,18 @@ import { cn } from '@/lib/utils';
 interface WaveformProps {
   isActive: boolean;
   className?: string;
+  intensity?: number; // 0-1 scale for intensity
 }
 
-export const Waveform = ({ isActive, className }: WaveformProps) => {
+export const Waveform = ({ isActive, className, intensity = 1 }: WaveformProps) => {
   const [bars, setBars] = useState<number[]>([]);
 
   useEffect(() => {
     const generateBars = () => {
-      const numBars = 40;
-      const newBars = Array.from({ length: numBars }, () => 
-        isActive ? Math.random() * 100 + 20 : 20
-      );
+        const numBars = 40;
+        const newBars = Array.from({ length: numBars }, () => 
+          isActive ? (Math.random() * 80 + 20) * intensity : 20
+        );
       setBars(newBars);
     };
 

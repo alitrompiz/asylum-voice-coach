@@ -25,7 +25,7 @@ export default function Interview() {
   const waveformTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const navigate = useNavigate();
   // Audio recording and conversation hooks
-  const { isRecording, duration, error: recordingError, startRecording, stopRecording, cancelRecording } = useAudioRecording();
+  const { isRecording, duration, audioLevel, error: recordingError, startRecording, stopRecording, cancelRecording } = useAudioRecording();
   const { messages, isProcessing, currentSubtitle, processAudioMessage, clearConversation, formatTime } = useInterviewConversation();
   const { speak, stop: stopTTS, isPlaying: isTTSPlaying, isLoading: isTTSLoading } = useTextToSpeech();
   
@@ -368,10 +368,11 @@ export default function Interview() {
           {/* Timer and Recording Indicator */}
           {isRecording && (
             <div className="flex flex-col items-center gap-2">
-              <div className="w-32 bg-black/30 rounded-lg p-2 backdrop-blur-sm">
+              <div className="w-32 bg-black/30 rounded-lg p-2 backdrop-blur-sm overflow-hidden">
                 <Waveform 
-                  isActive={true}
-                  className="h-4 animate-pulse"
+                  isActive={audioLevel > 0.01}
+                  intensity={audioLevel}
+                  className="h-4 animate-fade-in"
                 />
               </div>
               <div className="bg-black/50 px-4 py-2 rounded-lg backdrop-blur-sm">
