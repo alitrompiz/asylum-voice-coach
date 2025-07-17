@@ -328,12 +328,14 @@ export default function Interview() {
             </div>
 
             {/* Waveform - positioned in front of officer's picture at 25% height */}
-            <div className="absolute bottom-24 left-1/2 transform -translate-x-1/2 w-80">
-              <Waveform 
-                isActive={showWaveform && !isPaused} 
-                className="h-16"
-              />
-            </div>
+            {showWaveform && !isPaused && (
+              <div className="absolute bottom-24 left-1/2 transform -translate-x-1/2 w-80 animate-fade-in">
+                <Waveform 
+                  isActive={true} 
+                  className="h-16"
+                />
+              </div>
+            )}
           </div>
 
           {/* Interviewer Name */}
