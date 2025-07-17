@@ -365,12 +365,20 @@ export default function Interview() {
 
         {/* Press to Talk Button - Bottom Middle */}
         <div className="flex flex-col items-center pb-8 gap-4">
-          {/* Timer Display */}
+          {/* Timer and Recording Indicator */}
           {isRecording && (
-            <div className="bg-black/50 px-4 py-2 rounded-lg backdrop-blur-sm">
-              <span className="text-white text-lg font-mono">
-                {formatTime(duration)}
-              </span>
+            <div className="flex flex-col items-center gap-2">
+              <div className="w-32">
+                <Waveform 
+                  isActive={true}
+                  className="h-6"
+                />
+              </div>
+              <div className="bg-black/50 px-4 py-2 rounded-lg backdrop-blur-sm">
+                <span className="text-white text-lg font-mono">
+                  {formatTime(duration)}
+                </span>
+              </div>
             </div>
           )}
           
