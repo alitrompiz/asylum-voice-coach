@@ -1,3 +1,4 @@
+
 import { Link, useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
@@ -33,6 +34,7 @@ const Index = () => {
       navigate('/dashboard');
     }
   }, [user, isInitialized, navigate]);
+
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
@@ -131,13 +133,10 @@ const Index = () => {
 
       {/* Footer */}
       <footer className="py-8 px-4 border-t bg-muted/20">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
+        <div className="max-w-6xl mx-auto text-center">
           <div className="text-sm text-muted-foreground">
             © 2024 AsylumPrep. All rights reserved.
           </div>
-          <Button variant="ghost" size="sm" asChild>
-            <Link to="/admin-login">Admin Login</Link>
-          </Button>
         </div>
       </footer>
     </div>

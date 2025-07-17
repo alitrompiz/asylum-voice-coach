@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -5,14 +6,12 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/components/AuthProvider";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
-import { RequireAdmin } from "@/components/admin/RequireAdmin";
-import { RequireAdminCode } from "@/components/RequireAdminCode";
+import { RequireAdminRole } from "@/components/RequireAdminRole";
 import '@/lib/i18n';
 
 // Import pages
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
-import AdminCodePage from "./pages/AdminCodePage";
 
 // Auth pages
 import Login from "./pages/auth/Login";
@@ -67,11 +66,8 @@ const App = () => (
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             <Route path="/settings/contact" element={<ProtectedRoute><ContactUsForm /></ProtectedRoute>} />
             
-            {/* Admin access route */}
-            <Route path="/admin-login" element={<AdminCodePage />} />
-            
-            {/* Admin routes */}
-            <Route path="/admin" element={<RequireAdminCode><AdminLayout /></RequireAdminCode>}>
+            {/* Admin routes - require admin role */}
+            <Route path="/admin" element={<RequireAdminRole><AdminLayout /></RequireAdminRole>}>
               <Route index element={<AdminDashboard />} />
               <Route path="users" element={<UserManagement />} />
               <Route path="skills" element={<SkillsManagement />} />

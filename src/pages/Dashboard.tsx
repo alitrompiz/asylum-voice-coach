@@ -1,17 +1,31 @@
+
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { User, Play } from 'lucide-react';
+import { User, Play, Shield } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { UserScoreCard } from '@/components/UserScoreCard';
 import { PersonaCarousel } from '@/components/PersonaCarousel';
 import { SkillsScroller } from '@/components/SkillsScroller';
 import { useSkillsStore } from '@/stores/personaStore';
+import { useAdminAccess } from '@/hooks/useAdminAccess';
+import { useEffect } from 'react';
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const { skillsSelected } = useSkillsStore();
+  const { isAdmin } = useAdminAccess();
+
+  // Clean up old localStorage admin code on component mount
+  useEffect(() => {
+    localStorage.removeItem('isAdminUnlocked');
+  }, []);
 
   const handleStartInterview = () => {
     navigate('/interview');
+  };
+
+  const handleAdminPanel = () => {
+    navigate('/admin');
   };
 
   return (
@@ -24,10 +38,24 @@ export default function Dashboard() {
               Prepare for your asylum interview with AI-powered practice sessions
             </p>
           </div>
-          <Button variant="outline" onClick={() => navigate('/profile')}>
-            <User className="w-4 h-4 mr-2" />
-            Profile
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => navigate('/profile')}>
+              <User className="w-4 h-4 mr-2" />
+              Profile
+            </Button>
+            {isAdmin && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" size="icon" onClick={handleAdminPanel}>
+                    <Shield className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Admin Panel</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+          </div>
         </header>
 
         <div className="mb-8">
