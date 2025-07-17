@@ -368,10 +368,10 @@ export default function Interview() {
           {/* Timer and Recording Indicator */}
           {isRecording && (
             <div className="flex flex-col items-center gap-2">
-              <div className="w-32">
+              <div className="w-32 bg-black/30 rounded-lg p-2 backdrop-blur-sm">
                 <Waveform 
                   isActive={true}
-                  className="h-6"
+                  className="h-4 animate-pulse"
                 />
               </div>
               <div className="bg-black/50 px-4 py-2 rounded-lg backdrop-blur-sm">
