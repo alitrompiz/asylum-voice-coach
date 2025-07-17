@@ -44,14 +44,16 @@ export const PersonaCard = ({ persona, onDelete, onToggleVisibility }: PersonaCa
       
       if (error) throw error;
     },
-    onSuccess: (_, { field }) => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['admin-personas'] });
+      const field = Object.keys(variables.updates)[0];
       setSaveStates(prev => ({ ...prev, [field]: 'success' }));
       setTimeout(() => {
         setSaveStates(prev => ({ ...prev, [field]: undefined }));
       }, 2000);
     },
-    onError: (_, { field }) => {
+    onError: (_, variables) => {
+      const field = Object.keys(variables.updates)[0];
       setSaveStates(prev => ({ ...prev, [field]: 'error' }));
       toast({ 
         title: 'Error updating persona', 
@@ -67,8 +69,7 @@ export const PersonaCard = ({ persona, onDelete, onToggleVisibility }: PersonaCa
     setSaveStates(prev => ({ ...prev, [field]: 'saving' }));
     updatePersonaMutation.mutate({ 
       id: persona.id, 
-      updates: { [field]: value },
-      field 
+      updates: { [field]: value }
     });
   }, 500);
 
@@ -83,9 +84,9 @@ export const PersonaCard = ({ persona, onDelete, onToggleVisibility }: PersonaCa
 
   const getSaveIcon = (field: string) => {
     const state = saveStates[field];
-    if (state === 'saving') return <div className="w-4 h-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />;
-    if (state === 'success') return <Check className="w-4 h-4 text-green-500" />;
-    if (state === 'error') return <X className="w-4 h-4 text-red-500" />;
+    if (state === 'saving') return <div className="w-4 h-4 animate-spin rounded-full border-2 border-primary border-t-transparent" data-testid="saving-indicator" />;
+    if (state === 'success') return <Check className="w-4 h-4 text-green-500" data-testid="success-indicator" />;
+    if (state === 'error') return <X className="w-4 h-4 text-red-500" data-testid="error-indicator" />;
     return null;
   };
 
