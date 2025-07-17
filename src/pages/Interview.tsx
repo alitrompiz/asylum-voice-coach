@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -7,51 +7,68 @@ import { Input } from '@/components/ui/input';
 import { MessageSquare, Mic, X, Pause, Play, Send, MicOff } from 'lucide-react';
 import { usePersonaStore } from '@/stores/personaStore';
 import { usePersonas } from '@/hooks/usePersonas';
+import { useAudioRecording } from '@/hooks/useAudioRecording';
+import { useInterviewConversation } from '@/hooks/useInterviewConversation';
 import { Waveform } from '@/components/Waveform';
 import { cn } from '@/lib/utils';
 
 export default function Interview() {
   const [isAiSpeaking, setIsAiSpeaking] = useState(true);
   const [showSubtitles, setShowSubtitles] = useState(true);
-  const [currentSubtitle, setCurrentSubtitle] = useState('');
   const [isPaused, setIsPaused] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const navigate = useNavigate();
+  
+  // Audio recording and conversation hooks
+  const { isRecording, duration, error: recordingError, startRecording, stopRecording, cancelRecording } = useAudioRecording();
+  const { messages, isProcessing, currentSubtitle, processAudioMessage, clearConversation, formatTime } = useInterviewConversation();
+  
+  // Ref for managing press-to-talk
+  const pressToTalkRef = useRef<boolean>(false);
   
   const { selectedPersona } = usePersonaStore();
   const { personas } = usePersonas();
   
   const selectedPersonaData = personas.find(p => p.id === selectedPersona);
 
-  // Demo subtitle simulation
-  useEffect(() => {
-    if (isAiSpeaking && showSubtitles && !isPaused) {
-      const subtitles = [
-        "Hello, I'm here to help you practice for your asylum interview.",
-        "Let's begin with some basic questions about your background.",
-        "Can you tell me your name and where you're from?",
-        "Take your time to think about your response."
-      ];
-      
-      let currentIndex = 0;
-      const interval = setInterval(() => {
-        setCurrentSubtitle(subtitles[currentIndex]);
-        currentIndex = (currentIndex + 1) % subtitles.length;
-      }, 3000);
-      
-      return () => clearInterval(interval);
-    } else {
-      setCurrentSubtitle('');
+  // Handle press-to-talk functionality
+  const handlePressStart = async () => {
+    if (isProcessing || pressToTalkRef.current) return;
+    
+    pressToTalkRef.current = true;
+    try {
+      await startRecording();
+      setIsAiSpeaking(false); // Stop AI speaking when user starts talking
+    } catch (error) {
+      console.error('Failed to start recording:', error);
+      pressToTalkRef.current = false;
     }
-  }, [isAiSpeaking, showSubtitles, isPaused]);
+  };
 
-  const handlePressToTalk = () => {
-    // Here you would implement press to talk functionality
-    console.log('Press to talk activated');
+  const handlePressEnd = async () => {
+    if (!pressToTalkRef.current || !isRecording) return;
+    
+    pressToTalkRef.current = false;
+    try {
+      const recording = await stopRecording();
+      if (recording.duration > 0) {
+        await processAudioMessage(recording);
+      }
+    } catch (error) {
+      console.error('Failed to stop recording:', error);
+    }
+  };
+
+  const handlePressCancel = () => {
+    if (pressToTalkRef.current) {
+      pressToTalkRef.current = false;
+      cancelRecording();
+    }
   };
 
   const handleEndSession = () => {
     setIsAiSpeaking(false);
+    clearConversation();
     setShowFeedback(true);
   };
 
@@ -140,25 +157,56 @@ export default function Interview() {
 
           {/* Subtitles */}
           <div className="max-w-md mx-auto h-16 flex items-center justify-center">
-            {showSubtitles && currentSubtitle && (
+            {showSubtitles && (currentSubtitle || isProcessing) && (
               <p className="text-center text-white/90 bg-black/30 px-4 py-2 rounded-lg backdrop-blur-sm">
-                {currentSubtitle}
+                {isProcessing ? 'Processing...' : currentSubtitle}
               </p>
             )}
           </div>
         </div>
 
         {/* Press to Talk Button - Bottom Middle */}
-        <div className="flex justify-center pb-8">
-          <button
-            onClick={handlePressToTalk}
-            className="flex flex-col items-center gap-3 group"
-          >
-            <div className="w-20 h-20 rounded-full bg-blue-600 flex items-center justify-center group-hover:bg-blue-500 transition-colors shadow-lg">
-              <Mic className="w-8 h-8 text-white" />
+        <div className="flex flex-col items-center pb-8 gap-4">
+          {/* Timer Display */}
+          {(isRecording || isProcessing) && (
+            <div className="bg-black/50 px-4 py-2 rounded-lg backdrop-blur-sm">
+              <span className="text-white text-lg font-mono">
+                {isRecording ? formatTime(duration) : (isProcessing ? 'Processing...' : '')}
+              </span>
             </div>
-            <span className="text-white text-sm font-medium">Press to talk</span>
-          </button>
+          )}
+          
+          {/* Press to Talk Button */}
+          <div className="flex justify-center">
+            <button
+              onMouseDown={handlePressStart}
+              onMouseUp={handlePressEnd}
+              onMouseLeave={handlePressCancel}
+              onTouchStart={handlePressStart}
+              onTouchEnd={handlePressEnd}
+              onTouchCancel={handlePressCancel}
+              disabled={isProcessing}
+              className={cn(
+                "flex flex-col items-center gap-3 group select-none",
+                "transition-all duration-200",
+                isRecording && "scale-110"
+              )}
+            >
+              <div className={cn(
+                "w-20 h-20 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg",
+                isRecording 
+                  ? "bg-red-600 hover:bg-red-500 shadow-red-500/50" 
+                  : isProcessing 
+                    ? "bg-yellow-600 cursor-not-allowed" 
+                    : "bg-blue-600 hover:bg-blue-500 shadow-blue-500/30"
+              )}>
+                <Mic className="w-8 h-8 text-white" />
+              </div>
+              <span className="text-white text-sm font-medium">
+                {isRecording ? "Recording..." : isProcessing ? "Processing..." : "Press to talk"}
+              </span>
+            </button>
+          </div>
         </div>
       </div>
 
