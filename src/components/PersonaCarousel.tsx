@@ -106,11 +106,9 @@ export const PersonaCarousel = ({ onSelect }: PersonaCarouselProps) => {
                 )}
                 
                 {/* Overlay pill with name and mood */}
-                <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 bg-muted/90 backdrop-blur-sm rounded-full px-3 py-1 border border-border/50">
-                  <div className="text-center">
-                    <p className="font-medium text-xs leading-tight">{persona.name}</p>
-                    <p className="text-xs text-muted-foreground leading-tight">{persona.mood}</p>
-                  </div>
+                <div className="absolute bottom-0 left-0 right-0 h-11 bg-muted/90 backdrop-blur-sm rounded-b-full border border-border/50 flex flex-col items-center justify-center">
+                  <p className="font-medium text-xs leading-tight">{persona.name}</p>
+                  <p className="text-xs text-muted-foreground leading-tight">{persona.mood}</p>
                 </div>
               </div>
             </div>
