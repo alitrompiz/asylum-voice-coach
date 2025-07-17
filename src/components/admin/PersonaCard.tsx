@@ -96,7 +96,7 @@ export const PersonaCard = ({ persona, onDelete, onToggleVisibility }: PersonaCa
         <img
           src={persona.image_url}
           alt={persona.alt_text}
-          className="aspect-square w-full object-cover rounded-lg"
+          className="aspect-square w-[40rem] object-cover rounded-lg"
         />
         <div className="absolute top-2 right-2">
           <Badge variant={persona.is_visible ? 'default' : 'secondary'}>
