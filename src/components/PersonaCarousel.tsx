@@ -87,7 +87,7 @@ export const PersonaCarousel = ({ onSelect }: PersonaCarouselProps) => {
                 className={cn(
                   "relative mb-2 rounded-full overflow-hidden transition-all duration-200 shadow-lg",
                   selectedPersona === persona.id
-                    ? "ring-3 ring-primary ring-offset-2 scale-105"
+                    ? "ring-4 ring-primary ring-offset-4 scale-105 shadow-xl"
                     : "hover:scale-105 hover:shadow-xl"
                 )}
               >
@@ -97,13 +97,6 @@ export const PersonaCarousel = ({ onSelect }: PersonaCarouselProps) => {
                   className="w-44 h-44 object-cover rounded-full"
                   loading="lazy"
                 />
-                {selectedPersona === persona.id && (
-                  <div className="absolute inset-0 bg-primary/10 rounded-full flex items-center justify-center">
-                    <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
-                      <div className="w-4 h-4 bg-white rounded-full"></div>
-                    </div>
-                  </div>
-                )}
               </div>
               
               {/* Overlay pill with name and mood - positioned outside image container */}
