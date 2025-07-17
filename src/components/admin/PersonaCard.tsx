@@ -7,9 +7,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Eye, EyeOff, Trash2, Check, X } from 'lucide-react';
+import { Eye, EyeOff, Trash2, Check, X, Volume2 } from 'lucide-react';
 import { useDebounce } from '@/hooks/useDebounce';
+import { useTextToSpeech } from '@/hooks/useTextToSpeech';
 
 interface Persona {
   id: string;
@@ -19,6 +21,7 @@ interface Persona {
   mood: string;
   position: number;
   is_visible: boolean;
+  tts_voice: string;
   created_at: string;
   updated_at: string;
 }
@@ -29,11 +32,21 @@ interface PersonaCardProps {
   onToggleVisibility: (id: string, isVisible: boolean) => void;
 }
 
+const TTS_VOICES = [
+  { value: 'alloy', label: 'Alloy' },
+  { value: 'echo', label: 'Echo' },
+  { value: 'fable', label: 'Fable' },
+  { value: 'onyx', label: 'Onyx' },
+  { value: 'nova', label: 'Nova' },
+  { value: 'shimmer', label: 'Shimmer' },
+];
+
 export const PersonaCard = ({ persona, onDelete, onToggleVisibility }: PersonaCardProps) => {
   const [editingFields, setEditingFields] = useState<Record<string, any>>({});
   const [saveStates, setSaveStates] = useState<Record<string, 'saving' | 'success' | 'error'>>({});
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { speak, stop, isPlaying, isLoading } = useTextToSpeech();
 
   const updatePersonaMutation = useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<Persona> }) => {
@@ -90,6 +103,20 @@ export const PersonaCard = ({ persona, onDelete, onToggleVisibility }: PersonaCa
     return null;
   };
 
+  const handleVoiceTest = () => {
+    const voice = getCurrentValue('tts_voice');
+    speak(`Hello, I'm ${persona.name}. This is how I sound.`, { 
+      voice,
+      onError: (error) => {
+        toast({
+          title: 'Voice test failed',
+          description: error.message,
+          variant: 'destructive',
+        });
+      }
+    });
+  };
+
   return (
     <div className="w-40">
       <div className="bg-card border rounded-lg p-4 space-y-4">
@@ -135,6 +162,53 @@ export const PersonaCard = ({ persona, onDelete, onToggleVisibility }: PersonaCa
               onChange={(e) => handleFieldChange('mood', e.target.value)}
               className="h-8"
             />
+          </div>
+
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <Label htmlFor={`voice-${persona.id}`} className="text-sm font-medium">
+                Voice
+              </Label>
+              {getSaveIcon('tts_voice')}
+            </div>
+            <Select
+              value={getCurrentValue('tts_voice')}
+              onValueChange={(value) => handleFieldChange('tts_voice', value)}
+            >
+              <SelectTrigger className="h-8">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {TTS_VOICES.map((voice) => (
+                  <SelectItem key={voice.value} value={voice.value}>
+                    {voice.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex gap-1">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleVoiceTest}
+              disabled={isLoading || isPlaying}
+              className="flex-1"
+            >
+              <Volume2 className="w-3 h-3 mr-1" />
+              {isLoading ? 'Loading...' : isPlaying ? 'Playing...' : 'Test'}
+            </Button>
+            {isPlaying && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={stop}
+                className="px-2"
+              >
+                <X className="w-3 h-3" />
+              </Button>
+            )}
           </div>
 
           <div className="space-y-1">

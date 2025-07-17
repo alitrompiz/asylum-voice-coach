@@ -13,6 +13,7 @@ interface Persona {
   mood: string;
   position: number;
   is_visible: boolean;
+  tts_voice: string;
 }
 
 interface PersonaCarouselProps {

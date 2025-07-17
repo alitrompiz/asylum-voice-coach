@@ -1,14 +1,16 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { MessageSquare, Mic, X, Pause, Play, Send, MicOff } from 'lucide-react';
+import { MessageSquare, Mic, X, Pause, Play, Send, MicOff, Volume2 } from 'lucide-react';
 import { usePersonaStore } from '@/stores/personaStore';
 import { usePersonas } from '@/hooks/usePersonas';
 import { useAudioRecording } from '@/hooks/useAudioRecording';
 import { useInterviewConversation } from '@/hooks/useInterviewConversation';
+import { useTextToSpeech } from '@/hooks/useTextToSpeech';
 import { Waveform } from '@/components/Waveform';
 import { cn } from '@/lib/utils';
 
@@ -22,6 +24,7 @@ export default function Interview() {
   // Audio recording and conversation hooks
   const { isRecording, duration, error: recordingError, startRecording, stopRecording, cancelRecording } = useAudioRecording();
   const { messages, isProcessing, currentSubtitle, processAudioMessage, clearConversation, formatTime } = useInterviewConversation();
+  const { speak, stop: stopTTS, isPlaying: isTTSPlaying, isLoading: isTTSLoading } = useTextToSpeech();
   
   // Ref for managing press-to-talk
   const pressToTalkRef = useRef<boolean>(false);
@@ -31,12 +34,32 @@ export default function Interview() {
   
   const selectedPersonaData = personas.find(p => p.id === selectedPersona);
 
+  // Auto-play TTS when AI responds
+  useEffect(() => {
+    if (currentSubtitle && selectedPersonaData?.tts_voice) {
+      speak(currentSubtitle, {
+        voice: selectedPersonaData.tts_voice,
+        onStart: () => setIsAiSpeaking(true),
+        onEnd: () => setIsAiSpeaking(false),
+        onError: (error) => {
+          console.error('TTS error:', error);
+          setIsAiSpeaking(false);
+        }
+      });
+    }
+  }, [currentSubtitle, selectedPersonaData?.tts_voice, speak]);
+
   // Handle press-to-talk functionality for mouse events
   const handleMousePressStart = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     console.log('Mouse press start called', { isProcessing, pressToTalkRef: pressToTalkRef.current });
     if (isProcessing || pressToTalkRef.current) return;
+    
+    // Stop TTS if playing
+    if (isTTSPlaying) {
+      stopTTS();
+    }
     
     pressToTalkRef.current = true;
     try {
@@ -86,6 +109,11 @@ export default function Interview() {
     console.log('Touch press start called', { isProcessing, pressToTalkRef: pressToTalkRef.current });
     if (isProcessing || pressToTalkRef.current) return;
     
+    // Stop TTS if playing
+    if (isTTSPlaying) {
+      stopTTS();
+    }
+    
     pressToTalkRef.current = true;
     try {
       console.log('Starting recording...');
@@ -129,8 +157,21 @@ export default function Interview() {
 
   const handleEndSession = () => {
     setIsAiSpeaking(false);
+    stopTTS();
     clearConversation();
     setShowFeedback(true);
+  };
+
+  const handleTTSToggle = () => {
+    if (isTTSPlaying) {
+      stopTTS();
+    } else if (currentSubtitle && selectedPersonaData?.tts_voice) {
+      speak(currentSubtitle, {
+        voice: selectedPersonaData.tts_voice,
+        onStart: () => setIsAiSpeaking(true),
+        onEnd: () => setIsAiSpeaking(false),
+      });
+    }
   };
 
   const feedbackData = {
@@ -197,7 +238,7 @@ export default function Interview() {
             {/* Waveform - positioned in front of officer's picture at 25% height */}
             <div className="absolute bottom-24 left-1/2 transform -translate-x-1/2 w-80">
               <Waveform 
-                isActive={isAiSpeaking && !isPaused} 
+                isActive={(isAiSpeaking || isTTSPlaying) && !isPaused} 
                 className="h-16"
               />
             </div>
@@ -216,12 +257,26 @@ export default function Interview() {
             )}
           </div>
 
-          {/* Subtitles */}
-          <div className="max-w-md mx-auto h-16 flex items-center justify-center">
+          {/* Subtitles with TTS Controls */}
+          <div className="max-w-md mx-auto h-16 flex items-center justify-center relative">
             {showSubtitles && (currentSubtitle || isProcessing) && (
-              <p className="text-center text-white/90 bg-black/30 px-4 py-2 rounded-lg backdrop-blur-sm">
-                {isProcessing ? 'Processing...' : currentSubtitle}
-              </p>
+              <div className="flex items-center gap-2">
+                <p className="text-center text-white/90 bg-black/30 px-4 py-2 rounded-lg backdrop-blur-sm">
+                  {isProcessing ? 'Processing...' : currentSubtitle}
+                </p>
+                {currentSubtitle && (
+                  <button
+                    onClick={handleTTSToggle}
+                    disabled={isTTSLoading}
+                    className={cn(
+                      "p-2 rounded-full bg-black/30 backdrop-blur-sm transition-colors",
+                      isTTSPlaying ? "text-red-400 hover:text-red-300" : "text-white/70 hover:text-white"
+                    )}
+                  >
+                    <Volume2 className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
             )}
           </div>
         </div>

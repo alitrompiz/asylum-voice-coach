@@ -170,6 +170,7 @@ export type Database = {
           mood: string
           name: string
           position: number
+          tts_voice: string | null
           updated_at: string
         }
         Insert: {
@@ -181,6 +182,7 @@ export type Database = {
           mood: string
           name: string
           position?: number
+          tts_voice?: string | null
           updated_at?: string
         }
         Update: {
@@ -192,6 +194,7 @@ export type Database = {
           mood?: string
           name?: string
           position?: number
+          tts_voice?: string | null
           updated_at?: string
         }
         Relationships: []
