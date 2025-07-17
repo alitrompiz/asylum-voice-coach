@@ -34,9 +34,14 @@ export default function Interview() {
   
   const selectedPersonaData = personas.find(p => p.id === selectedPersona);
 
-  // Auto-play TTS when AI responds
+  // Auto-play TTS when AI responds, but only for actual AI responses (not system messages)
   useEffect(() => {
-    if (currentSubtitle && selectedPersonaData?.tts_voice) {
+    // Only speak if it's an actual AI response (not processing/transcribing messages)
+    if (currentSubtitle && 
+        !currentSubtitle.includes("Processing your message") && 
+        !currentSubtitle.includes("Transcribing your message") &&
+        selectedPersonaData?.tts_voice) {
+      
       speak(currentSubtitle, {
         voice: selectedPersonaData.tts_voice,
         onStart: () => setIsAiSpeaking(true),
@@ -165,7 +170,10 @@ export default function Interview() {
   const handleTTSToggle = () => {
     if (isTTSPlaying) {
       stopTTS();
-    } else if (currentSubtitle && selectedPersonaData?.tts_voice) {
+    } else if (currentSubtitle && 
+               !currentSubtitle.includes("Processing your message") && 
+               !currentSubtitle.includes("Transcribing your message") &&
+               selectedPersonaData?.tts_voice) {
       speak(currentSubtitle, {
         voice: selectedPersonaData.tts_voice,
         onStart: () => setIsAiSpeaking(true),
