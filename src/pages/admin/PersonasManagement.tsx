@@ -54,10 +54,10 @@ export default function PersonasManagement() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-personas'] });
-      toast({ title: 'Persona visibility updated' });
+      toast({ title: 'Officer visibility updated' });
     },
     onError: () => {
-      toast({ title: 'Error updating persona visibility', variant: 'destructive' });
+      toast({ title: 'Error updating officer visibility', variant: 'destructive' });
     }
   });
 
@@ -72,10 +72,10 @@ export default function PersonasManagement() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-personas'] });
-      toast({ title: 'Persona deleted successfully' });
+      toast({ title: 'Officer deleted successfully' });
     },
     onError: () => {
-      toast({ title: 'Error deleting persona', variant: 'destructive' });
+      toast({ title: 'Error deleting officer', variant: 'destructive' });
     }
   });
 
@@ -130,10 +130,10 @@ export default function PersonasManagement() {
       queryClient.invalidateQueries({ queryKey: ['admin-personas'] });
       setIsUploadModalOpen(false);
       setUploadedFiles([]);
-      toast({ title: `${personas.length} personas uploaded successfully` });
+      toast({ title: `${personas.length} officers uploaded successfully` });
     },
     onError: () => {
-      toast({ title: 'Error uploading personas', variant: 'destructive' });
+      toast({ title: 'Error uploading officers', variant: 'destructive' });
     }
   });
 
@@ -166,14 +166,14 @@ export default function PersonasManagement() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Personas Management</h1>
+        <h1 className="text-3xl font-bold">Officers Management</h1>
         <Button onClick={() => setIsUploadModalOpen(true)}>
           <Upload className="w-4 h-4 mr-2" />
-          Upload Personas
+          Upload Officers
         </Button>
       </div>
 
-      <div className="grid gap-6 sm:grid-cols-[repeat(auto-fill,minmax(10rem,1fr))]">
+      <div className="grid gap-3 grid-cols-[repeat(auto-fill,minmax(20rem,1fr))] xl:grid-cols-5">
         {personas?.map((persona) => (
           <PersonaCard
             key={persona.id}
@@ -188,12 +188,12 @@ export default function PersonasManagement() {
       <Dialog open={isUploadModalOpen} onOpenChange={setIsUploadModalOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Upload Personas</DialogTitle>
+            <DialogTitle>Upload Officers</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center">
               <Upload className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
-              <p className="mb-2">Select persona images to upload</p>
+              <p className="mb-2">Select officer images to upload</p>
               <Input
                 type="file"
                 multiple
@@ -225,7 +225,7 @@ export default function PersonasManagement() {
                 disabled={uploadedFiles.length === 0 || uploadPersonasMutation.isPending}
               >
                 <Plus className="w-4 h-4 mr-2" />
-                Upload {uploadedFiles.length} Persona{uploadedFiles.length !== 1 ? 's' : ''}
+                Upload {uploadedFiles.length} Officer{uploadedFiles.length !== 1 ? 's' : ''}
               </Button>
               <Button 
                 variant="outline" 
