@@ -37,6 +37,15 @@ export default function Interview() {
 
   // Auto-play TTS when AI responds, but only for actual AI responses (not system messages)
   useEffect(() => {
+    console.log('TTS Check:', {
+      currentSubtitle,
+      selectedPersonaData,
+      tts_voice: selectedPersonaData?.tts_voice,
+      hasSubtitle: !!currentSubtitle,
+      notProcessing: !currentSubtitle?.includes("Processing your message"),
+      notTranscribing: !currentSubtitle?.includes("Transcribing your message")
+    });
+    
     // Only speak if it's an actual AI response (not processing/transcribing messages)
     if (currentSubtitle && 
         !currentSubtitle.includes("Processing your message") && 
