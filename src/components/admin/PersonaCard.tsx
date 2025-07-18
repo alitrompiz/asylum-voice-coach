@@ -118,13 +118,13 @@ export const PersonaCard = ({ persona, onDelete, onToggleVisibility }: PersonaCa
   };
 
   return (
-    <div className="w-80">
+    <div className="w-full min-w-0">
       <div className="bg-card border rounded-lg p-3 space-y-3">
         <div className="relative">
           <img
             src={persona.image_url}
             alt={persona.alt_text}
-            className="w-full h-80 object-cover rounded-lg"
+            className="w-full h-64 object-cover rounded-lg"
           />
           <div className="absolute top-2 right-2">
             <Badge variant={persona.is_visible ? 'default' : 'secondary'}>
