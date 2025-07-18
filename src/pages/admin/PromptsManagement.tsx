@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Plus, Edit, Trash2, MessageSquare, Eye, Loader2 } from 'lucide-react';
+import { Plus, Edit, Trash2, MessageSquare, Eye, Loader2, Play, TrendingUp, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
@@ -23,6 +23,10 @@ interface Prompt {
   prompt_type: 'interview_conduct' | 'feedback_generation';
   is_active: boolean;
   version: number;
+  usage_count?: number;
+  last_used_at?: string;
+  template_variables?: string[];
+  validation_status?: 'pending' | 'validated' | 'needs_review';
   created_at: string;
   updated_at: string;
   created_by: string;
@@ -42,8 +46,12 @@ export default function PromptsManagement() {
     content: '',
     description: '',
     prompt_type: 'interview_conduct' as 'interview_conduct' | 'feedback_generation',
-    is_active: true
+    is_active: true,
+    template_variables: [] as string[],
+    validation_status: 'pending' as 'pending' | 'validated' | 'needs_review'
   });
+  const [previewMode, setPreviewMode] = useState(false);
+  const [previewContent, setPreviewContent] = useState('');
 
   // Fetch prompts
   const { data: prompts = [], isLoading } = useQuery({
@@ -158,8 +166,12 @@ export default function PromptsManagement() {
       content: '',
       description: '',
       prompt_type: 'interview_conduct',
-      is_active: true
+      is_active: true,
+      template_variables: [],
+      validation_status: 'pending'
     });
+    setPreviewMode(false);
+    setPreviewContent('');
   };
 
   const handleEdit = (prompt: Prompt) => {
@@ -169,9 +181,54 @@ export default function PromptsManagement() {
       content: prompt.content,
       description: prompt.description || '',
       prompt_type: prompt.prompt_type,
-      is_active: prompt.is_active
+      is_active: prompt.is_active,
+      template_variables: prompt.template_variables || [],
+      validation_status: prompt.validation_status || 'pending'
     });
     setIsDialogOpen(true);
+  };
+
+  const validatePrompt = () => {
+    const requiredVars = formData.prompt_type === 'interview_conduct' 
+      ? ['user_story', 'skills_selected', 'persona_mood', 'language']
+      : ['user_story', 'skills_selected', 'transcript'];
+    
+    const missingVars = requiredVars.filter(varName => 
+      !formData.content.includes(`{{${varName}}}`)
+    );
+    
+    if (missingVars.length > 0) {
+      toast({
+        title: "Validation Warning",
+        description: `Missing recommended variables: ${missingVars.join(', ')}`,
+        variant: "destructive",
+      });
+      return false;
+    }
+    return true;
+  };
+
+  const handlePreview = () => {
+    const sampleVars = formData.prompt_type === 'interview_conduct' 
+      ? {
+          user_story: "Sample asylum story from Afghanistan...",
+          skills_selected: "storytelling, legal knowledge",
+          persona_mood: "professional but empathetic",
+          language: "English"
+        }
+      : {
+          user_story: "Sample asylum story from Afghanistan...",
+          skills_selected: "storytelling, legal knowledge", 
+          transcript: "Sample interview transcript..."
+        };
+    
+    let preview = formData.content;
+    Object.entries(sampleVars).forEach(([key, value]) => {
+      preview = preview.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), value);
+    });
+    
+    setPreviewContent(preview);
+    setPreviewMode(true);
   };
 
   const handleSubmit = () => {
@@ -184,10 +241,20 @@ export default function PromptsManagement() {
       return;
     }
 
+    // Extract template variables from content
+    const templateVars = (formData.content.match(/\{\{(\w+)\}\}/g) || [])
+      .map(match => match.replace(/\{\{|\}\}/g, ''));
+    
+    const submitData = {
+      ...formData,
+      template_variables: templateVars,
+      validation_status: validatePrompt() ? 'validated' as const : 'needs_review' as const
+    };
+
     if (editingPrompt) {
-      updatePromptMutation.mutate({ id: editingPrompt.id, ...formData });
+      updatePromptMutation.mutate({ id: editingPrompt.id, ...submitData });
     } else {
-      createPromptMutation.mutate(formData);
+      createPromptMutation.mutate(submitData);
     }
   };
 
@@ -279,15 +346,51 @@ export default function PromptsManagement() {
                 />
               </div>
               <div>
-                <Label htmlFor="content">Prompt Content</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="content">Prompt Content</Label>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handlePreview}
+                    disabled={!formData.content}
+                  >
+                    <Eye className="w-4 h-4 mr-1" />
+                    Preview
+                  </Button>
+                </div>
                 <Textarea
                   id="content"
                   value={formData.content}
                   onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
-                  placeholder="Enter your prompt content here..."
+                  placeholder="Enter your prompt content here. Use {{variable_name}} for dynamic content..."
                   className="min-h-[200px]"
                 />
+                <div className="text-xs text-muted-foreground mt-1">
+                  Available variables: {formData.prompt_type === 'interview_conduct' 
+                    ? '{{user_story}}, {{skills_selected}}, {{persona_mood}}, {{language}}'
+                    : '{{user_story}}, {{skills_selected}}, {{transcript}}'
+                  }
+                </div>
               </div>
+              
+              {previewMode && (
+                <div>
+                  <Label>Preview with Sample Data</Label>
+                  <div className="p-4 bg-muted rounded-lg border">
+                    <pre className="whitespace-pre-wrap text-sm">{previewContent}</pre>
+                  </div>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setPreviewMode(false)}
+                    className="mt-2"
+                  >
+                    Hide Preview
+                  </Button>
+                </div>
+              )}
               <div className="flex items-center space-x-2">
                 <Switch
                   id="active"
@@ -297,6 +400,14 @@ export default function PromptsManagement() {
                 <Label htmlFor="active">Active</Label>
               </div>
               <div className="flex gap-2">
+                <Button 
+                  type="button"
+                  variant="outline"
+                  onClick={validatePrompt}
+                >
+                  <Play className="w-4 h-4 mr-1" />
+                  Validate
+                </Button>
                 <Button 
                   onClick={handleSubmit}
                   disabled={createPromptMutation.isPending || updatePromptMutation.isPending}
@@ -375,9 +486,9 @@ export default function PromptsManagement() {
               <TableRow>
                 <TableHead>Name</TableHead>
                 <TableHead>Type</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>Version</TableHead>
+                <TableHead>Usage</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Validation</TableHead>
                 <TableHead>Modified</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
@@ -395,7 +506,14 @@ export default function PromptsManagement() {
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-2">
                         <MessageSquare className="w-4 h-4" />
-                        {prompt.name}
+                        <div>
+                          <div>{prompt.name}</div>
+                          {prompt.description && (
+                            <div className="text-xs text-muted-foreground max-w-xs truncate">
+                              {prompt.description}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -403,20 +521,48 @@ export default function PromptsManagement() {
                         {prompt.prompt_type === 'interview_conduct' ? 'Interview' : 'Feedback'}
                       </Badge>
                     </TableCell>
-                    <TableCell className="max-w-xs truncate">
-                      {prompt.description || 'No description'}
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <TrendingUp className="w-4 h-4 text-muted-foreground" />
+                        <span className="font-medium">{prompt.usage_count || 0}</span>
+                        {prompt.last_used_at && (
+                          <span className="text-xs text-muted-foreground">
+                            Last: {new Date(prompt.last_used_at).toLocaleDateString()}
+                          </span>
+                        )}
+                      </div>
                     </TableCell>
-                    <TableCell>v{prompt.version}</TableCell>
                     <TableCell>
                       <Badge variant={prompt.is_active ? 'default' : 'secondary'}>
                         {prompt.is_active ? 'Active' : 'Inactive'}
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {new Date(prompt.updated_at).toLocaleDateString()}
+                      <div className="flex items-center gap-1">
+                        {prompt.validation_status === 'validated' && (
+                          <CheckCircle2 className="w-4 h-4 text-green-600" />
+                        )}
+                        {prompt.validation_status === 'needs_review' && (
+                          <AlertTriangle className="w-4 h-4 text-yellow-600" />
+                        )}
+                        {prompt.validation_status === 'pending' && (
+                          <div className="w-4 h-4 bg-gray-400 rounded-full" />
+                        )}
+                        <span className="text-xs capitalize">
+                          {prompt.validation_status || 'pending'}
+                        </span>
+                      </div>
                     </TableCell>
                     <TableCell>
-                      <div className="flex gap-2">
+                      <div className="text-sm">
+                        v{prompt.version}
+                        <div className="text-xs text-muted-foreground">
+                          {new Date(prompt.updated_at).toLocaleDateString()}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">
                         <Button 
                           variant="outline" 
                           size="sm"

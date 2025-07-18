@@ -80,62 +80,41 @@ serve(async (req) => {
         .eq('user_id', user.id);
     }
 
-    // Get active feedback generation prompt
-    const { data: promptData } = await supabase
+    // Get active feedback generation prompt - REQUIRED
+    const { data: promptData, error: promptError } = await supabase
       .from('prompts')
       .select('*')
       .eq('prompt_type', 'feedback_generation')
       .eq('is_active', true)
       .single();
 
-    let systemPrompt = '';
-    
-    if (promptData) {
-      // Use admin-defined prompt with variable substitution
-      const promptVariables = {
-        user_story: userContext.userStory || 'No story provided',
-        skills_selected: skillsSelected?.join(', ') || 'General interview skills',
-        persona_mood: personaDesc || 'Professional officer',
-        transcript: transcript
-      };
-
-      systemPrompt = processPromptTemplate(promptData.content, promptVariables);
-    } else {
-      // Fallback to default prompt construction
-      systemPrompt = `You are an expert asylum interview evaluator providing constructive feedback to help asylum seekers improve their interview performance.
-
-EVALUATION CRITERIA:
-- Clarity and coherence of storytelling
-- Emotional authenticity and credibility
-- Completeness of information provided
-- Ability to handle difficult questions
-- Overall communication effectiveness
-
-PERSONA CONTEXT: ${personaDesc || 'Professional interview setting'}
-SKILLS BEING ASSESSED: ${skillsSelected && skillsSelected.length > 0 ? skillsSelected.join(', ') : 'General interview skills'}
-
-ONBOARDING INFO: ${onboarding ? JSON.stringify(onboarding) : 'No additional context provided'}
-USER STORY CONTEXT: ${userContext.userStory}
-
-INSTRUCTIONS:
-1. Analyze the interview transcript carefully
-2. Provide 3-5 specific strengths demonstrated
-3. Provide 3-5 actionable areas for improvement
-4. Assign a score from 1-5 (1=needs significant improvement, 5=excellent performance)
-5. Be supportive and constructive in your feedback
-6. Focus on specific examples from the transcript
-7. Provide practical advice for improvement
-
-RESPONSE FORMAT:
-You must respond with a valid JSON object containing:
-{
-  "strengths": ["strength1", "strength2", ...],
-  "improvements": ["improvement1", "improvement2", ...],
-  "score": 1-5
-}
-
-Do not include any text outside of this JSON structure.`;
+    if (!promptData) {
+      console.error('No active feedback prompt found:', promptError);
+      throw new Error('No active feedback prompt configured. Please contact an administrator.');
     }
+
+    // Use admin-defined prompt with variable substitution
+    const promptVariables = {
+      user_story: userContext.userStory || 'No story provided',
+      skills_selected: skillsSelected?.join(', ') || 'General interview skills',
+      persona_mood: personaDesc || 'Professional officer',
+      transcript: transcript
+    };
+
+    const systemPrompt = processPromptTemplate(promptData.content, promptVariables);
+    
+    // Log prompt usage
+    await supabase.rpc('increment_prompt_usage', { prompt_id: promptData.id });
+    
+    await supabase
+      .from('prompt_usage_logs')
+      .insert({
+        prompt_id: promptData.id,
+        interview_session_id: sessionId,
+        user_id: user.id,
+        prompt_type: 'feedback_generation',
+        variables_used: promptVariables
+      });
 
     // Template engine for replacing prompt variables
     function processPromptTemplate(template: string, variables: Record<string, any>): string {
@@ -207,13 +186,17 @@ Do not include any text outside of this JSON structure.`;
       throw new Error('Score must be a number between 1 and 5');
     }
 
-    // Store feedback in database
+    // Store feedback in database with prompt tracking
     const { data: feedbackData, error: dbError } = await supabase
       .from('feedback')
       .insert({
         user_id: user.id,
         transcript,
-        onboarding,
+        onboarding: {
+          ...onboarding,
+          prompt_used: promptData.id,
+          prompt_version: promptData.version
+        },
         persona_desc: personaDesc,
         skills_selected: skillsSelected,
         strengths: feedback.strengths,

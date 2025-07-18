@@ -96,69 +96,62 @@ serve(async (req) => {
       }
     }
 
-    // Get active interview conduct prompt
-    const { data: promptData } = await supabase
+    // Get active interview conduct prompt - REQUIRED
+    const { data: promptData, error: promptError } = await supabase
       .from('prompts')
       .select('*')
       .eq('prompt_type', 'interview_conduct')
       .eq('is_active', true)
       .single();
 
-    let systemPrompt = '';
+    if (!promptData) {
+      console.error('No active interview prompt found:', promptError);
+      throw new Error('No active interview prompt configured. Please contact an administrator.');
+    }
+
+    // Use admin-defined prompt with variable substitution
+    const promptVariables = {
+      user_story: userContext.userStory || 'No story provided',
+      country_of_persecution: userContext.profile?.country_of_feared_persecution || 'Not specified',
+      skills_selected: skills.length > 0 ? skills.join(', ') : 'General interview skills',
+      persona_mood: personaDesc,
+      language: language || 'English'
+    };
+
+    const systemPrompt = processPromptTemplate(promptData.content, promptVariables);
     
-    if (promptData) {
-      // Use admin-defined prompt with variable substitution
-      const promptVariables = {
-        user_story: userContext.userStory || 'No story provided',
-        country_of_persecution: userContext.profile?.country_of_feared_persecution || 'Not specified',
-        skills_selected: skills.length > 0 ? skills.join(', ') : 'General interview skills',
-        persona_mood: personaDesc,
-        language: language || 'English'
-      };
-
-      systemPrompt = processPromptTemplate(promptData.content, promptVariables);
+    // Log prompt usage
+    if (userId) {
+      await supabase.rpc('increment_prompt_usage', { prompt_id: promptData.id });
       
-      // Store session context if sessionId provided
-      if (sessionId && userId) {
-        await supabase
-          .from('interview_sessions')
-          .upsert({
-            id: sessionId,
-            user_id: userId,
-            persona_id: personaId,
-            skills_selected: skills || [],
-            language: language || 'en',
-            user_context: {
-              profile: userContext.profile,
-              story: userContext.userStory,
-              prompt_used: promptData.id
-            },
-            prompt_version_used: promptData.id
-          });
-      }
-    } else {
-      // Fallback to default prompt construction
-      systemPrompt = `You are an experienced asylum interview officer conducting a practice interview session. 
-
-PERSONA: ${personaDesc}
-LANGUAGE: ${language}
-SKILLS TO ASSESS: ${skills.length > 0 ? skills.join(', ') : 'general communication, storytelling, legal knowledge'}
-
-INSTRUCTIONS:
-- Ask relevant questions about the asylum seeker's story and background
-- Be professional but empathetic
-- Focus on helping them practice articulating their experiences clearly
-- Ask follow-up questions to help them provide more detail
-- Provide gentle guidance if they seem unclear or need encouragement
-- Keep responses concise but thorough
-- Respond in ${language === 'en' ? 'English' : language}
-- This is a practice session to help them prepare for their real interview
-
-Current conversation context: You are in an ongoing practice interview session.`;
+      await supabase
+        .from('prompt_usage_logs')
+        .insert({
+          prompt_id: promptData.id,
+          interview_session_id: sessionId,
+          user_id: userId,
+          prompt_type: 'interview_conduct',
+          variables_used: promptVariables
+        });
+    }
       
-      if (userContext.userStory) {
-        systemPrompt += `\n\nUser's asylum story context: "${userContext.userStory.substring(0, 500)}..."`;
-      }
+    // Store session context if sessionId provided
+    if (sessionId && userId) {
+      await supabase
+        .from('interview_sessions')
+        .upsert({
+          id: sessionId,
+          user_id: userId,
+          persona_id: personaId,
+          skills_selected: skills || [],
+          language: language || 'en',
+          user_context: {
+            profile: userContext.profile,
+            story: userContext.userStory,
+            prompt_used: promptData.id
+          },
+          prompt_version_used: promptData.id
+        });
     }
 
     // Format messages for OpenAI
