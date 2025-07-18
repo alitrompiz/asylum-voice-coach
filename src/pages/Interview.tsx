@@ -99,7 +99,48 @@ export default function Interview() {
     };
   }, [currentSubtitle, selectedPersonaData?.tts_voice, speak]);
 
-  // Handle press-to-talk functionality for mouse events
+  // Handle click-to-toggle functionality for desktop mouse events
+  const handleMouseClick = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log('Mouse click called', { isProcessing, isRecording, pressToTalkRef: pressToTalkRef.current });
+    
+    if (isProcessing) return;
+    
+    // Stop TTS if playing
+    if (isTTSPlaying) {
+      stopTTS();
+    }
+    
+    if (!isRecording && !pressToTalkRef.current) {
+      // Start recording
+      pressToTalkRef.current = true;
+      try {
+        console.log('Starting recording...');
+        await startRecording();
+        setIsAiSpeaking(false);
+        console.log('Recording started successfully');
+      } catch (error) {
+        console.error('Failed to start recording:', error);
+        pressToTalkRef.current = false;
+      }
+    } else if (isRecording && pressToTalkRef.current) {
+      // Stop recording
+      pressToTalkRef.current = false;
+      try {
+        console.log('Stopping recording...');
+        const recording = await stopRecording();
+        if (recording.duration > 0) {
+          console.log('Processing audio message...');
+          await processAudioMessage(recording);
+        }
+      } catch (error) {
+        console.error('Failed to stop recording:', error);
+      }
+    }
+  };
+
+  // Handle press-to-talk functionality for mouse events (legacy - kept for compatibility)
   const handleMousePressStart = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -386,9 +427,7 @@ export default function Interview() {
            {/* Press to Talk Button */}
           <div className="flex justify-center">
             <button
-              onMouseDown={handleMousePressStart}
-              onMouseUp={handleMousePressEnd}
-              onMouseLeave={handleMousePressCancel}
+              onClick={handleMouseClick}
               onTouchStart={handleTouchPressStart}
               onTouchEnd={handleTouchPressEnd}
               onTouchCancel={handleTouchPressCancel}
@@ -411,7 +450,7 @@ export default function Interview() {
                 <Mic className="w-8 h-8 text-white" />
               </div>
               <span className="text-white text-sm font-medium">
-                {isRecording ? "Recording..." : isProcessing ? "Processing..." : "Press to talk"}
+                {isRecording ? "Click to stop" : isProcessing ? "Processing..." : "Click to talk"}
               </span>
             </button>
           </div>
