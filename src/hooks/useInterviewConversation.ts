@@ -16,6 +16,7 @@ export const useInterviewConversation = () => {
   const [messages, setMessages] = useState<ConversationMessage[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentSubtitle, setCurrentSubtitle] = useState('');
+  const [hasInitialized, setHasInitialized] = useState(false);
   const { toast } = useToast();
   const { selectedPersona } = usePersonaStore();
   const sessionIdRef = useRef<string | null>(null);
@@ -24,6 +25,36 @@ export const useInterviewConversation = () => {
   if (!sessionIdRef.current) {
     sessionIdRef.current = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
+
+  // Initialize with AI greeting
+  const initializeInterview = async () => {
+    if (hasInitialized || !selectedPersona) return;
+    
+    setHasInitialized(true);
+    setIsProcessing(true);
+    setCurrentSubtitle('Connecting...');
+
+    try {
+      // Get initial AI greeting
+      const aiResponse = await sendToAI([]);
+      
+      // Add AI greeting to conversation
+      const aiMessage: ConversationMessage = {
+        id: `ai_greeting_${Date.now()}`,
+        role: 'assistant',
+        text: aiResponse,
+        timestamp: Date.now()
+      };
+
+      setMessages([aiMessage]);
+      setCurrentSubtitle(aiResponse);
+    } catch (error) {
+      console.error('Error initializing interview:', error);
+      setCurrentSubtitle('Hello! I\'m ready to conduct your asylum interview. Please press and hold the button to speak.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
@@ -139,6 +170,7 @@ export const useInterviewConversation = () => {
   const clearConversation = () => {
     setMessages([]);
     setCurrentSubtitle('');
+    setHasInitialized(false);
     sessionIdRef.current = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   };
 
@@ -148,6 +180,8 @@ export const useInterviewConversation = () => {
     currentSubtitle,
     processAudioMessage,
     clearConversation,
-    formatTime
+    formatTime,
+    initializeInterview,
+    hasInitialized
   };
 };

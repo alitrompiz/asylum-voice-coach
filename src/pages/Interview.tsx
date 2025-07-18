@@ -24,7 +24,7 @@ export default function Interview() {
   const navigate = useNavigate();
   // Audio recording and conversation hooks
   const { isRecording, duration, audioLevel, error: recordingError, startRecording, stopRecording, cancelRecording } = useAudioRecording();
-  const { messages, isProcessing, currentSubtitle, processAudioMessage, clearConversation, formatTime } = useInterviewConversation();
+  const { messages, isProcessing, currentSubtitle, processAudioMessage, clearConversation, formatTime, initializeInterview, hasInitialized } = useInterviewConversation();
   const { speak, stop: stopTTS, isPlaying: isTTSPlaying, isLoading: isTTSLoading } = useTextToSpeech();
   
   // Ref for managing press-to-talk
@@ -34,6 +34,13 @@ export default function Interview() {
   const { personas } = usePersonas();
   
   const selectedPersonaData = personas.find(p => p.id === selectedPersona);
+
+  // Initialize interview with AI greeting
+  useEffect(() => {
+    if (selectedPersonaData && !hasInitialized) {
+      initializeInterview();
+    }
+  }, [selectedPersonaData, hasInitialized, initializeInterview]);
 
   // Auto-play TTS when AI responds, but only for actual AI responses (not system messages)
   useEffect(() => {
