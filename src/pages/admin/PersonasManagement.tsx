@@ -222,12 +222,17 @@ export default function PersonasManagement() {
       </div>
 
       <DragDropContext onDragEnd={handleDragEnd}>
-        <Droppable droppableId="officers-list" direction="horizontal">
+        <Droppable droppableId="officers-list">
           {(provided) => (
             <div 
               {...provided.droppableProps}
               ref={provided.innerRef}
-              className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5"
+              className="flex flex-wrap gap-4"
+              style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: '1rem'
+              }}
             >
               {personas?.map((persona, index) => (
                 <Draggable key={persona.id} draggableId={persona.id} index={index}>
@@ -235,18 +240,22 @@ export default function PersonasManagement() {
                     <div
                       ref={provided.innerRef}
                       {...provided.draggableProps}
+                      {...provided.dragHandleProps}
                       className={`transition-transform ${
                         snapshot.isDragging ? 'rotate-2 shadow-2xl z-50' : ''
                       }`}
+                      style={{
+                        ...provided.draggableProps.style,
+                        width: 'calc(20% - 0.8rem)', // 5 items per row on large screens
+                        minWidth: '280px', // Minimum width for cards
+                        flexShrink: 0
+                      }}
                     >
-                      <div {...provided.dragHandleProps}>
-                        <PersonaCard
-                          key={persona.id}
-                          persona={persona}
-                          onDelete={handleDelete}
-                          onToggleVisibility={handleToggleVisibility}
-                        />
-                      </div>
+                      <PersonaCard
+                        persona={persona}
+                        onDelete={handleDelete}
+                        onToggleVisibility={handleToggleVisibility}
+                      />
                     </div>
                   )}
                 </Draggable>
