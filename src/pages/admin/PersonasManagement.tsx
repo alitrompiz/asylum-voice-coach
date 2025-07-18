@@ -227,12 +227,7 @@ export default function PersonasManagement() {
             <div 
               {...provided.droppableProps}
               ref={provided.innerRef}
-              className="flex flex-wrap gap-4"
-              style={{
-                display: 'flex',
-                flexWrap: 'wrap',
-                gap: '1rem'
-              }}
+              className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5"
             >
               {personas?.map((persona, index) => (
                 <Draggable key={persona.id} draggableId={persona.id} index={index}>
@@ -246,9 +241,9 @@ export default function PersonasManagement() {
                       }`}
                       style={{
                         ...provided.draggableProps.style,
-                        width: 'calc(20% - 0.8rem)', // 5 items per row on large screens
-                        minWidth: '280px', // Minimum width for cards
-                        flexShrink: 0
+                        // Maintain size during drag to prevent layout shift
+                        width: snapshot.isDragging ? '320px' : 'auto',
+                        height: snapshot.isDragging ? 'auto' : 'auto',
                       }}
                     >
                       <PersonaCard
