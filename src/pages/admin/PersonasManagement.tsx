@@ -9,6 +9,7 @@ import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Upload, Plus } from 'lucide-react';
 import { PersonaCard } from '@/components/admin/PersonaCard';
+import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 
 interface Persona {
   id: string;
@@ -76,6 +77,34 @@ export default function PersonasManagement() {
     },
     onError: () => {
       toast({ title: 'Error deleting officer', variant: 'destructive' });
+    }
+  });
+
+  const reorderPersonasMutation = useMutation({
+    mutationFn: async (reorderedPersonas: Persona[]) => {
+      // Update positions in database
+      const updates = reorderedPersonas.map((persona, index) => ({
+        id: persona.id,
+        position: index + 1
+      }));
+
+      for (const update of updates) {
+        const { error } = await supabase
+          .from('personas')
+          .update({ position: update.position })
+          .eq('id', update.id);
+        
+        if (error) throw error;
+      }
+      
+      return reorderedPersonas;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-personas'] });
+      toast({ title: 'Officer positions updated successfully' });
+    },
+    onError: () => {
+      toast({ title: 'Error updating officer positions', variant: 'destructive' });
     }
   });
 
@@ -155,6 +184,25 @@ export default function PersonasManagement() {
     uploadPersonasMutation.mutate(uploadedFiles);
   };
 
+  const handleDragEnd = (result: DropResult) => {
+    const { destination, source } = result;
+
+    // If dropped outside the list or in the same position
+    if (!destination || destination.index === source.index) {
+      return;
+    }
+
+    if (!personas) return;
+
+    // Reorder the personas array
+    const reorderedPersonas = Array.from(personas);
+    const [removed] = reorderedPersonas.splice(source.index, 1);
+    reorderedPersonas.splice(destination.index, 0, removed);
+
+    // Update positions in database
+    reorderPersonasMutation.mutate(reorderedPersonas);
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -173,16 +221,41 @@ export default function PersonasManagement() {
         </Button>
       </div>
 
-      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-        {personas?.map((persona) => (
-          <PersonaCard
-            key={persona.id}
-            persona={persona}
-            onDelete={handleDelete}
-            onToggleVisibility={handleToggleVisibility}
-          />
-        ))}
-      </div>
+      <DragDropContext onDragEnd={handleDragEnd}>
+        <Droppable droppableId="officers-list" direction="horizontal">
+          {(provided) => (
+            <div 
+              {...provided.droppableProps}
+              ref={provided.innerRef}
+              className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5"
+            >
+              {personas?.map((persona, index) => (
+                <Draggable key={persona.id} draggableId={persona.id} index={index}>
+                  {(provided, snapshot) => (
+                    <div
+                      ref={provided.innerRef}
+                      {...provided.draggableProps}
+                      className={`transition-transform ${
+                        snapshot.isDragging ? 'rotate-2 shadow-2xl z-50' : ''
+                      }`}
+                    >
+                      <div {...provided.dragHandleProps}>
+                        <PersonaCard
+                          key={persona.id}
+                          persona={persona}
+                          onDelete={handleDelete}
+                          onToggleVisibility={handleToggleVisibility}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </Draggable>
+              ))}
+              {provided.placeholder}
+            </div>
+          )}
+        </Droppable>
+      </DragDropContext>
 
       {/* Upload Modal */}
       <Dialog open={isUploadModalOpen} onOpenChange={setIsUploadModalOpen}>
