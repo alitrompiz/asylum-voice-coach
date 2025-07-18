@@ -25,7 +25,7 @@ const adminItems = [
     icon: Brain,
   },
   {
-    title: 'Personas',
+    title: 'Officers',
     url: '/admin/personas',
     icon: UserCheck,
   },
