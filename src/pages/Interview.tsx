@@ -53,10 +53,11 @@ export default function Interview() {
       notTranscribing: !currentSubtitle?.includes("Transcribing your message")
     });
     
-    // Only speak if it's an actual AI response (not processing/transcribing messages)
+    // Only speak if it's an actual AI response (not processing/transcribing/system messages)
     if (currentSubtitle && 
         !currentSubtitle.includes("Processing your message") && 
         !currentSubtitle.includes("Transcribing your message") &&
+        !currentSubtitle.includes("Connecting...") &&
         selectedPersonaData?.tts_voice) {
       
       // Clear any existing subtitle timeout
