@@ -203,6 +203,18 @@ export default function PersonasManagement() {
     reorderPersonasMutation.mutate(reorderedPersonas);
   };
 
+  // Calculate responsive columns for layout
+  const getColumnsPerRow = () => {
+    if (typeof window === 'undefined') return 5;
+    const width = window.innerWidth;
+    if (width < 640) return 1; // sm
+    if (width < 768) return 2; // md
+    if (width < 1024) return 2; // lg
+    if (width < 1280) return 3; // xl
+    if (width < 1536) return 4; // 2xl
+    return 5; // 2xl+
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -223,38 +235,60 @@ export default function PersonasManagement() {
 
       <DragDropContext onDragEnd={handleDragEnd}>
         <Droppable droppableId="officers-list">
-          {(provided) => (
+          {(provided, droppableSnapshot) => (
             <div 
               {...provided.droppableProps}
               ref={provided.innerRef}
-              className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5"
+              className="w-full"
             >
-              {personas?.map((persona, index) => (
-                <Draggable key={persona.id} draggableId={persona.id} index={index}>
-                  {(provided, snapshot) => (
-                    <div
-                      ref={provided.innerRef}
-                      {...provided.draggableProps}
-                      {...provided.dragHandleProps}
-                      className={`transition-transform ${
-                        snapshot.isDragging ? 'rotate-2 shadow-2xl z-50' : ''
-                      }`}
-                      style={{
-                        ...provided.draggableProps.style,
-                        // Maintain size during drag to prevent layout shift
-                        width: snapshot.isDragging ? '320px' : 'auto',
-                        height: snapshot.isDragging ? 'auto' : 'auto',
-                      }}
-                    >
-                      <PersonaCard
-                        persona={persona}
-                        onDelete={handleDelete}
-                        onToggleVisibility={handleToggleVisibility}
-                      />
-                    </div>
-                  )}
-                </Draggable>
-              ))}
+              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+                {personas?.map((persona, index) => (
+                  <Draggable key={persona.id} draggableId={persona.id} index={index}>
+                    {(provided, snapshot) => (
+                      <>
+                        <div
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                          {...provided.dragHandleProps}
+                          className={`transition-all duration-200 ${
+                            snapshot.isDragging 
+                              ? 'rotate-2 shadow-2xl z-50 scale-105' 
+                              : droppableSnapshot.isDraggingOver 
+                                ? 'transform-gpu' 
+                                : ''
+                          }`}
+                          style={{
+                            ...provided.draggableProps.style,
+                            position: snapshot.isDragging ? 'fixed' : 'relative',
+                            width: snapshot.isDragging ? '320px' : '100%',
+                            zIndex: snapshot.isDragging ? 1000 : 'auto',
+                            transform: snapshot.isDragging 
+                              ? `${provided.draggableProps.style?.transform || ''} rotate(2deg) scale(1.05)`
+                              : provided.draggableProps.style?.transform || '',
+                          }}
+                        >
+                          <PersonaCard
+                            persona={persona}
+                            onDelete={handleDelete}
+                            onToggleVisibility={handleToggleVisibility}
+                          />
+                        </div>
+                        
+                        {/* Placeholder div that maintains space during drag */}
+                        {snapshot.isDragging && (
+                          <div 
+                            className="opacity-30 border-2 border-dashed border-gray-400 rounded-lg"
+                            style={{ 
+                              height: '400px', // Approximate height of PersonaCard
+                              width: '100%'
+                            }}
+                          />
+                        )}
+                      </>
+                    )}
+                  </Draggable>
+                ))}
+              </div>
               {provided.placeholder}
             </div>
           )}
