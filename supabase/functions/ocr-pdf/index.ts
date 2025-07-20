@@ -8,23 +8,35 @@ const corsHeaders = {
 
 async function processRequest(req: Request): Promise<Response> {
   try {
+    console.log('=== OCR Function Started ===');
     const requestBody = await req.json();
+    console.log('Request body received:', JSON.stringify(requestBody));
+    
     const { filePath, fileName } = requestBody;
     
     console.log('Processing OCR request for file:', fileName);
+    console.log('File path:', filePath);
     
     // Get AWS credentials from environment
     const awsAccessKeyId = Deno.env.get('AWS_ACCESS_KEY_ID');
     const awsSecretAccessKey = Deno.env.get('AWS_SECRET_ACCESS_KEY');
     const awsRegion = Deno.env.get('AWS_REGION') || 'us-east-1';
     
+    console.log('AWS Region:', awsRegion);
+    console.log('AWS Access Key ID present:', !!awsAccessKeyId);
+    console.log('AWS Secret Access Key present:', !!awsSecretAccessKey);
+    
     if (!awsAccessKeyId || !awsSecretAccessKey) {
+      console.error('Missing AWS credentials');
       throw new Error('AWS credentials not configured');
     }
     
     // Get file from Supabase Storage
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    console.log('Supabase URL:', supabaseUrl);
+    console.log('Service key present:', !!supabaseServiceKey);
+    
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
     console.log('Downloading file from storage:', filePath);
@@ -39,14 +51,20 @@ async function processRequest(req: Request): Promise<Response> {
     }
     
     if (!fileData) {
+      console.error('No file data received');
       throw new Error('No file data received');
     }
     
-    console.log('File downloaded successfully, processing with Textract...');
+    console.log('File downloaded successfully, size:', fileData.size);
+    console.log('File type:', fileData.type);
+    
+    console.log('Converting file to base64...');
     
     // Convert file to base64 for Textract
     const fileBuffer = await fileData.arrayBuffer();
+    console.log('File buffer size:', fileBuffer.byteLength);
     const base64Data = btoa(String.fromCharCode(...new Uint8Array(fileBuffer)));
+    console.log('Base64 conversion completed, length:', base64Data.length);
     
     // Create timestamp for AWS signature
     const now = new Date();
@@ -105,7 +123,8 @@ async function processRequest(req: Request): Promise<Response> {
     
     const authorizationHeader = `${algorithm} Credential=${awsAccessKeyId}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
     
-    console.log('Calling AWS Textract...');
+    
+    console.log('Making AWS Textract API call...');
     
     // Call AWS Textract
     const textractResponse = await fetch(`https://textract.${awsRegion}.amazonaws.com/`, {
@@ -119,9 +138,12 @@ async function processRequest(req: Request): Promise<Response> {
       body: requestPayload
     });
     
+    console.log('Textract response status:', textractResponse.status);
+    console.log('Textract response headers:', Object.fromEntries(textractResponse.headers.entries()));
+    
     if (!textractResponse.ok) {
       const errorText = await textractResponse.text();
-      console.error('Textract error:', errorText);
+      console.error('Textract error response:', errorText);
       throw new Error(`Textract API error: ${textractResponse.status} ${errorText}`);
     }
     
