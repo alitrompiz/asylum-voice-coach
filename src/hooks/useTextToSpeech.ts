@@ -1,6 +1,7 @@
 
 import { useState, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useLanguagePreference } from './useLanguagePreference';
 
 interface TTSOptions {
   voice?: string;
@@ -13,6 +14,7 @@ export const useTextToSpeech = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const { language, getVoiceForTTS } = useLanguagePreference();
 
   const speak = useCallback(async (text: string, options: TTSOptions = {}) => {
     if (!text.trim()) return;
@@ -27,12 +29,22 @@ export const useTextToSpeech = () => {
         audioRef.current = null;
       }
 
-      // Call the TTS edge function
-      console.log('Calling text-to-speech edge function with:', { textLength: text.length, voice: options.voice });
+      // Get the appropriate voice for the selected language
+      const voice = options.voice || getVoiceForTTS('openai');
+
+      // Call the TTS edge function with language-specific voice
+      console.log('Calling text-to-speech edge function with:', { 
+        textLength: text.length, 
+        voice, 
+        language: language.code,
+        primaryTTS: language.primaryTTS 
+      });
+
       const { data, error } = await supabase.functions.invoke('text-to-speech', {
         body: {
           text,
-          voice: options.voice || 'alloy',
+          voice,
+          language: language.code,
         },
       });
 
@@ -75,7 +87,7 @@ export const useTextToSpeech = () => {
       setIsPlaying(false);
       options.onError?.(error as Error);
     }
-  }, []);
+  }, [language, getVoiceForTTS]);
 
   const stop = useCallback(() => {
     if (audioRef.current) {
@@ -91,5 +103,6 @@ export const useTextToSpeech = () => {
     stop,
     isPlaying,
     isLoading,
+    currentLanguage: language,
   };
 };

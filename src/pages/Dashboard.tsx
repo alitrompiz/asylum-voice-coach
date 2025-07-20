@@ -5,6 +5,7 @@ import { User, Play, Shield } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { UserScoreCard } from '@/components/UserScoreCard';
 import { PersonaCarousel } from '@/components/PersonaCarousel';
+import { LanguageSelector } from '@/components/LanguageSelector';
 import { SkillsScroller } from '@/components/SkillsScroller';
 import { useSkillsStore } from '@/stores/personaStore';
 import { useAdminAccess } from '@/hooks/useAdminAccess';
@@ -57,6 +58,10 @@ export default function Dashboard() {
 
         <div className="mb-3">
           <PersonaCarousel />
+        </div>
+
+        <div className="mb-3">
+          <LanguageSelector />
         </div>
 
         <div className="mb-3">

@@ -50,10 +50,10 @@ export const PersonaCarousel = ({ onSelect }: PersonaCarouselProps) => {
     return (
       <div className="bg-card rounded-lg p-3 border">
         <h3 className="text-lg font-semibold mb-3">Select an officer</h3>
-        <div className="flex gap-4">
+        <div className="flex gap-3">
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="flex flex-col items-center animate-pulse">
-              <div className="w-44 h-44 bg-muted rounded-full mb-2" />
+              <div className="w-36 h-36 bg-muted rounded-full mb-2" />
               <div className="w-16 h-3 bg-muted rounded mb-1" />
               <div className="w-12 h-3 bg-muted rounded" />
             </div>
@@ -76,11 +76,11 @@ export const PersonaCarousel = ({ onSelect }: PersonaCarouselProps) => {
     <div className="bg-card rounded-lg p-3 border">
       <h3 className="text-lg font-semibold mb-3">Select an officer</h3>
       <ScrollArea className="w-full">
-        <div className="flex gap-4 pb-4 snap-x snap-mandatory overflow-x-auto">
+        <div className="flex gap-3 pb-4 snap-x snap-mandatory overflow-x-auto">
           {personas.map((persona) => (
             <div
               key={persona.id}
-              className="flex flex-col items-center min-w-[180px] cursor-pointer snap-center relative pt-4 px-2 pb-2"
+              className="flex flex-col items-center min-w-[150px] cursor-pointer snap-center relative pt-4 px-2 pb-2"
               onClick={() => handlePersonaSelect(persona.id)}
               data-testid={`persona-${persona.id}`}
             >
@@ -95,7 +95,7 @@ export const PersonaCarousel = ({ onSelect }: PersonaCarouselProps) => {
                 <img
                   src={persona.image_url}
                   alt={persona.alt_text}
-                  className="w-44 h-44 object-cover rounded-full"
+                  className="w-36 h-36 object-cover rounded-full"
                   loading="lazy"
                 />
               </div>

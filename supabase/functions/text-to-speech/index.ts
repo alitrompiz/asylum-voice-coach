@@ -13,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const { text, voice = 'alloy' } = await req.json();
+    const { text, voice = 'alloy', language = 'en' } = await req.json();
     
     if (!text) {
       throw new Error('Text is required');
@@ -24,7 +24,14 @@ serve(async (req) => {
       throw new Error('OpenAI API key not configured');
     }
 
-    // Call OpenAI TTS API
+    console.log('TTS Request:', { 
+      textLength: text.length, 
+      voice, 
+      language,
+      textPreview: text.substring(0, 100) + (text.length > 100 ? '...' : '')
+    });
+
+    // Call OpenAI TTS API with language-aware voice selection
     const response = await fetch('https://api.openai.com/v1/audio/speech', {
       method: 'POST',
       headers: {
@@ -54,10 +61,19 @@ serve(async (req) => {
         .join('')
     );
 
+    console.log('TTS Success:', { 
+      language, 
+      voice, 
+      audioSize: audioBuffer.byteLength,
+      base64Size: base64Audio.length 
+    });
+
     return new Response(
       JSON.stringify({ 
         audioContent: base64Audio,
-        contentType: 'audio/mpeg'
+        contentType: 'audio/mpeg',
+        language,
+        voice
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
