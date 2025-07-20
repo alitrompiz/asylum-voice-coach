@@ -204,5 +204,23 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  return await processRequest(req);
+  try {
+    console.log('OCR function called');
+    const result = await processRequest(req);
+    console.log('OCR function completed successfully');
+    return result;
+  } catch (error) {
+    console.error('Unhandled error in OCR function:', error);
+    return new Response(
+      JSON.stringify({ 
+        error: 'Internal server error',
+        details: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    );
+  }
 });
