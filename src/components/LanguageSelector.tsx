@@ -93,9 +93,6 @@ export const LanguageSelector = ({ selectedLanguage, onLanguageChange }: Languag
           ))}
         </SelectContent>
       </Select>
-      <p className="text-xs text-muted-foreground mt-2">
-        {t('language.description')}
-      </p>
     </div>
   );
 };
