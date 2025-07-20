@@ -6,219 +6,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-async function processRequest(req: Request): Promise<Response> {
-  try {
-    console.log('=== OCR Function Started ===');
-    const requestBody = await req.json();
-    console.log('Request body received:', JSON.stringify(requestBody));
-    
-    const { filePath, fileName } = requestBody;
-    
-    console.log('Processing OCR request for file:', fileName);
-    console.log('File path:', filePath);
-    
-    // Get AWS credentials from environment
-    const awsAccessKeyId = Deno.env.get('AWS_ACCESS_KEY_ID');
-    const awsSecretAccessKey = Deno.env.get('AWS_SECRET_ACCESS_KEY');
-    const awsRegion = Deno.env.get('AWS_REGION') || 'us-east-1';
-    
-    console.log('AWS Region:', awsRegion);
-    console.log('AWS Access Key ID present:', !!awsAccessKeyId);
-    console.log('AWS Secret Access Key present:', !!awsSecretAccessKey);
-    
-    if (!awsAccessKeyId || !awsSecretAccessKey) {
-      console.error('Missing AWS credentials');
-      throw new Error('AWS credentials not configured');
-    }
-    
-    // Get file from Supabase Storage
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    console.log('Supabase URL:', supabaseUrl);
-    console.log('Service key present:', !!supabaseServiceKey);
-    
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    
-    console.log('Downloading file from storage:', filePath);
-    
-    const { data: fileData, error: fileError } = await supabase.storage
-      .from('story-files')
-      .download(filePath);
-    
-    if (fileError) {
-      console.error('Error downloading file:', fileError);
-      throw new Error(`Failed to download file: ${fileError.message}`);
-    }
-    
-    if (!fileData) {
-      console.error('No file data received');
-      throw new Error('No file data received');
-    }
-    
-    console.log('File downloaded successfully, size:', fileData.size);
-    console.log('File type:', fileData.type);
-    
-    console.log('Converting file to base64...');
-    
-    // Convert file to base64 for Textract
-    const fileBuffer = await fileData.arrayBuffer();
-    console.log('File buffer size:', fileBuffer.byteLength);
-    const base64Data = btoa(String.fromCharCode(...new Uint8Array(fileBuffer)));
-    console.log('Base64 conversion completed, length:', base64Data.length);
-    
-    // Create timestamp for AWS signature
-    const now = new Date();
-    const timestamp = now.toISOString().replace(/[:\-]|\.\d{3}/g, '');
-    const date = timestamp.substring(0, 8);
-    
-    // AWS signature v4 implementation
-    const service = 'textract';
-    const method = 'POST';
-    const canonicalUri = '/';
-    const canonicalQueryString = '';
-    
-    const requestPayload = JSON.stringify({
-      Document: { Bytes: base64Data },
-      FeatureTypes: ["FORMS", "TABLES"]
-    });
-    
-    const payloadHashArray = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(requestPayload)));
-    const payloadHash = Array.from(payloadHashArray).map(b => b.toString(16).padStart(2, '0')).join('');
-    
-    const canonicalHeaders = [
-      `host:textract.${awsRegion}.amazonaws.com`,
-      `x-amz-date:${timestamp}`,
-      `x-amz-target:Textract.AnalyzeDocument`
-    ].join('\n') + '\n';
-    
-    const signedHeaders = 'host;x-amz-date;x-amz-target';
-    const canonicalRequest = [method, canonicalUri, canonicalQueryString, canonicalHeaders, signedHeaders, payloadHash].join('\n');
-    
-    const algorithm = 'AWS4-HMAC-SHA256';
-    const credentialScope = `${date}/${awsRegion}/${service}/aws4_request`;
-    
-    const canonicalRequestHashArray = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(canonicalRequest)));
-    const canonicalRequestHash = Array.from(canonicalRequestHashArray).map(b => b.toString(16).padStart(2, '0')).join('');
-    
-    const stringToSign = [algorithm, timestamp, credentialScope, canonicalRequestHash].join('\n');
-    
-    // Create signing key
-    const getSignatureKey = async (key: string, dateStamp: string, regionName: string, serviceName: string) => {
-      const kDate = await crypto.subtle.importKey('raw', new TextEncoder().encode('AWS4' + key), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
-      const kDateSig = new Uint8Array(await crypto.subtle.sign('HMAC', kDate, new TextEncoder().encode(dateStamp)));
-      
-      const kRegion = await crypto.subtle.importKey('raw', kDateSig, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
-      const kRegionSig = new Uint8Array(await crypto.subtle.sign('HMAC', kRegion, new TextEncoder().encode(regionName)));
-      
-      const kService = await crypto.subtle.importKey('raw', kRegionSig, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
-      const kServiceSig = new Uint8Array(await crypto.subtle.sign('HMAC', kService, new TextEncoder().encode(serviceName)));
-      
-      const kSigning = await crypto.subtle.importKey('raw', kServiceSig, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
-      return await crypto.subtle.importKey('raw', new Uint8Array(await crypto.subtle.sign('HMAC', kSigning, new TextEncoder().encode('aws4_request'))), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
-    };
-    
-    const signingKey = await getSignatureKey(awsSecretAccessKey, date, awsRegion, service);
-    const signatureArray = new Uint8Array(await crypto.subtle.sign('HMAC', signingKey, new TextEncoder().encode(stringToSign)));
-    const signature = Array.from(signatureArray).map(b => b.toString(16).padStart(2, '0')).join('');
-    
-    const authorizationHeader = `${algorithm} Credential=${awsAccessKeyId}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
-    
-    
-    console.log('Making AWS Textract API call...');
-    
-    // Call AWS Textract
-    const textractResponse = await fetch(`https://textract.${awsRegion}.amazonaws.com/`, {
-      method: 'POST',
-      headers: {
-        'Authorization': authorizationHeader,
-        'Content-Type': 'application/x-amz-json-1.1',
-        'X-Amz-Date': timestamp,
-        'X-Amz-Target': 'Textract.AnalyzeDocument'
-      },
-      body: requestPayload
-    });
-    
-    console.log('Textract response status:', textractResponse.status);
-    console.log('Textract response headers:', Object.fromEntries(textractResponse.headers.entries()));
-    
-    if (!textractResponse.ok) {
-      const errorText = await textractResponse.text();
-      console.error('Textract error response:', errorText);
-      throw new Error(`Textract API error: ${textractResponse.status} ${errorText}`);
-    }
-    
-    const textractData = await textractResponse.json();
-    console.log('Textract processing completed successfully');
-    
-    // Parse Textract response to extract text and form data
-    let extractedText = '';
-    const sections: any = {
-      personalInfo: {},
-      asylumClaim: {},
-      narrative: {}
-    };
-    
-    if (textractData.Blocks) {
-      // Extract LINE blocks for text
-      const lineBlocks = textractData.Blocks.filter((block: any) => block.BlockType === 'LINE');
-      extractedText = lineBlocks.map((block: any) => block.Text).join('\n');
-      
-      // Extract form data from KEY_VALUE_SET blocks
-      const keyValueSets = textractData.Blocks.filter((block: any) => block.BlockType === 'KEY_VALUE_SET');
-      const keyBlocks = keyValueSets.filter((block: any) => block.EntityTypes?.includes('KEY'));
-      const valueBlocks = keyValueSets.filter((block: any) => block.EntityTypes?.includes('VALUE'));
-      
-      // Map keys to values based on relationships
-      keyBlocks.forEach((keyBlock: any) => {
-        const keyText = keyBlock.Text || '';
-        const relationships = keyBlock.Relationships || [];
-        const valueRelationship = relationships.find((rel: any) => rel.Type === 'VALUE');
-        
-        if (valueRelationship) {
-          const valueBlock = valueBlocks.find((vb: any) => vb.Id === valueRelationship.Ids[0]);
-          if (valueBlock) {
-            const valueText = valueBlock.Text || '';
-            
-            // Categorize form fields based on common I-589 patterns
-            if (keyText.toLowerCase().includes('name') || keyText.toLowerCase().includes('apellido')) {
-              sections.personalInfo.name = valueText;
-            } else if (keyText.toLowerCase().includes('birth') || keyText.toLowerCase().includes('nacimiento')) {
-              sections.personalInfo.dateOfBirth = valueText;
-            } else if (keyText.toLowerCase().includes('country') && keyText.toLowerCase().includes('birth')) {
-              sections.personalInfo.countryOfBirth = valueText;
-            } else if (keyText.toLowerCase().includes('fear') || keyText.toLowerCase().includes('persecution')) {
-              sections.asylumClaim.countryOfFear = valueText;
-            }
-          }
-        }
-      });
-    }
-    
-    const ocrResult = {
-      text: extractedText,
-      sections: sections
-    };
-    
-    console.log('OCR processing completed, extracted text length:', extractedText.length);
-    
-    return new Response(
-      JSON.stringify(ocrResult),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    );
-  } catch (error) {
-    console.error('Error in ocr-pdf function:', error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    );
-  }
-}
-
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -226,17 +13,110 @@ serve(async (req) => {
   }
 
   try {
-    console.log('OCR function called');
-    const result = await processRequest(req);
-    console.log('OCR function completed successfully');
-    return result;
+    console.log('=== OCR Function Started ===');
+    
+    const requestBody = await req.json();
+    console.log('Request body:', JSON.stringify(requestBody));
+    
+    const { filePath, fileName } = requestBody;
+    
+    if (!filePath || !fileName) {
+      throw new Error('Missing filePath or fileName in request');
+    }
+    
+    console.log('Processing file:', fileName, 'at path:', filePath);
+    
+    // Check AWS credentials
+    const awsAccessKeyId = Deno.env.get('AWS_ACCESS_KEY_ID');
+    const awsSecretAccessKey = Deno.env.get('AWS_SECRET_ACCESS_KEY');
+    const awsRegion = Deno.env.get('AWS_REGION') || 'us-east-1';
+    
+    console.log('AWS credentials check:', {
+      accessKeyPresent: !!awsAccessKeyId,
+      secretKeyPresent: !!awsSecretAccessKey,
+      region: awsRegion
+    });
+    
+    if (!awsAccessKeyId || !awsSecretAccessKey) {
+      throw new Error('AWS credentials not configured');
+    }
+    
+    // Get Supabase credentials
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    
+    console.log('Supabase credentials check:', {
+      urlPresent: !!supabaseUrl,
+      serviceKeyPresent: !!supabaseServiceKey
+    });
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      throw new Error('Supabase credentials not configured');
+    }
+    
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    
+    console.log('Attempting to download file from storage...');
+    
+    // Download file from Supabase Storage
+    const { data: fileData, error: fileError } = await supabase.storage
+      .from('story-files')
+      .download(filePath);
+    
+    if (fileError) {
+      console.error('Storage download error:', fileError);
+      throw new Error(`Failed to download file: ${fileError.message}`);
+    }
+    
+    if (!fileData) {
+      throw new Error('No file data received from storage');
+    }
+    
+    console.log('File downloaded successfully:', {
+      size: fileData.size,
+      type: fileData.type
+    });
+    
+    // For now, return a simple success response with mock OCR data
+    // This will help us identify if the issue is with file download or AWS Textract
+    const mockOcrResult = {
+      text: `Mock OCR result for file: ${fileName}\nThis is a test response to verify the function is working.\nThe file was successfully downloaded from storage with size: ${fileData.size} bytes.`,
+      sections: {
+        personalInfo: {
+          name: "Test Name",
+          dateOfBirth: "Test Date"
+        },
+        asylumClaim: {
+          countryOfFear: "Test Country"
+        },
+        narrative: {}
+      }
+    };
+    
+    console.log('Returning mock OCR result');
+    
+    return new Response(
+      JSON.stringify(mockOcrResult),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    );
+    
   } catch (error) {
-    console.error('Unhandled error in OCR function:', error);
+    console.error('Error in OCR function:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    
+    console.error('Error details:', {
+      message: errorMessage,
+      stack: errorStack
+    });
+    
     return new Response(
       JSON.stringify({ 
-        error: 'Internal server error',
-        details: error instanceof Error ? error.message : 'Unknown error',
-        stack: error instanceof Error ? error.stack : undefined
+        error: errorMessage,
+        details: 'Check function logs for more details',
+        timestamp: new Date().toISOString()
       }),
       {
         status: 500,
