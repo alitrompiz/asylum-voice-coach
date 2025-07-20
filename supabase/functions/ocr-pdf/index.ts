@@ -295,121 +295,186 @@ async function processOCRJob(jobId: string, supabase: any) {
 }
 
 function extractI589Data(analyzeResult: any) {
-  console.log('Extracting I-589 form data...');
+  console.log('=== STARTING COMPREHENSIVE TEXT EXTRACTION ===');
+  
+  if (!analyzeResult) {
+    console.error('No analyzeResult provided');
+    return { text: '', sections: {}, confidence: 0, pageCount: 0, processedAt: new Date().toISOString() };
+  }
   
   const pages = analyzeResult.pages || [];
   const tables = analyzeResult.tables || [];
   const paragraphs = analyzeResult.paragraphs || [];
   
-  console.log(`Total pages found: ${pages.length}`);
-  console.log(`Total paragraphs found: ${paragraphs.length}`);
-  console.log(`Total tables found: ${tables.length}`);
+  console.log(`=== EXTRACTION SUMMARY ===`);
+  console.log(`Total pages: ${pages.length}`);
+  console.log(`Total paragraphs: ${paragraphs.length}`);
+  console.log(`Total tables: ${tables.length}`);
   
-  // Extract text content from multiple sources for completeness
-  let fullText = '';
-  
-  // Method 1: Extract from paragraphs (structured text)
-  console.log('Method 1: Extracting from paragraphs...');
-  for (const paragraph of paragraphs) {
-    fullText += paragraph.content + '\n';
+  // Method 1: Try to get the complete content directly from Azure's content field
+  let completeText = '';
+  if (analyzeResult.content) {
+    completeText = analyzeResult.content;
+    console.log(`Method 1 - Direct content: ${completeText.length} characters`);
   }
-  console.log(`Paragraph extraction length: ${fullText.length}`);
   
-  // Method 2: Extract from individual pages and lines
+  // Method 2: Extract all paragraphs in order
+  let paragraphText = '';
+  if (paragraphs && paragraphs.length > 0) {
+    console.log('Method 2 - Extracting paragraphs...');
+    paragraphs
+      .sort((a, b) => {
+        // Sort by reading order if available, otherwise by position
+        if (a.readingOrder !== undefined && b.readingOrder !== undefined) {
+          return a.readingOrder - b.readingOrder;
+        }
+        // Fallback to bounding box position (top to bottom, left to right)
+        const aTop = a.boundingRegions?.[0]?.polygon?.[1] || 0;
+        const bTop = b.boundingRegions?.[0]?.polygon?.[1] || 0;
+        return aTop - bTop;
+      })
+      .forEach((paragraph, index) => {
+        paragraphText += paragraph.content + '\n';
+        if (index % 10 === 0) {
+          console.log(`  Processed paragraph ${index + 1}/${paragraphs.length}`);
+        }
+      });
+    console.log(`Method 2 - Paragraphs: ${paragraphText.length} characters`);
+  }
+  
+  // Method 3: Page-by-page comprehensive extraction
   let pageByPageText = '';
-  console.log('Method 2: Extracting page by page...');
+  console.log('Method 3 - Page-by-page extraction...');
   
-  for (let i = 0; i < pages.length; i++) {
-    const page = pages[i];
-    pageByPageText += `\n=== PAGE ${i + 1} ===\n`;
-    console.log(`Processing page ${i + 1}`);
+  for (let pageIndex = 0; pageIndex < pages.length; pageIndex++) {
+    const page = pages[pageIndex];
+    console.log(`\n--- Processing Page ${pageIndex + 1} ---`);
     
-    let pageText = '';
+    pageByPageText += `\n\n=== PAGE ${pageIndex + 1} OF ${pages.length} ===\n\n`;
     
-    // Extract from lines if available
+    let pageContent = '';
+    
+    // Try lines first
     if (page.lines && page.lines.length > 0) {
-      console.log(`  Found ${page.lines.length} lines on page ${i + 1}`);
-      for (const line of page.lines) {
-        pageText += line.content + '\n';
-      }
+      console.log(`  Page ${pageIndex + 1}: Found ${page.lines.length} lines`);
+      
+      page.lines
+        .sort((a, b) => {
+          // Sort by vertical position (top to bottom)
+          const aTop = a.boundingBox?.[1] || 0;
+          const bTop = b.boundingBox?.[1] || 0;
+          return aTop - bTop;
+        })
+        .forEach(line => {
+          pageContent += line.content + '\n';
+        });
     }
     
-    // If no lines, extract from words
-    if (!pageText && page.words && page.words.length > 0) {
-      console.log(`  No lines found, extracting from ${page.words.length} words on page ${i + 1}`);
+    // If no lines, try words
+    else if (page.words && page.words.length > 0) {
+      console.log(`  Page ${pageIndex + 1}: No lines, extracting from ${page.words.length} words`);
+      
+      const sortedWords = page.words.sort((a, b) => {
+        const aTop = a.boundingBox?.[1] || 0;
+        const bTop = b.boundingBox?.[1] || 0;
+        const aLeft = a.boundingBox?.[0] || 0;
+        const bLeft = b.boundingBox?.[0] || 0;
+        
+        // Sort by Y position first (top to bottom), then X position (left to right)
+        if (Math.abs(aTop - bTop) > 5) {
+          return aTop - bTop;
+        }
+        return aLeft - bLeft;
+      });
+      
       let currentLine = '';
       let lastTop = -1;
       
-      for (const word of page.words) {
-        const wordTop = word.boundingBox ? word.boundingBox[1] : 0;
+      sortedWords.forEach(word => {
+        const wordTop = word.boundingBox?.[1] || 0;
         
-        // Start new line if word is significantly below the last one
+        // If this word is significantly below the last one, start a new line
         if (lastTop >= 0 && Math.abs(wordTop - lastTop) > 10) {
-          pageText += currentLine.trim() + '\n';
+          if (currentLine.trim()) {
+            pageContent += currentLine.trim() + '\n';
+          }
           currentLine = '';
         }
         
         currentLine += word.content + ' ';
         lastTop = wordTop;
-      }
+      });
       
+      // Add the last line
       if (currentLine.trim()) {
-        pageText += currentLine.trim() + '\n';
+        pageContent += currentLine.trim() + '\n';
       }
     }
     
-    console.log(`  Page ${i + 1} text length: ${pageText.length}`);
-    pageByPageText += pageText;
+    console.log(`  Page ${pageIndex + 1}: Extracted ${pageContent.length} characters`);
+    pageByPageText += pageContent;
   }
   
-  console.log(`Page-by-page extraction total length: ${pageByPageText.length}`);
+  console.log(`Method 3 - Page-by-page: ${pageByPageText.length} characters`);
   
-  // Method 3: Extract all content from the entire document
-  let allContentText = '';
-  console.log('Method 3: Extracting all document content...');
+  // Choose the best extraction method
+  let finalText = '';
+  let method = '';
   
-  // Extract from document-level content if available
-  if (analyzeResult.content) {
-    allContentText = analyzeResult.content;
-    console.log(`Document content length: ${allContentText.length}`);
+  if (completeText.length > finalText.length) {
+    finalText = completeText;
+    method = 'direct-content';
   }
   
-  // Use the most complete text source
-  let bestText = fullText;
-  let method = 'paragraphs';
+  if (paragraphText.length > finalText.length) {
+    finalText = paragraphText;
+    method = 'paragraphs';
+  }
   
-  if (pageByPageText.length > bestText.length) {
-    bestText = pageByPageText;
+  if (pageByPageText.length > finalText.length) {
+    finalText = pageByPageText;
     method = 'page-by-page';
   }
   
-  if (allContentText.length > bestText.length) {
-    bestText = allContentText;
-    method = 'document content';
+  console.log(`\n=== FINAL RESULTS ===`);
+  console.log(`Best method: ${method}`);
+  console.log(`Final text length: ${finalText.length} characters`);
+  console.log(`Text starts with: ${finalText.substring(0, 200)}...`);
+  console.log(`Text ends with: ...${finalText.substring(Math.max(0, finalText.length - 200))}`);
+  
+  // Verify we have substantial content
+  if (finalText.length < 1000) {
+    console.warn(`WARNING: Extracted text is unusually short (${finalText.length} characters)`);
   }
   
-  console.log(`Best extraction method: ${method} with ${bestText.length} characters`);
+  // Count pages in final text
+  const pageMarkers = (finalText.match(/=== PAGE \d+ =/g) || []).length;
+  if (pageMarkers > 0 && pageMarkers < pages.length) {
+    console.warn(`WARNING: Only found ${pageMarkers} page markers but document has ${pages.length} pages`);
+  }
   
-  // Extract structured data for I-589 form
+  // Extract structured data
   const extractedSections = {
-    personalInfo: extractPersonalInfo(bestText, tables),
-    asylumClaim: extractAsylumClaim(bestText),
-    narrative: extractNarrative(bestText),
+    personalInfo: extractPersonalInfo(finalText, tables),
+    asylumClaim: extractAsylumClaim(finalText),
+    narrative: extractNarrative(finalText),
     tables: extractTables(tables),
     checkboxes: extractCheckboxes(pages),
     extractionMetadata: {
       totalPages: pages.length,
       extractionMethod: method,
       textLengths: {
-        paragraphs: fullText.length,
+        directContent: completeText.length,
+        paragraphs: paragraphText.length,
         pageByPage: pageByPageText.length,
-        documentContent: allContentText.length
-      }
+        final: finalText.length
+      },
+      extractionWarnings: finalText.length < 1000 ? ['Text unusually short'] : []
     }
   };
   
   return {
-    text: bestText,
+    text: finalText,
     sections: extractedSections,
     confidence: calculateConfidence(analyzeResult),
     pageCount: pages.length,
