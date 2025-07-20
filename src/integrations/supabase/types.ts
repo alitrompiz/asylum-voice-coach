@@ -160,6 +160,48 @@ export type Database = {
         }
         Relationships: []
       }
+      ocr_jobs: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          error_message: string | null
+          file_name: string
+          file_path: string
+          id: string
+          progress: number | null
+          result: Json | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          file_name: string
+          file_path: string
+          id?: string
+          progress?: number | null
+          result?: Json | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          file_name?: string
+          file_path?: string
+          id?: string
+          progress?: number | null
+          result?: Json | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       personas: {
         Row: {
           ai_instructions: string | null

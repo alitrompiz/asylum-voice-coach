@@ -2,11 +2,13 @@ import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
+import { Progress } from '@/components/ui/progress';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Upload, FileText, Trash2, Edit3, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
+import { Upload, FileText, Trash2, Edit3, AlertCircle, CheckCircle, Loader2, Clock } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useOcrJob } from '@/hooks/useOcrJob';
 
 interface Story {
   id: string;
@@ -45,6 +47,9 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
   const [storyToDelete, setStoryToDelete] = useState<string | null>(null);
   const [editingStory, setEditingStory] = useState<Story | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+  const [currentJobId, setCurrentJobId] = useState<string | null>(null);
+  
+  const { job: ocrJob } = useOcrJob(currentJobId);
 
   const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
   const MAX_WORDS = 2000;
@@ -57,6 +62,62 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
     getUser();
     loadExistingStories();
   }, []);
+
+  // Handle OCR job completion
+  React.useEffect(() => {
+    if (ocrJob?.status === 'completed' && ocrJob.result) {
+      handleOcrCompletion(ocrJob);
+    } else if (ocrJob?.status === 'failed') {
+      handleOcrFailure(ocrJob);
+    }
+  }, [ocrJob?.status]);
+
+  const handleOcrCompletion = async (job: any) => {
+    try {
+      if (!userId) throw new Error('User not authenticated');
+
+      const { data: storyData, error: storyError } = await supabase
+        .from('stories')
+        .insert({
+          title: job.file_name.replace('.pdf', ''),
+          story_text: job.result.text,
+          detected_sections: job.result.sections,
+          source_type: 'pdf',
+          file_path: job.file_path,
+          user_id: userId,
+          is_active: false
+        })
+        .select()
+        .single();
+
+      if (storyError) throw storyError;
+
+      toast({
+        title: "Success",
+        description: "PDF processed and story created successfully",
+      });
+
+      onStoryAdded?.({ ...storyData, source_type: storyData.source_type as 'pdf' | 'text' });
+      loadExistingStories();
+      setCurrentJobId(null);
+    } catch (error) {
+      console.error('Error saving OCR result:', error);
+      toast({
+        title: "Save failed",
+        description: "OCR completed but failed to save story",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleOcrFailure = (job: any) => {
+    toast({
+      title: "OCR processing failed",
+      description: job.error_message || "Failed to process PDF",
+      variant: "destructive"
+    });
+    setCurrentJobId(null);
+  };
 
   const loadExistingStories = async () => {
     try {
@@ -128,7 +189,7 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
 
       if (!uploadResponse.ok) throw new Error('Failed to upload file');
 
-      // Process with OCR
+      // Start OCR processing
       const { data: ocrData, error: ocrError } = await supabase.functions.invoke('ocr-pdf', {
         body: {
           filePath: signedUrlData.filePath,
@@ -138,32 +199,13 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
 
       if (ocrError) throw ocrError;
 
-      // Save to database
-      if (!userId) throw new Error('User not authenticated');
-
-      const { data: storyData, error: storyError } = await supabase
-        .from('stories')
-        .insert({
-          title: file.name.replace('.pdf', ''),
-          story_text: ocrData.text,
-          detected_sections: ocrData.sections,
-          source_type: 'pdf',
-          file_path: signedUrlData.filePath,
-          user_id: userId,
-          is_active: false // New stories are not active by default
-        })
-        .select()
-        .single();
-
-      if (storyError) throw storyError;
+      // Set the job ID to start tracking progress
+      setCurrentJobId(ocrData.jobId);
 
       toast({
-        title: "Success",
-        description: "PDF uploaded and processed successfully",
+        title: "Upload successful",
+        description: "PDF uploaded. Processing will continue in the background.",
       });
-
-      onStoryAdded?.({ ...storyData, source_type: storyData.source_type as 'pdf' | 'text' });
-      loadExistingStories();
 
     } catch (error) {
       console.error('Upload error:', error);
@@ -344,6 +386,56 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
                 Supported: PDF files up to 10MB
               </p>
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* OCR Progress Tracking */}
+      {ocrJob && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="w-5 h-5" />
+              Processing {ocrJob.file_name}
+            </CardTitle>
+            <CardDescription>
+              Advanced OCR processing for complex forms with tables and checkboxes
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="capitalize">{ocrJob.status.replace('_', ' ')}</span>
+                <span>{ocrJob.progress}%</span>
+              </div>
+              <Progress value={ocrJob.progress} className="w-full" />
+            </div>
+            
+            {ocrJob.status === 'processing' && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>
+                  {ocrJob.progress < 30 ? 'Downloading file...' :
+                   ocrJob.progress < 60 ? 'Analyzing document structure...' :
+                   ocrJob.progress < 90 ? 'Extracting text and form data...' :
+                   'Finalizing results...'}
+                </span>
+              </div>
+            )}
+            
+            {ocrJob.status === 'completed' && (
+              <div className="flex items-center gap-2 text-sm text-green-600">
+                <CheckCircle className="w-4 h-4" />
+                <span>Processing complete! Creating your story...</span>
+              </div>
+            )}
+            
+            {ocrJob.status === 'failed' && (
+              <div className="flex items-center gap-2 text-sm text-destructive">
+                <AlertCircle className="w-4 h-4" />
+                <span>{ocrJob.error_message || 'Processing failed'}</span>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
