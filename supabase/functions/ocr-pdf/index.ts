@@ -281,28 +281,42 @@ function extractI589Data(analyzeResult: any) {
   const tables = analyzeResult.tables || [];
   const paragraphs = analyzeResult.paragraphs || [];
   
+  console.log(`Total pages found: ${pages.length}`);
+  console.log(`Total paragraphs found: ${paragraphs.length}`);
+  console.log(`Total tables found: ${tables.length}`);
+  
   // Extract text content from multiple sources for completeness
   let fullText = '';
   
   // Method 1: Extract from paragraphs (structured text)
+  console.log('Method 1: Extracting from paragraphs...');
   for (const paragraph of paragraphs) {
     fullText += paragraph.content + '\n';
   }
+  console.log(`Paragraph extraction length: ${fullText.length}`);
   
-  // Method 2: Extract from individual lines for any missed content
-  let lineText = '';
-  for (const page of pages) {
-    if (page.lines) {
+  // Method 2: Extract from individual pages and lines
+  let pageByPageText = '';
+  console.log('Method 2: Extracting page by page...');
+  
+  for (let i = 0; i < pages.length; i++) {
+    const page = pages[i];
+    pageByPageText += `\n=== PAGE ${i + 1} ===\n`;
+    console.log(`Processing page ${i + 1}`);
+    
+    let pageText = '';
+    
+    // Extract from lines if available
+    if (page.lines && page.lines.length > 0) {
+      console.log(`  Found ${page.lines.length} lines on page ${i + 1}`);
       for (const line of page.lines) {
-        lineText += line.content + '\n';
+        pageText += line.content + '\n';
       }
     }
-  }
-  
-  // Method 3: Extract from words if lines/paragraphs miss content
-  let wordText = '';
-  for (const page of pages) {
-    if (page.words) {
+    
+    // If no lines, extract from words
+    if (!pageText && page.words && page.words.length > 0) {
+      console.log(`  No lines found, extracting from ${page.words.length} words on page ${i + 1}`);
       let currentLine = '';
       let lastTop = -1;
       
@@ -311,7 +325,7 @@ function extractI589Data(analyzeResult: any) {
         
         // Start new line if word is significantly below the last one
         if (lastTop >= 0 && Math.abs(wordTop - lastTop) > 10) {
-          wordText += currentLine.trim() + '\n';
+          pageText += currentLine.trim() + '\n';
           currentLine = '';
         }
         
@@ -320,24 +334,41 @@ function extractI589Data(analyzeResult: any) {
       }
       
       if (currentLine.trim()) {
-        wordText += currentLine.trim() + '\n';
+        pageText += currentLine.trim() + '\n';
       }
     }
+    
+    console.log(`  Page ${i + 1} text length: ${pageText.length}`);
+    pageByPageText += pageText;
+  }
+  
+  console.log(`Page-by-page extraction total length: ${pageByPageText.length}`);
+  
+  // Method 3: Extract all content from the entire document
+  let allContentText = '';
+  console.log('Method 3: Extracting all document content...');
+  
+  // Extract from document-level content if available
+  if (analyzeResult.content) {
+    allContentText = analyzeResult.content;
+    console.log(`Document content length: ${allContentText.length}`);
   }
   
   // Use the most complete text source
   let bestText = fullText;
-  if (lineText.length > bestText.length) {
-    bestText = lineText;
-    console.log('Using line-based extraction as it captured more text');
-  }
-  if (wordText.length > bestText.length) {
-    bestText = wordText;
-    console.log('Using word-based extraction as it captured more text');
+  let method = 'paragraphs';
+  
+  if (pageByPageText.length > bestText.length) {
+    bestText = pageByPageText;
+    method = 'page-by-page';
   }
   
-  console.log(`Extracted text lengths - Paragraphs: ${fullText.length}, Lines: ${lineText.length}, Words: ${wordText.length}`);
-  console.log(`Using text with length: ${bestText.length}`);
+  if (allContentText.length > bestText.length) {
+    bestText = allContentText;
+    method = 'document content';
+  }
+  
+  console.log(`Best extraction method: ${method} with ${bestText.length} characters`);
   
   // Extract structured data for I-589 form
   const extractedSections = {
@@ -345,7 +376,16 @@ function extractI589Data(analyzeResult: any) {
     asylumClaim: extractAsylumClaim(bestText),
     narrative: extractNarrative(bestText),
     tables: extractTables(tables),
-    checkboxes: extractCheckboxes(pages)
+    checkboxes: extractCheckboxes(pages),
+    extractionMetadata: {
+      totalPages: pages.length,
+      extractionMethod: method,
+      textLengths: {
+        paragraphs: fullText.length,
+        pageByPage: pageByPageText.length,
+        documentContent: allContentText.length
+      }
+    }
   };
   
   return {
