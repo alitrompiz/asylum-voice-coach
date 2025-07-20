@@ -75,6 +75,12 @@ export const useTextToSpeech = () => {
 
       if (error) {
         console.error('Edge function error:', error);
+        
+        // Check if it's a quota exceeded error and provide user-friendly message
+        if (error.message?.includes('quota') || error.message?.includes('429')) {
+          throw new Error('Voice synthesis temporarily unavailable - quota exceeded. Please check your OpenAI API billing.');
+        }
+        
         throw error;
       }
 
