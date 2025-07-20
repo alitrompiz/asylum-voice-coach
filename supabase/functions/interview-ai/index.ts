@@ -202,8 +202,8 @@ serve(async (req) => {
         messages: formattedMessages,
         max_tokens: 500,
         temperature: 0.7,
-        presence_penalty: 0.1,
-        frequency_penalty: 0.1
+        presence_penalty: 0.3,
+        frequency_penalty: 0.5
       }),
     });
 
