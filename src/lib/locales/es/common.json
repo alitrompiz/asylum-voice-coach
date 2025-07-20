@@ -54,7 +54,22 @@
   },
   "personas": {
     "title": "Selecciona un oficial",
-    "no_officers": "No hay oficiales disponibles en este momento."
+    "no_officers": "No hay oficiales disponibles en este momento.",
+    "moods": {
+      "analytical": "Analítico",
+      "easygoing": "Relajado",
+      "empathetic": "Empático",
+      "encouraging": "Alentador",
+      "formal": "Formal",
+      "inquisitive": "Inquisitivo",
+      "intimidating": "Intimidante",
+      "methodic": "Metódico",
+      "objective": "Objetivo",
+      "patient": "Paciente",
+      "probing": "Indagador",
+      "skeptical": "Escéptico",
+      "unpredictable": "Impredecible"
+    }
   },
   "common": {
     "error": "Error"

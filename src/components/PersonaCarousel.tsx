@@ -43,6 +43,13 @@ export const PersonaCarousel = ({ onSelect }: PersonaCarouselProps) => {
   const { data: personas, isLoading, error } = usePersonas();
   const { selectedPersona, setSelectedPersona } = usePersonaStore();
 
+  // Function to translate mood names
+  const translateMood = (mood: string) => {
+    const key = `personas.moods.${mood.toLowerCase().replace(/ /g, '_')}`;
+    const translated = t(key);
+    return translated !== key ? translated : mood;
+  };
+
   const handlePersonaSelect = (personaId: string) => {
     setSelectedPersona(personaId);
     onSelect?.(personaId);
@@ -105,7 +112,7 @@ export const PersonaCarousel = ({ onSelect }: PersonaCarouselProps) => {
               {/* Overlay pill with name and mood - positioned outside image container */}
               <div className="absolute bottom-0 left-0 right-0 h-11 bg-muted/90 backdrop-blur-sm rounded-full border border-border/50 flex flex-col items-center justify-center z-10">
                 <p className="font-medium text-xs leading-tight">{persona.name}</p>
-                <p className="text-xs text-muted-foreground leading-tight">{persona.mood}</p>
+                <p className="text-xs text-muted-foreground leading-tight">{translateMood(persona.mood)}</p>
               </div>
             </div>
           ))}

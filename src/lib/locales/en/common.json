@@ -54,7 +54,22 @@
   },
   "personas": {
     "title": "Select an officer",
-    "no_officers": "No officers available at the moment."
+    "no_officers": "No officers available at the moment.",
+    "moods": {
+      "analytical": "Analytical",
+      "easygoing": "Easygoing",
+      "empathetic": "Empathetic",
+      "encouraging": "Encouraging",
+      "formal": "Formal",
+      "inquisitive": "Inquisitive",
+      "intimidating": "Intimidating",
+      "methodic": "Methodic",
+      "objective": "Objective",
+      "patient": "Patient",
+      "probing": "Probing",
+      "skeptical": "Skeptical",
+      "unpredictable": "Unpredictable"
+    }
   },
   "common": {
     "error": "Error"

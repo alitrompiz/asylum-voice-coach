@@ -54,7 +54,22 @@
   },
   "personas": {
     "title": "Chwazi yon ofisye",
-    "no_officers": "Pa gen ofisye ki disponib nan moman an."
+    "no_officers": "Pa gen ofisye ki disponib nan moman an.",
+    "moods": {
+      "analytical": "Analize",
+      "easygoing": "Trankil",
+      "empathetic": "Konprann",
+      "encouraging": "Ankouraje",
+      "formal": "Fòmèl",
+      "inquisitive": "Kyèryè",
+      "intimidating": "Intimidé",
+      "methodic": "Òganize",
+      "objective": "Objektif",
+      "patient": "Pasyans",
+      "probing": "Rechèche",
+      "skeptical": "Doutè",
+      "unpredictable": "Pa ka predi"
+    }
   },
   "common": {
     "error": "Erè"

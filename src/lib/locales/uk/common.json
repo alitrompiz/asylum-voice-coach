@@ -54,7 +54,22 @@
   },
   "personas": {
     "title": "Виберіть офіцера",
-    "no_officers": "Наразі немає доступних офіцерів."
+    "no_officers": "Наразі немає доступних офіцерів.",
+    "moods": {
+      "analytical": "Аналітичний",
+      "easygoing": "Невимушений",
+      "empathetic": "Емпатичний",
+      "encouraging": "Підбадьорливий",
+      "formal": "Формальний",
+      "inquisitive": "Допитливий",
+      "intimidating": "Залякуючий",
+      "methodic": "Методичний",
+      "objective": "Об'єктивний",
+      "patient": "Терплячий",
+      "probing": "Дослідницький",
+      "skeptical": "Скептичний",
+      "unpredictable": "Непередбачуваний"
+    }
   },
   "common": {
     "error": "Помилка"

@@ -54,7 +54,22 @@
   },
   "personas": {
     "title": "选择官员",
-    "no_officers": "目前没有可用的官员。"
+    "no_officers": "目前没有可用的官员。",
+    "moods": {
+      "analytical": "分析型",
+      "easygoing": "随和型",
+      "empathetic": "同理心型",
+      "encouraging": "鼓励型",
+      "formal": "正式型",
+      "inquisitive": "好奇型",
+      "intimidating": "威慑型",
+      "methodic": "条理型",
+      "objective": "客观型",
+      "patient": "耐心型",
+      "probing": "探究型",
+      "skeptical": "怀疑型",
+      "unpredictable": "不可预测型"
+    }
   },
   "common": {
     "error": "错误"
