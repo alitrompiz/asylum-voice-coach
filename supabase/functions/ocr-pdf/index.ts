@@ -13,7 +13,8 @@ serve(async (req) => {
   }
 
   try {
-    const { filePath, fileName } = await req.json();
+    const requestBody = await req.json();
+    const { filePath, fileName } = requestBody;
     
     // Get AWS credentials from environment
     const awsAccessKeyId = Deno.env.get('AWS_ACCESS_KEY_ID');
