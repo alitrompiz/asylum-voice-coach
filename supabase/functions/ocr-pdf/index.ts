@@ -1,12 +1,11 @@
-// Enhanced OCR function with comprehensive debugging
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.51.0';
+
 console.log('=== Enhanced OCR Function Started ===');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
-
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.51.0';
 
 // Initialize Supabase client
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -372,10 +371,10 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const requestBody = await req.text();
-  console.log('Request body:', requestBody);
-  
   try {
+    const requestBody = await req.text();
+    console.log('Request body:', requestBody);
+    
     const { filePath, fileName } = JSON.parse(requestBody);
     console.log('Processing file:', fileName, 'at path:', filePath);
     
