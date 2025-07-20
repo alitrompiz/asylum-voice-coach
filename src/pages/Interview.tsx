@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { MessageSquare, Mic, X, Pause, Play, Send, MicOff, Volume2 } from 'lucide-react';
+import { MessageSquare, Mic, X, Pause, Play, Send, MicOff, Volume2, EyeOff, Eye } from 'lucide-react';
 import { usePersonaStore } from '@/stores/personaStore';
 import { usePersonas } from '@/hooks/usePersonas';
 import { useAudioRecording } from '@/hooks/useAudioRecording';
@@ -256,29 +256,9 @@ export default function Interview() {
       
       {/* Content */}
       <div className="relative z-10 flex flex-col h-screen p-6">
-        {/* Top Controls */}
+        {/* Top Controls - Empty for now */}
         <div className="absolute top-6 left-6 z-20 flex gap-4">
-          <button
-            onClick={handleEndSession}
-            className="flex items-center gap-2 bg-red-600 hover:bg-red-500 px-4 py-2 rounded-lg transition-colors"
-          >
-            <X className="w-5 h-5 text-white" />
-            <span className="text-white text-sm font-medium">End Session</span>
-          </button>
-          
-          <button
-            onClick={() => setShowSubtitles(!showSubtitles)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-              showSubtitles 
-                ? "bg-blue-600 hover:bg-blue-500" 
-                : "bg-gray-600 hover:bg-gray-500"
-            }`}
-          >
-            <MessageSquare className="w-5 h-5 text-white" />
-            <span className="text-white text-sm font-medium">
-              {showSubtitles ? "Hide Subtitles" : "Show Subtitles"}
-            </span>
-          </button>
+          {/* Top controls removed - buttons moved to officer photo area */}
         </div>
 
         {/* App Name */}
@@ -305,12 +285,31 @@ export default function Interview() {
               />
             </div>
             
-            {/* AI Badge */}
-            <div className="absolute -bottom-2 -right-2 bg-gray-800 rounded-full p-2 border-2 border-white/20">
-              <Badge className="bg-gray-700 text-white text-xs px-2 py-1">
-                AI ✨
-              </Badge>
-            </div>
+            {/* End Session Button - Bottom left */}
+            <button
+              onClick={handleEndSession}
+              className="absolute -bottom-2 -left-2 bg-red-600 hover:bg-red-500 rounded-full p-3 border-2 border-white/20 transition-colors"
+              title="End Session"
+            >
+              <X className="w-5 h-5 text-white" />
+            </button>
+
+            {/* Subtitles Toggle Button - Bottom right */}
+            <button
+              onClick={() => setShowSubtitles(!showSubtitles)}
+              className={`absolute -bottom-2 -right-2 rounded-full p-3 border-2 border-white/20 transition-colors ${
+                showSubtitles 
+                  ? "bg-blue-600 hover:bg-blue-500" 
+                  : "bg-gray-600 hover:bg-gray-500"
+              }`}
+              title={showSubtitles ? "Hide Subtitles" : "Show Subtitles"}
+            >
+              {showSubtitles ? (
+                <Eye className="w-5 h-5 text-white" />
+              ) : (
+                <EyeOff className="w-5 h-5 text-white" />
+              )}
+            </button>
 
             {/* Waveform - positioned in front of officer's picture at 25% height */}
             {isAiSpeaking && (
