@@ -172,8 +172,10 @@ async function processOCRJob(jobId: string, supabase: any) {
     
     console.log('Sending to Azure Document Intelligence...');
     
-    // Submit document to Azure Document Intelligence
-    const analyzeUrl = `${azureEndpoint}/formrecognizer/documentModels/prebuilt-layout:analyze?api-version=2023-07-31`;
+    // Submit document to Azure Document Intelligence using the read model for better multi-page handling
+    const analyzeUrl = `${azureEndpoint}/formrecognizer/documentModels/prebuilt-read:analyze?api-version=2023-07-31`;
+    
+    console.log('Using prebuilt-read model for better multi-page text extraction');
     
     const analyzeResponse = await fetch(analyzeUrl, {
       method: 'POST',
@@ -202,10 +204,12 @@ async function processOCRJob(jobId: string, supabase: any) {
     
     console.log('Document submitted, polling for results...');
     
-    // Poll for results
+    // Poll for results with longer timeout for large documents
     let result;
     let attempts = 0;
-    const maxAttempts = 60; // 5 minutes maximum
+    const maxAttempts = 120; // 10 minutes maximum for large multi-page documents
+    
+    console.log('Starting polling for OCR results...');
     
     while (attempts < maxAttempts) {
       await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
@@ -222,19 +226,25 @@ async function processOCRJob(jobId: string, supabase: any) {
       
       result = await resultResponse.json();
       
+      console.log(`Polling attempt ${attempts + 1}: Status = ${result.status}`);
+      
       if (result.status === 'succeeded') {
+        console.log('Azure OCR analysis completed successfully!');
         break;
       } else if (result.status === 'failed') {
-        throw new Error('Document analysis failed');
+        console.error('Azure analysis failed:', result);
+        throw new Error(`Document analysis failed: ${JSON.stringify(result)}`);
+      } else if (result.status === 'running') {
+        console.log(`Analysis still running... (attempt ${attempts + 1}/${maxAttempts})`);
       }
       
       attempts++;
       
-      // Update progress
-      const progress = Math.min(60 + (attempts * 2), 90);
+      // Update progress more frequently for large documents
+      const progress = Math.min(60 + (attempts * 0.25), 90);
       await supabase
         .from('ocr_jobs')
-        .update({ progress })
+        .update({ progress: Math.floor(progress) })
         .eq('id', jobId);
     }
     
@@ -244,8 +254,18 @@ async function processOCRJob(jobId: string, supabase: any) {
     
     console.log('OCR analysis completed successfully');
     
+    // Log the full result structure for debugging
+    console.log('Full Azure result structure:', JSON.stringify(result, null, 2).substring(0, 1000) + '...');
+    console.log('analyzeResult keys:', Object.keys(result.analyzeResult || {}));
+    console.log('Pages in result:', result.analyzeResult?.pages?.length || 0);
+    console.log('Paragraphs in result:', result.analyzeResult?.paragraphs?.length || 0);
+    
     // Extract and structure the data
     const extractedData = extractI589Data(result.analyzeResult);
+    
+    console.log('Final extracted text length:', extractedData.text.length);
+    console.log('Final extracted text preview:', extractedData.text.substring(0, 500) + '...');
+    console.log('Final extracted text ending:', extractedData.text.substring(extractedData.text.length - 500));
     
     // Update job with results
     await supabase
