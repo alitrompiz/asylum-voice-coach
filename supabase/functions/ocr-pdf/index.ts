@@ -172,10 +172,10 @@ async function processOCRJob(jobId: string, supabase: any) {
     
     console.log('Sending to Azure Document Intelligence...');
     
-    // Submit document to Azure Document Intelligence using the read model for better multi-page handling
-    const analyzeUrl = `${azureEndpoint}/formrecognizer/documentModels/prebuilt-read:analyze?api-version=2023-07-31`;
+    // Use the general document model which is better at handling complex multi-page forms
+    const analyzeUrl = `${azureEndpoint}/formrecognizer/documentModels/prebuilt-document:analyze?api-version=2023-07-31&pages=1-50`;
     
-    console.log('Using prebuilt-read model for better multi-page text extraction');
+    console.log('Using prebuilt-document model with explicit page range for multi-page extraction');
     
     const analyzeResponse = await fetch(analyzeUrl, {
       method: 'POST',
