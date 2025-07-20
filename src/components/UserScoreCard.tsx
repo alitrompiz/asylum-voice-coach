@@ -4,6 +4,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useTranslation } from 'react-i18next';
 
 interface Score {
   credibility: number;
@@ -87,6 +88,7 @@ const ScoreRing = ({ score, label, tooltip }: { score: number; label: string; to
 };
 
 export const UserScoreCard = () => {
+  const { t } = useTranslation();
   const { data: scores, isLoading, error } = useUserScores();
 
   if (isLoading) {
@@ -111,16 +113,16 @@ export const UserScoreCard = () => {
     return (
       <div className="bg-card rounded-lg p-3 border">
         <div className="flex justify-center gap-4">
-          <ScoreRing score={0} label="Credibility" tooltip="Perceived honesty of your answers" />
-          <ScoreRing score={0} label="Story Clarity" tooltip="How clearly you narrate events" />
-          <ScoreRing score={0} label="Case Strength" tooltip="Match between your story and asylum criteria" />
+          <ScoreRing score={0} label={t('scores.credibility')} tooltip={t('scores.credibility_tooltip')} />
+          <ScoreRing score={0} label={t('scores.story_clarity')} tooltip={t('scores.story_clarity_tooltip')} />
+          <ScoreRing score={0} label={t('scores.case_strength')} tooltip={t('scores.case_strength_tooltip')} />
         </div>
         <div className="mt-2 text-center">
           <p className="text-sm text-muted-foreground">
-            Your overall readiness: 0/100
+            {t('scores.overall_readiness', { score: 0 })}
           </p>
           <p className="text-xs text-muted-foreground mt-1">
-            Complete practice interviews to see your scores
+            {t('scores.complete_interviews')}
           </p>
         </div>
       </div>
@@ -138,23 +140,23 @@ export const UserScoreCard = () => {
       <div className="flex justify-center gap-4">
         <ScoreRing 
           score={avgCredibility} 
-          label="Credibility" 
-          tooltip="Perceived honesty of your answers" 
+          label={t('scores.credibility')} 
+          tooltip={t('scores.credibility_tooltip')} 
         />
         <ScoreRing 
           score={avgStoryClarity} 
-          label="Story Clarity" 
-          tooltip="How clearly you narrate events" 
+          label={t('scores.story_clarity')} 
+          tooltip={t('scores.story_clarity_tooltip')} 
         />
         <ScoreRing 
           score={avgCaseStrength} 
-          label="Case Strength" 
-          tooltip="Match between your story and asylum criteria" 
+          label={t('scores.case_strength')} 
+          tooltip={t('scores.case_strength_tooltip')} 
         />
       </div>
       <div className="mt-2 text-center">
         <p className="text-sm font-medium">
-          Your overall readiness: {overallAverage}/100
+          {t('scores.overall_readiness', { score: overallAverage })}
         </p>
       </div>
     </div>

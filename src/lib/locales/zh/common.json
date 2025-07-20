@@ -19,6 +19,25 @@
     "set_to": "语言设置为{{language}}",
     "update_failed": "更新语言偏好失败"
   },
+  "skills": {
+    "title": "选择关注领域",
+    "no_areas": "当前没有活跃的关注领域。",
+    "contact_admin": "联系管理员添加领域。"
+  },
+  "scores": {
+    "credibility": "可信度",
+    "story_clarity": "故事清晰度",
+    "case_strength": "案件强度",
+    "credibility_tooltip": "你回答的诚实度感知",
+    "story_clarity_tooltip": "你叙述事件的清晰程度",
+    "case_strength_tooltip": "你的故事与庇护标准的匹配度",
+    "overall_readiness": "你的整体准备度：{{score}}/100",
+    "complete_interviews": "完成练习面试以查看你的分数"
+  },
+  "personas": {
+    "title": "选择官员",
+    "no_officers": "目前没有可用的官员。"
+  },
   "common": {
     "error": "错误"
   },

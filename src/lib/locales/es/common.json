@@ -19,6 +19,25 @@
     "set_to": "Idioma configurado a {{language}}",
     "update_failed": "Error al actualizar la preferencia de idioma"
   },
+  "skills": {
+    "title": "Elige áreas de enfoque",
+    "no_areas": "No hay áreas de enfoque actualmente activas.",
+    "contact_admin": "Contacta a tu administrador para agregar áreas."
+  },
+  "scores": {
+    "credibility": "Credibilidad",
+    "story_clarity": "Claridad de Historia",
+    "case_strength": "Fuerza del Caso",
+    "credibility_tooltip": "Honestidad percibida de tus respuestas",
+    "story_clarity_tooltip": "Qué tan claramente narras los eventos",
+    "case_strength_tooltip": "Coincidencia entre tu historia y los criterios de asilo",
+    "overall_readiness": "Tu preparación general: {{score}}/100",
+    "complete_interviews": "Completa entrevistas de práctica para ver tus puntuaciones"
+  },
+  "personas": {
+    "title": "Selecciona un oficial",
+    "no_officers": "No hay oficiales disponibles en este momento."
+  },
   "common": {
     "error": "Error"
   },

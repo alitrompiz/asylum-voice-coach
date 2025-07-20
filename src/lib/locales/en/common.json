@@ -19,6 +19,25 @@
     "set_to": "Language set to {{language}}",
     "update_failed": "Failed to update language preference"
   },
+  "skills": {
+    "title": "Pick areas of focus",
+    "no_areas": "No focus areas are currently active.",
+    "contact_admin": "Contact your administrator to add areas."
+  },
+  "scores": {
+    "credibility": "Credibility",
+    "story_clarity": "Story Clarity",
+    "case_strength": "Case Strength",
+    "credibility_tooltip": "Perceived honesty of your answers",
+    "story_clarity_tooltip": "How clearly you narrate events",
+    "case_strength_tooltip": "Match between your story and asylum criteria",
+    "overall_readiness": "Your overall readiness: {{score}}/100",
+    "complete_interviews": "Complete practice interviews to see your scores"
+  },
+  "personas": {
+    "title": "Select an officer",
+    "no_officers": "No officers available at the moment."
+  },
   "common": {
     "error": "Error"
   },

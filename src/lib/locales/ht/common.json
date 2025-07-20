@@ -19,6 +19,25 @@
     "set_to": "Lang konfigire nan {{language}}",
     "update_failed": "Echèk nan ajou preferans lang"
   },
+  "skills": {
+    "title": "Chwazi zòn konsantrasyon",
+    "no_areas": "Pa gen zòn konsantrasyon ki aktif koulye a.",
+    "contact_admin": "Kontakte administratè ou pou ajoute zòn yo."
+  },
+  "scores": {
+    "credibility": "Kredibilite",
+    "story_clarity": "Klate Istwa",
+    "case_strength": "Fòs Ka",
+    "credibility_tooltip": "Onètete yo wè nan repons ou yo",
+    "story_clarity_tooltip": "Ki jan ou klè nan rakonte bagay ki rive yo",
+    "case_strength_tooltip": "Koresponn ant istwa ou ak kritè azil yo",
+    "overall_readiness": "Preparasyon jeneral ou: {{score}}/100",
+    "complete_interviews": "Konplete entèvyou pratik pou wè nòt ou yo"
+  },
+  "personas": {
+    "title": "Chwazi yon ofisye",
+    "no_officers": "Pa gen ofisye ki disponib nan moman an."
+  },
   "common": {
     "error": "Erè"
   },

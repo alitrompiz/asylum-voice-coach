@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useSkillsStore } from '@/stores/personaStore';
 import { cn } from '@/lib/utils';
 import { ChevronRight } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface Skill {
   id: string;
@@ -31,6 +32,7 @@ const useSkills = () => {
 };
 
 export const SkillsScroller = () => {
+  const { t } = useTranslation();
   const { data: skills, isLoading, error } = useSkills();
   const { skillsSelected, toggleSkill } = useSkillsStore();
 
@@ -48,7 +50,7 @@ export const SkillsScroller = () => {
   if (isLoading) {
     return (
       <div className="bg-card rounded-lg p-3 border">
-        <h3 className="text-lg font-semibold mb-3">Pick areas of focus</h3>
+        <h3 className="text-lg font-semibold mb-3">{t('skills.title')}</h3>
         <div className="space-y-3">
           {[1, 2].map((row) => (
             <div key={row} className="flex gap-2 animate-pulse">
@@ -65,13 +67,13 @@ export const SkillsScroller = () => {
   if (error || !skills || skills.length === 0) {
     return (
       <div className="bg-card rounded-lg p-3 border">
-        <h3 className="text-lg font-semibold mb-3">Pick areas of focus</h3>
+        <h3 className="text-lg font-semibold mb-3">{t('skills.title')}</h3>
         <div className="flex flex-col items-center justify-center py-6">
           <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
             <ChevronRight className="w-8 h-8 text-muted-foreground" />
           </div>
-          <p className="text-muted-foreground text-center">No focus areas are currently active.</p>
-          <p className="text-sm text-muted-foreground mt-1">Contact your administrator to add areas.</p>
+          <p className="text-muted-foreground text-center">{t('skills.no_areas')}</p>
+          <p className="text-sm text-muted-foreground mt-1">{t('skills.contact_admin')}</p>
         </div>
       </div>
     );
@@ -84,7 +86,7 @@ export const SkillsScroller = () => {
 
   return (
     <div className="bg-card rounded-lg p-3 border">
-      <h3 className="text-lg font-semibold mb-3">Pick areas of focus</h3>
+      <h3 className="text-lg font-semibold mb-3">{t('skills.title')}</h3>
       <div className="space-y-3">
         {/* Row 1 */}
         <ScrollArea className="w-full h-[68px]">
