@@ -9,10 +9,12 @@ import { LanguageSelector } from '@/components/LanguageSelector';
 import { SkillsScroller } from '@/components/SkillsScroller';
 import { useSkillsStore } from '@/stores/personaStore';
 import { useAdminAccess } from '@/hooks/useAdminAccess';
+import { useTranslation } from 'react-i18next';
 import { useEffect } from 'react';
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { skillsSelected } = useSkillsStore();
   const { isAdmin, loading, error } = useAdminAccess();
 
@@ -39,15 +41,15 @@ export default function Dashboard() {
       <div className="max-w-6xl mx-auto">
         <header className="mb-3 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold mb-1">AsylumPrep</h1>
+            <h1 className="text-2xl md:text-3xl font-bold mb-1">{t('app.name')}</h1>
             <p className="text-muted-foreground text-sm">
-              Speak your truth — with confidence
+              {t('app.tagline')}
             </p>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={() => navigate('/profile')}>
               <User className="w-4 h-4 mr-2" />
-              Profile
+              {t('navigation.profile')}
             </Button>
           </div>
         </header>
@@ -78,14 +80,14 @@ export default function Dashboard() {
           disabled={skillsSelected.length === 0}
         >
           <Play className="w-5 h-5 mr-2" />
-          Start Interview
+          {t('interview.start')}
           {skillsSelected.length > 0 && (
-            <span className="ml-2 text-xs">({skillsSelected.length} areas)</span>
+            <span className="ml-2 text-xs">({t('interview.areas_count', { count: skillsSelected.length })})</span>
           )}
         </Button>
         {skillsSelected.length === 0 && (
           <p className="text-sm text-muted-foreground text-center mt-1">
-            Select at least one area of focus to begin
+            {t('interview.select_areas')}
           </p>
         )}
       </div>
@@ -105,7 +107,7 @@ export default function Dashboard() {
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Admin Panel</p>
+              <p>{t('navigation.admin_panel')}</p>
             </TooltipContent>
           </Tooltip>
         </div>

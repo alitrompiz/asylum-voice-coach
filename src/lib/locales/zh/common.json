@@ -1,4 +1,27 @@
 {
+  "app": {
+    "name": "AsylumPrep",
+    "tagline": "说出真相——充满信心"
+  },
+  "navigation": {
+    "profile": "个人资料",
+    "admin_panel": "管理面板"
+  },
+  "interview": {
+    "start": "开始面试",
+    "areas_count": "{{count}}个领域",
+    "select_areas": "选择至少一个关注领域开始"
+  },
+  "language": {
+    "title": "面试语言",
+    "description": "语音和界面文本都将使用所选语言",
+    "updated": "语言已更新",
+    "set_to": "语言设置为{{language}}",
+    "update_failed": "更新语言偏好失败"
+  },
+  "common": {
+    "error": "错误"
+  },
   "onboarding": {
     "title": "欢迎来到AsylumPrep",
     "subtitle": "让我们开始快速设置",

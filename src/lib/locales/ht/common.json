@@ -1,4 +1,27 @@
 {
+  "app": {
+    "name": "AsylumPrep",
+    "tagline": "Di verite ou — ak konfyans"
+  },
+  "navigation": {
+    "profile": "Pwofil",
+    "admin_panel": "Panèl Administratè"
+  },
+  "interview": {
+    "start": "Kòmanse Entèvyou",
+    "areas_count": "{{count}} zòn",
+    "select_areas": "Chwazi omwen yon zòn konsantrasyon pou kòmanse"
+  },
+  "language": {
+    "title": "Lang Entèvyou",
+    "description": "Vwa ak tèks entèfas la pral nan lang ou chwazi a",
+    "updated": "Lang Ajou",
+    "set_to": "Lang konfigire nan {{language}}",
+    "update_failed": "Echèk nan ajou preferans lang"
+  },
+  "common": {
+    "error": "Erè"
+  },
   "onboarding": {
     "title": "Byenvini nan AsylumPrep",
     "subtitle": "Ann kòmanse ak yon konfigirasyon rapid",

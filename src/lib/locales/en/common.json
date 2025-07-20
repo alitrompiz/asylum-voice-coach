@@ -1,4 +1,27 @@
 {
+  "app": {
+    "name": "AsylumPrep",
+    "tagline": "Speak your truth — with confidence"
+  },
+  "navigation": {
+    "profile": "Profile",
+    "admin_panel": "Admin Panel"
+  },
+  "interview": {
+    "start": "Start Interview",
+    "areas_count": "{{count}} areas",
+    "select_areas": "Select at least one area of focus to begin"
+  },
+  "language": {
+    "title": "Interview Language",
+    "description": "Both voice and interface text will be in the selected language",
+    "updated": "Language Updated",
+    "set_to": "Language set to {{language}}",
+    "update_failed": "Failed to update language preference"
+  },
+  "common": {
+    "error": "Error"
+  },
   "onboarding": {
     "title": "Welcome to AsylumPrep",
     "subtitle": "Let's get you started with a quick setup",

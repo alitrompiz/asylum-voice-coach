@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { RequireAdminRole } from "@/components/RequireAdminRole";
+import { LanguageProvider } from "@/components/LanguageProvider";
 import '@/lib/i18n';
 
 // Import pages
@@ -47,7 +48,8 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <Routes>
+          <LanguageProvider>
+            <Routes>
             <Route path="/" element={<Index />} />
             
             {/* Auth routes */}
@@ -79,7 +81,8 @@ const App = () => (
             
             {/* 404 catch-all route */}
             <Route path="*" element={<NotFound />} />
-          </Routes>
+            </Routes>
+          </LanguageProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

@@ -2,9 +2,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { SUPPORTED_LANGUAGES, type Language } from '@/components/LanguageSelector';
+import { useTranslation } from 'react-i18next';
 
 export const useLanguagePreference = () => {
   const queryClient = useQueryClient();
+  const { i18n } = useTranslation();
 
   const { data: languageCode, isLoading } = useQuery({
     queryKey: ['user-language'],
@@ -35,8 +37,10 @@ export const useLanguagePreference = () => {
       if (error) throw error;
       return newLanguageCode;
     },
-    onSuccess: () => {
+    onSuccess: (newLanguageCode) => {
       queryClient.invalidateQueries({ queryKey: ['user-language'] });
+      // Update i18n language
+      i18n.changeLanguage(newLanguageCode);
     },
   });
 

@@ -1,10 +1,9 @@
 
-import { useState } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Globe } from 'lucide-react';
+import { useLanguagePreference } from '@/hooks/useLanguagePreference';
+import { useTranslation } from 'react-i18next';
 
 export interface Language {
   code: string;
@@ -41,79 +40,40 @@ interface LanguageSelectorProps {
 
 export const LanguageSelector = ({ selectedLanguage, onLanguageChange }: LanguageSelectorProps) => {
   const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const [isUpdating, setIsUpdating] = useState(false);
+  const { t } = useTranslation();
+  const { languageCode, language, isLoading, updateLanguage, isUpdating } = useLanguagePreference();
 
-  const { data: userLanguage } = useQuery({
-    queryKey: ['user-language'],
-    queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return 'en';
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('language_preference')
-        .eq('user_id', user.id)
-        .single();
-
-      return profile?.language_preference || 'en';
-    },
-  });
-
-  const updateLanguageMutation = useMutation({
-    mutationFn: async (languageCode: string) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
-
-      const { error } = await supabase
-        .from('profiles')
-        .update({ language_preference: languageCode })
-        .eq('user_id', user.id);
-
-      if (error) throw error;
-      return languageCode;
-    },
-    onSuccess: (languageCode) => {
-      queryClient.invalidateQueries({ queryKey: ['user-language'] });
-      onLanguageChange?.(languageCode);
-      const language = SUPPORTED_LANGUAGES.find(l => l.code === languageCode);
+  const handleLanguageChange = async (newLanguageCode: string) => {
+    try {
+      await updateLanguage(newLanguageCode);
+      onLanguageChange?.(newLanguageCode);
       toast({
-        title: "Language Updated",
-        description: `Interview language set to ${language?.name || languageCode}`,
+        title: t('language.updated'),
+        description: t('language.set_to', { language: SUPPORTED_LANGUAGES.find(l => l.code === newLanguageCode)?.name }),
       });
-    },
-    onError: (error) => {
+    } catch (error) {
       console.error('Error updating language:', error);
       toast({
-        title: "Error",
-        description: "Failed to update language preference",
+        title: t('common.error'),
+        description: t('language.update_failed'),
         variant: "destructive",
       });
-    },
-  });
-
-  const handleLanguageChange = async (languageCode: string) => {
-    setIsUpdating(true);
-    try {
-      await updateLanguageMutation.mutateAsync(languageCode);
-    } finally {
-      setIsUpdating(false);
     }
   };
 
-  const currentLanguage = selectedLanguage || userLanguage || 'en';
+  const currentLanguage = selectedLanguage || languageCode;
   const currentLanguageData = SUPPORTED_LANGUAGES.find(l => l.code === currentLanguage);
 
   return (
     <div className="bg-card rounded-lg p-3 border">
       <div className="flex items-center gap-2 mb-3">
         <Globe className="w-4 h-4" />
-        <h3 className="text-lg font-semibold">Interview Language</h3>
+        <h3 className="text-lg font-semibold">{t('language.title')}</h3>
       </div>
       <Select 
         value={currentLanguage} 
         onValueChange={handleLanguageChange}
-        disabled={isUpdating}
+        disabled={isUpdating || isLoading}
       >
         <SelectTrigger className="w-full">
           <SelectValue>
@@ -135,7 +95,7 @@ export const LanguageSelector = ({ selectedLanguage, onLanguageChange }: Languag
         </SelectContent>
       </Select>
       <p className="text-xs text-muted-foreground mt-2">
-        Voice will be in selected language, text remains in English
+        {t('language.description')}
       </p>
     </div>
   );
