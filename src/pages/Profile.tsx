@@ -18,13 +18,12 @@ import { useAuth } from '@/hooks/useAuth';
 import { StoryUploader } from '@/components/StoryUploader';
 
 const profileSchema = z.object({
-  display_name: z.string().optional(),
   legal_name: z.string().optional(),
   preferred_name: z.string().optional(),
   country_of_feared_persecution: z.string().optional(),
   asylum_office_filed: z.string().optional(),
-  date_filed: z.string().optional(),
-  interview_date: z.string().optional(),
+  date_filed: z.string().optional().transform(val => val === '' ? null : val),
+  interview_date: z.string().optional().transform(val => val === '' ? null : val),
   language_preference: z.string().optional(),
 });
 
@@ -40,6 +39,8 @@ export default function Profile() {
   const [error, setError] = useState<string | null>(null);
   const [storyDialogOpen, setStoryDialogOpen] = useState(false);
   const [storyMode, setStoryMode] = useState<'upload' | 'text'>('upload');
+  const [selectedStory, setSelectedStory] = useState<any>(null);
+  const [storyViewDialogOpen, setStoryViewDialogOpen] = useState(false);
 
   const {
     register,
@@ -181,6 +182,11 @@ export default function Profile() {
     navigate('/auth/login');
   };
 
+  const openStoryViewer = (story: any) => {
+    setSelectedStory(story);
+    setStoryViewDialogOpen(true);
+  };
+
   return (
     <div className="min-h-screen bg-background p-4">
       <div className="max-w-4xl mx-auto">
@@ -222,18 +228,6 @@ export default function Profile() {
             <form onSubmit={handleSubmit(onSubmitProfile)} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="display_name">Display Name</Label>
-                  <Input
-                    id="display_name"
-                    {...register('display_name')}
-                    disabled={isLoading}
-                  />
-                  {errors.display_name && (
-                    <p className="text-sm text-destructive">{errors.display_name.message}</p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
                   <Label htmlFor="preferred_name">Preferred Name</Label>
                   <Input
                     id="preferred_name"
@@ -244,18 +238,18 @@ export default function Profile() {
                     <p className="text-sm text-destructive">{errors.preferred_name.message}</p>
                   )}
                 </div>
-              </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="legal_name">Legal Name</Label>
-                <Input
-                  id="legal_name"
-                  {...register('legal_name')}
-                  disabled={isLoading}
-                />
-                {errors.legal_name && (
-                  <p className="text-sm text-destructive">{errors.legal_name.message}</p>
-                )}
+                <div className="space-y-2">
+                  <Label htmlFor="legal_name">Legal Name</Label>
+                  <Input
+                    id="legal_name"
+                    {...register('legal_name')}
+                    disabled={isLoading}
+                  />
+                  {errors.legal_name && (
+                    <p className="text-sm text-destructive">{errors.legal_name.message}</p>
+                  )}
+                </div>
               </div>
 
               <Separator />
@@ -400,11 +394,14 @@ export default function Profile() {
 
                 {/* Active Story Display */}
                 {activeStory && (
-                  <div className="border rounded-lg p-4 bg-muted/50">
+                  <div 
+                    className="border rounded-lg p-4 bg-muted/50 cursor-pointer hover:bg-muted/70 transition-colors"
+                    onClick={() => openStoryViewer(activeStory)}
+                  >
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
                         <CheckCircle className="w-4 h-4 text-green-600" />
-                        <h4 className="font-medium">Active Story</h4>
+                        <h4 className="font-medium">Active Story (Click to read)</h4>
                         <Badge variant="secondary">{activeStory.source_type}</Badge>
                       </div>
                       <p className="text-xs text-muted-foreground">
@@ -449,7 +446,10 @@ export default function Profile() {
                 {stories.filter(story => !story.is_active).map((story) => (
                   <div key={story.id} className="border rounded-lg p-4">
                     <div className="flex items-start justify-between mb-2">
-                      <div className="flex-1">
+                      <div 
+                        className="flex-1 cursor-pointer hover:bg-muted/50 -m-2 p-2 rounded transition-colors"
+                        onClick={() => openStoryViewer(story)}
+                      >
                         <div className="flex items-center gap-2 mb-1">
                           {story.source_type === 'pdf' ? (
                             <Upload className="w-4 h-4 text-blue-500" />
@@ -462,7 +462,9 @@ export default function Profile() {
                         <p className="text-sm text-muted-foreground mb-2">
                           Created: {new Date(story.created_at).toLocaleDateString()}
                         </p>
-                        <p className="text-sm line-clamp-2">{story.story_text}</p>
+                        <p className="text-sm line-clamp-2 text-blue-600 hover:text-blue-800">
+                          Click to read full story...
+                        </p>
                       </div>
                       <div className="flex gap-2 ml-4">
                         <Button
@@ -487,6 +489,29 @@ export default function Profile() {
             </CardContent>
           </Card>
         )}
+
+        {/* Story Viewer Dialog */}
+        <Dialog open={storyViewDialogOpen} onOpenChange={setStoryViewDialogOpen}>
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <FileText className="w-5 h-5" />
+                {selectedStory?.title || 'Asylum Story'}
+                <Badge variant="outline">{selectedStory?.source_type}</Badge>
+              </DialogTitle>
+              <DialogDescription>
+                Created: {selectedStory ? new Date(selectedStory.created_at).toLocaleDateString() : ''}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex-1 overflow-auto">
+              <div className="prose prose-sm max-w-none">
+                <div className="whitespace-pre-wrap text-sm leading-relaxed">
+                  {selectedStory?.story_text}
+                </div>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
