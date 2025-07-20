@@ -40,7 +40,9 @@ export const useLanguagePreference = () => {
     onSuccess: (newLanguageCode) => {
       queryClient.invalidateQueries({ queryKey: ['user-language'] });
       // Update i18n language
+      console.log('Changing i18n language to:', newLanguageCode, 'from:', i18n.language);
       i18n.changeLanguage(newLanguageCode);
+      console.log('i18n language after change:', i18n.language);
     },
   });
 
