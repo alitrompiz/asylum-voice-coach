@@ -152,9 +152,18 @@ async function processOCRJob(jobId: string, supabase: any) {
       throw new Error('Azure Document Intelligence credentials not configured');
     }
     
-    // Convert file to base64
+    // Convert file to base64 using chunks to avoid stack overflow
     const arrayBuffer = await fileData.arrayBuffer();
-    const base64Data = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+    const uint8Array = new Uint8Array(arrayBuffer);
+    
+    // Convert to base64 in chunks to avoid maximum call stack size exceeded
+    let base64Data = '';
+    const chunkSize = 8192; // 8KB chunks
+    
+    for (let i = 0; i < uint8Array.length; i += chunkSize) {
+      const chunk = uint8Array.slice(i, i + chunkSize);
+      base64Data += btoa(String.fromCharCode.apply(null, Array.from(chunk)));
+    }
     
     await supabase
       .from('ocr_jobs')
