@@ -20,7 +20,7 @@ const adminItems = [
     icon: Users,
   },
   {
-    title: 'Skills',
+    title: 'Focus Areas',
     url: '/admin/skills',
     icon: Brain,
   },

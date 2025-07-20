@@ -259,6 +259,44 @@ export type Database = {
         }
         Relationships: []
       }
+      prompt_usage_logs: {
+        Row: {
+          created_at: string
+          id: string
+          interview_session_id: string | null
+          prompt_id: string
+          prompt_type: string
+          user_id: string
+          variables_used: Json | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          interview_session_id?: string | null
+          prompt_id: string
+          prompt_type: string
+          user_id: string
+          variables_used?: Json | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          interview_session_id?: string | null
+          prompt_id?: string
+          prompt_type?: string
+          user_id?: string
+          variables_used?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prompt_usage_logs_prompt_id_fkey"
+            columns: ["prompt_id"]
+            isOneToOne: false
+            referencedRelation: "prompts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       prompts: {
         Row: {
           content: string
@@ -268,11 +306,15 @@ export type Database = {
           id: string
           is_active: boolean
           is_base_template: boolean
+          last_used_at: string | null
           name: string
           placeholder_documentation: string | null
           prompt_type: Database["public"]["Enums"]["prompt_type"] | null
           prompt_variables: Json | null
+          template_variables: Json | null
           updated_at: string
+          usage_count: number | null
+          validation_status: string | null
           version: number
         }
         Insert: {
@@ -283,11 +325,15 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_base_template?: boolean
+          last_used_at?: string | null
           name: string
           placeholder_documentation?: string | null
           prompt_type?: Database["public"]["Enums"]["prompt_type"] | null
           prompt_variables?: Json | null
+          template_variables?: Json | null
           updated_at?: string
+          usage_count?: number | null
+          validation_status?: string | null
           version?: number
         }
         Update: {
@@ -298,11 +344,15 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_base_template?: boolean
+          last_used_at?: string | null
           name?: string
           placeholder_documentation?: string | null
           prompt_type?: Database["public"]["Enums"]["prompt_type"] | null
           prompt_variables?: Json | null
+          template_variables?: Json | null
           updated_at?: string
+          usage_count?: number | null
+          validation_status?: string | null
           version?: number
         }
         Relationships: []
@@ -502,6 +552,20 @@ export type Database = {
         Args: { _user_id: string }
         Returns: undefined
       }
+      get_active_prompt_by_type: {
+        Args: { p_type: string }
+        Returns: {
+          id: string
+          name: string
+          content: string
+          description: string
+          prompt_type: Database["public"]["Enums"]["prompt_type"]
+          is_active: boolean
+          version: number
+          created_at: string
+          updated_at: string
+        }[]
+      }
       get_admin_stats: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -526,9 +590,17 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_prompt_usage: {
+        Args: { prompt_id: string }
+        Returns: undefined
+      }
       remove_admin_role: {
         Args: { _user_id: string }
         Returns: undefined
+      }
+      validate_prompt_template: {
+        Args: { content: string; required_vars: string[] }
+        Returns: boolean
       }
     }
     Enums: {
