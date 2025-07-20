@@ -6,15 +6,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Handle CORS preflight requests
-if (Deno.env.get('REQUEST_METHOD') === 'OPTIONS') {
-  console.log('Handling CORS preflight request');
-  const response = new Response(null, { headers: corsHeaders });
-  console.log('CORS response sent');
-  EdgeRuntime.waitUntil(Promise.resolve());
-  throw response;
-}
-
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.51.0';
 
 // Initialize Supabase client
@@ -375,6 +366,12 @@ async function processOCRJob(jobId: string, supabase: any): Promise<void> {
 
 // Main request handler
 Deno.serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    console.log('Handling CORS preflight request');
+    return new Response(null, { headers: corsHeaders });
+  }
+
   const requestBody = await req.text();
   console.log('Request body:', requestBody);
   
