@@ -74,37 +74,36 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
 
   const handleOcrCompletion = async (job: any) => {
     try {
-      if (!userId) throw new Error('User not authenticated');
+      if (!job.result?.story_id) {
+        console.error('No story ID in OCR job result');
+        return;
+      }
 
+      // The story was already created by the OCR function, just fetch it
       const { data: storyData, error: storyError } = await supabase
         .from('stories')
-        .insert({
-          title: job.file_name.replace('.pdf', ''),
-          story_text: job.result.text,
-          detected_sections: job.result.sections,
-          source_type: 'pdf',
-          file_path: job.file_path,
-          user_id: userId,
-          is_active: false
-        })
-        .select()
+        .select('*')
+        .eq('id', job.result.story_id)
         .single();
 
-      if (storyError) throw storyError;
+      if (storyError) {
+        console.error('Error fetching completed story:', storyError);
+        throw storyError;
+      }
 
       toast({
         title: "Success",
-        description: "PDF processed and story created successfully",
+        description: `PDF processed successfully! Extracted ${job.result.pages_processed || 'multiple'} pages.`,
       });
 
       onStoryAdded?.({ ...storyData, source_type: storyData.source_type as 'pdf' | 'text' });
       loadExistingStories();
       setCurrentJobId(null);
     } catch (error) {
-      console.error('Error saving OCR result:', error);
+      console.error('Error handling OCR completion:', error);
       toast({
-        title: "Save failed",
-        description: "OCR completed but failed to save story",
+        title: "Error",
+        description: "OCR completed but failed to load the story",
         variant: "destructive"
       });
     }
