@@ -65,34 +65,33 @@ export const LanguageSelector = ({ selectedLanguage, onLanguageChange }: Languag
 
   return (
     <div className="bg-card rounded-lg p-3 border">
-      <div className="flex items-center gap-2 mb-2">
-        <Globe className="w-4 h-4" />
+      <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">{t('language.title')}</h3>
-      </div>
-      <Select 
-        value={languageCode} 
-        onValueChange={handleLanguageChange}
-        disabled={isUpdating || isLoading}
-      >
-        <SelectTrigger className="w-full">
-          <SelectValue>
-            <div className="flex items-center gap-2">
-              <span className="text-lg">{currentLanguageData?.flag}</span>
-              <span>{currentLanguageData?.name}</span>
-            </div>
-          </SelectValue>
-        </SelectTrigger>
-        <SelectContent>
-          {SUPPORTED_LANGUAGES.map((language) => (
-            <SelectItem key={language.code} value={language.code}>
+        <Select 
+          value={languageCode} 
+          onValueChange={handleLanguageChange}
+          disabled={isUpdating || isLoading}
+        >
+          <SelectTrigger className="w-auto min-w-[140px]">
+            <SelectValue>
               <div className="flex items-center gap-2">
-                <span className="text-lg">{language.flag}</span>
-                <span>{language.name}</span>
+                <span className="text-lg">{currentLanguageData?.flag}</span>
+                <span>{currentLanguageData?.name}</span>
               </div>
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {SUPPORTED_LANGUAGES.map((language) => (
+              <SelectItem key={language.code} value={language.code}>
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">{language.flag}</span>
+                  <span>{language.name}</span>
+                </div>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
     </div>
   );
 };
