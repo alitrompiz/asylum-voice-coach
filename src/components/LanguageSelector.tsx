@@ -61,8 +61,7 @@ export const LanguageSelector = ({ selectedLanguage, onLanguageChange }: Languag
     }
   };
 
-  const currentLanguage = selectedLanguage || languageCode;
-  const currentLanguageData = SUPPORTED_LANGUAGES.find(l => l.code === currentLanguage);
+  const currentLanguageData = SUPPORTED_LANGUAGES.find(l => l.code === languageCode);
 
   return (
     <div className="bg-card rounded-lg p-3 border">
@@ -71,7 +70,7 @@ export const LanguageSelector = ({ selectedLanguage, onLanguageChange }: Languag
         <h3 className="text-lg font-semibold">{t('language.title')}</h3>
       </div>
       <Select 
-        value={currentLanguage} 
+        value={languageCode} 
         onValueChange={handleLanguageChange}
         disabled={isUpdating || isLoading}
       >
