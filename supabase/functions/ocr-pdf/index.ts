@@ -172,10 +172,10 @@ async function processOCRJob(jobId: string, supabase: any) {
     
     console.log('Sending to Azure Document Intelligence...');
     
-    // Use the layout model which processes ALL pages by default and handles complex documents
-    const analyzeUrl = `${azureEndpoint}/formrecognizer/documentModels/prebuilt-layout:analyze?api-version=2023-07-31`;
+    // Force processing of ALL pages using the layout model with explicit parameters
+    const analyzeUrl = `${azureEndpoint}/formrecognizer/documentModels/prebuilt-layout:analyze?api-version=2023-07-31&pages=*&readingOrder=natural`;
     
-    console.log('Using prebuilt-layout model for complete multi-page extraction (processes all pages by default)');
+    console.log('Using prebuilt-layout model with pages=* to force ALL page processing');
     
     const analyzeResponse = await fetch(analyzeUrl, {
       method: 'POST',
