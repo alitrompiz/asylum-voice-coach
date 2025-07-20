@@ -38,7 +38,10 @@ export const useLanguagePreference = () => {
       return newLanguageCode;
     },
     onSuccess: (newLanguageCode) => {
+      // Update the cache immediately to show the new language
+      queryClient.setQueryData(['user-language'], newLanguageCode);
       queryClient.invalidateQueries({ queryKey: ['user-language'] });
+      
       // Update i18n language
       console.log('Changing i18n language to:', newLanguageCode, 'from:', i18n.language);
       i18n.changeLanguage(newLanguageCode);
