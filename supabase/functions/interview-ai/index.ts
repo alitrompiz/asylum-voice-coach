@@ -67,12 +67,12 @@ serve(async (req) => {
         .eq('user_id', userId)
         .single();
 
-      // Get user's asylum story
+      // Get user's active asylum story
       const { data: stories } = await supabase
         .from('stories')
         .select('story_text, title')
         .eq('user_id', userId)
-        .order('created_at', { ascending: false })
+        .eq('is_active', true)
         .limit(1);
 
       userContext = {

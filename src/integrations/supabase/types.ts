@@ -426,6 +426,7 @@ export type Database = {
           detected_sections: Json | null
           file_path: string | null
           id: string
+          is_active: boolean
           source_type: string
           story_text: string
           title: string | null
@@ -437,6 +438,7 @@ export type Database = {
           detected_sections?: Json | null
           file_path?: string | null
           id?: string
+          is_active?: boolean
           source_type: string
           story_text: string
           title?: string | null
@@ -448,6 +450,7 @@ export type Database = {
           detected_sections?: Json | null
           file_path?: string | null
           id?: string
+          is_active?: boolean
           source_type?: string
           story_text?: string
           title?: string | null
@@ -596,6 +599,10 @@ export type Database = {
       }
       remove_admin_role: {
         Args: { _user_id: string }
+        Returns: undefined
+      }
+      set_active_story: {
+        Args: { story_id: string; user_id_param: string }
         Returns: undefined
       }
       validate_prompt_template: {

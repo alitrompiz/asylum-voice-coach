@@ -24,18 +24,19 @@ interface StoryUploaderProps {
   onStoryAdded?: (story: Story) => void;
   onStoryUpdated?: (story: Story) => void;
   onStoryDeleted?: (storyId: string) => void;
+  activeMode?: 'upload' | 'text';
 }
 
 export const StoryUploader: React.FC<StoryUploaderProps> = ({
   onStoryAdded,
   onStoryUpdated,
-  onStoryDeleted
+  onStoryDeleted,
+  activeMode = 'upload'
 }) => {
   const { t } = useTranslation();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  const [activeMode, setActiveMode] = useState<'upload' | 'text'>('upload');
   const [textContent, setTextContent] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -148,7 +149,8 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
           detected_sections: ocrData.sections,
           source_type: 'pdf',
           file_path: signedUrlData.filePath,
-          user_id: userId
+          user_id: userId,
+          is_active: false // New stories are not active by default
         })
         .select()
         .single();
@@ -231,7 +233,7 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
         
         const { data, error } = await supabase
           .from('stories')
-          .insert({ ...storyData, user_id: userId })
+          .insert({ ...storyData, user_id: userId, is_active: false })
           .select()
           .single();
 
@@ -294,7 +296,7 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
   const handleEdit = (story: Story) => {
     setEditingStory(story);
     setTextContent(story.story_text);
-    setActiveMode('text');
+    // Mode switching is handled by parent component
   };
 
   const cancelEdit = () => {
@@ -303,26 +305,7 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
   };
 
   return (
-    <div className="space-y-6">
-      {/* Mode Selection */}
-      <div className="flex gap-2">
-        <Button
-          variant={activeMode === 'upload' ? 'default' : 'outline'}
-          onClick={() => setActiveMode('upload')}
-          className="flex-1"
-        >
-          <Upload className="w-4 h-4 mr-2" />
-          Upload PDF
-        </Button>
-        <Button
-          variant={activeMode === 'text' ? 'default' : 'outline'}
-          onClick={() => setActiveMode('text')}
-          className="flex-1"
-        >
-          <FileText className="w-4 h-4 mr-2" />
-          Paste Text
-        </Button>
-      </div>
+    <div className="space-y-6">{/* Mode Selection is now handled by the parent component */}
 
       {/* Upload Mode */}
       {activeMode === 'upload' && (
@@ -419,60 +402,6 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
         </Card>
       )}
 
-      {/* Existing Stories */}
-      {existingStories.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Your Stories</CardTitle>
-            <CardDescription>
-              Manage your uploaded stories
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {existingStories.map((story) => (
-                <div
-                  key={story.id}
-                  className="flex items-center justify-between p-3 border rounded-lg"
-                >
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      {story.source_type === 'pdf' ? (
-                        <Upload className="w-4 h-4 text-blue-500" />
-                      ) : (
-                        <FileText className="w-4 h-4 text-green-500" />
-                      )}
-                      <h4 className="font-medium">{story.title}</h4>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      {story.story_text.substring(0, 100)}...
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {story.source_type === 'pdf' ? 'PDF Upload' : 'Text Entry'} • {new Date(story.created_at).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleEdit(story)}
-                    >
-                      <Edit3 className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => confirmDelete(story.id)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

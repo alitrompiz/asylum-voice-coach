@@ -7,15 +7,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { User, FileText, LogOut, Save, Plus, Trash2, Edit } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { User, FileText, LogOut, Save, Plus, Trash2, Upload, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
+import { StoryUploader } from '@/components/StoryUploader';
 
 const profileSchema = z.object({
   display_name: z.string().optional(),
@@ -28,13 +28,7 @@ const profileSchema = z.object({
   language_preference: z.string().optional(),
 });
 
-const storySchema = z.object({
-  title: z.string().optional(),
-  story_text: z.string().min(1, 'Story text is required'),
-});
-
 type ProfileFormData = z.infer<typeof profileSchema>;
-type StoryFormData = z.infer<typeof storySchema>;
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -42,8 +36,10 @@ export default function Profile() {
   const [isLoading, setIsLoading] = useState(false);
   const [profile, setProfile] = useState<any>(null);
   const [stories, setStories] = useState<any[]>([]);
-  const [isEditingStory, setIsEditingStory] = useState<string | null>(null);
+  const [activeStory, setActiveStory] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [storyDialogOpen, setStoryDialogOpen] = useState(false);
+  const [storyMode, setStoryMode] = useState<'upload' | 'text'>('upload');
 
   const {
     register,
@@ -52,16 +48,6 @@ export default function Profile() {
     formState: { errors },
   } = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
-  });
-
-  const {
-    register: registerStory,
-    handleSubmit: handleSubmitStory,
-    setValue: setStoryValue,
-    reset: resetStory,
-    formState: { errors: storyErrors },
-  } = useForm<StoryFormData>({
-    resolver: zodResolver(storySchema),
   });
 
   useEffect(() => {
@@ -107,7 +93,9 @@ export default function Profile() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setStories(data || []);
+      const storiesData = data || [];
+      setStories(storiesData);
+      setActiveStory(storiesData.find(story => story.is_active));
     } catch (err: any) {
       console.error('Error fetching stories:', err);
       setError(err.message);
@@ -139,44 +127,19 @@ export default function Profile() {
     }
   };
 
-  const onSubmitStory = async (data: StoryFormData) => {
-    setIsLoading(true);
-    setError(null);
-
+  const setAsActiveStory = async (storyId: string) => {
     try {
-      if (isEditingStory) {
-        const { error } = await supabase
-          .from('stories')
-          .update({
-            ...data,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', isEditingStory);
+      const { error } = await supabase.rpc('set_active_story', {
+        story_id: storyId,
+        user_id_param: user?.id
+      });
 
-        if (error) throw error;
-        toast.success('Story updated successfully!');
-      } else {
-        const { error } = await supabase
-          .from('stories')
-          .insert({
-            user_id: user?.id!,
-            title: data.title,
-            story_text: data.story_text,
-            source_type: 'manual',
-          });
-
-        if (error) throw error;
-        toast.success('Story added successfully!');
-      }
-
-      resetStory();
-      setIsEditingStory(null);
+      if (error) throw error;
+      toast.success('Story set as active!');
       fetchStories();
     } catch (err: any) {
       setError(err.message);
-      toast.error('Failed to save story');
-    } finally {
-      setIsLoading(false);
+      toast.error('Failed to set story as active');
     }
   };
 
@@ -198,9 +161,19 @@ export default function Profile() {
     }
   };
 
-  const editStory = (story: any) => {
-    setIsEditingStory(story.id);
-    setStoryValue('story_text', story.story_text);
+  const handleStoryAdded = (story: any) => {
+    // When a new story is added, automatically set it as active
+    setAsActiveStory(story.id);
+    setStoryDialogOpen(false);
+  };
+
+  const handleStoryUpdated = (story: any) => {
+    fetchStories();
+    setStoryDialogOpen(false);
+  };
+
+  const handleStoryDeleted = (storyId: string) => {
+    fetchStories();
   };
 
   const handleLogout = async () => {
@@ -235,242 +208,285 @@ export default function Profile() {
           </Alert>
         )}
 
-        <Tabs defaultValue="profile" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="profile">
-              <User className="w-4 h-4 mr-2" />
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              <User className="w-5 h-5 mr-2 inline" />
               Profile Information
-            </TabsTrigger>
-            <TabsTrigger value="stories">
-              <FileText className="w-4 h-4 mr-2" />
-              Asylum Stories
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="profile">
-            <Card>
-              <CardHeader>
-                <CardTitle>Personal Information</CardTitle>
-                <CardDescription>
-                  Update your profile information and asylum case details
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleSubmit(onSubmitProfile)} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="display_name">Display Name</Label>
-                      <Input
-                        id="display_name"
-                        {...register('display_name')}
-                        disabled={isLoading}
-                      />
-                      {errors.display_name && (
-                        <p className="text-sm text-destructive">{errors.display_name.message}</p>
-                      )}
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="preferred_name">Preferred Name</Label>
-                      <Input
-                        id="preferred_name"
-                        {...register('preferred_name')}
-                        disabled={isLoading}
-                      />
-                      {errors.preferred_name && (
-                        <p className="text-sm text-destructive">{errors.preferred_name.message}</p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="legal_name">Legal Name</Label>
-                    <Input
-                      id="legal_name"
-                      {...register('legal_name')}
-                      disabled={isLoading}
-                    />
-                    {errors.legal_name && (
-                      <p className="text-sm text-destructive">{errors.legal_name.message}</p>
-                    )}
-                  </div>
-
-                  <Separator />
-
-                  <div className="space-y-2">
-                    <Label htmlFor="country_of_feared_persecution">Country of Feared Persecution</Label>
-                    <Input
-                      id="country_of_feared_persecution"
-                      {...register('country_of_feared_persecution')}
-                      disabled={isLoading}
-                    />
-                    {errors.country_of_feared_persecution && (
-                      <p className="text-sm text-destructive">{errors.country_of_feared_persecution.message}</p>
-                    )}
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="asylum_office_filed">Asylum Office Filed</Label>
-                      <Input
-                        id="asylum_office_filed"
-                        {...register('asylum_office_filed')}
-                        disabled={isLoading}
-                      />
-                      {errors.asylum_office_filed && (
-                        <p className="text-sm text-destructive">{errors.asylum_office_filed.message}</p>
-                      )}
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="language_preference">Language Preference</Label>
-                      <Input
-                        id="language_preference"
-                        {...register('language_preference')}
-                        disabled={isLoading}
-                        placeholder="e.g., English, Spanish, French"
-                      />
-                      {errors.language_preference && (
-                        <p className="text-sm text-destructive">{errors.language_preference.message}</p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="date_filed">Date Filed</Label>
-                      <Input
-                        id="date_filed"
-                        type="date"
-                        {...register('date_filed')}
-                        disabled={isLoading}
-                      />
-                      {errors.date_filed && (
-                        <p className="text-sm text-destructive">{errors.date_filed.message}</p>
-                      )}
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="interview_date">Interview Date</Label>
-                      <Input
-                        id="interview_date"
-                        type="date"
-                        {...register('interview_date')}
-                        disabled={isLoading}
-                      />
-                      {errors.interview_date && (
-                        <p className="text-sm text-destructive">{errors.interview_date.message}</p>
-                      )}
-                    </div>
-                  </div>
-
-                  <Button type="submit" disabled={isLoading}>
-                    <Save className="w-4 h-4 mr-2" />
-                    {isLoading ? 'Saving...' : 'Save Profile'}
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="stories">
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Add New Story</CardTitle>
-                  <CardDescription>
-                    {isEditingStory ? 'Edit your asylum story' : 'Add a new asylum story to your profile'}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <form onSubmit={handleSubmitStory(onSubmitStory)} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="story_text">Story</Label>
-                      <Textarea
-                        id="story_text"
-                        {...registerStory('story_text')}
-                        disabled={isLoading}
-                        rows={10}
-                        placeholder="Tell your story in detail..."
-                      />
-                      {storyErrors.story_text && (
-                        <p className="text-sm text-destructive">{storyErrors.story_text.message}</p>
-                      )}
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <Button type="submit" disabled={isLoading}>
-                        <Save className="w-4 h-4 mr-2" />
-                        {isLoading ? 'Saving...' : isEditingStory ? 'Update Story' : 'Add Story'}
-                      </Button>
-                      {isEditingStory && (
-                        <Button 
-                          type="button" 
-                          variant="outline" 
-                          onClick={() => {
-                            setIsEditingStory(null);
-                            resetStory();
-                          }}
-                        >
-                          Cancel
-                        </Button>
-                      )}
-                    </div>
-                  </form>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Your Stories</CardTitle>
-                  <CardDescription>
-                    Manage your asylum stories
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {stories.length === 0 ? (
-                    <p className="text-muted-foreground text-center py-8">
-                      No stories added yet. Add your first story above.
-                    </p>
-                  ) : (
-                    <div className="space-y-4">
-                      {stories.map((story) => (
-                        <div key={story.id} className="border rounded-lg p-4">
-                          <div className="flex items-start justify-between mb-2">
-                            <div>
-                              <h3 className="font-semibold">{story.title || 'Asylum Story'}</h3>
-                              <p className="text-sm text-muted-foreground">
-                                Created: {new Date(story.created_at).toLocaleDateString()}
-                              </p>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Badge variant="secondary">{story.source_type}</Badge>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => editStory(story)}
-                              >
-                                <Edit className="w-4 h-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => deleteStory(story.id)}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          </div>
-                          <p className="text-sm line-clamp-3">{story.story_text}</p>
-                        </div>
-                      ))}
-                    </div>
+            </CardTitle>
+            <CardDescription>
+              Update your personal information and asylum case details
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit(onSubmitProfile)} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="display_name">Display Name</Label>
+                  <Input
+                    id="display_name"
+                    {...register('display_name')}
+                    disabled={isLoading}
+                  />
+                  {errors.display_name && (
+                    <p className="text-sm text-destructive">{errors.display_name.message}</p>
                   )}
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-        </Tabs>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="preferred_name">Preferred Name</Label>
+                  <Input
+                    id="preferred_name"
+                    {...register('preferred_name')}
+                    disabled={isLoading}
+                  />
+                  {errors.preferred_name && (
+                    <p className="text-sm text-destructive">{errors.preferred_name.message}</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="legal_name">Legal Name</Label>
+                <Input
+                  id="legal_name"
+                  {...register('legal_name')}
+                  disabled={isLoading}
+                />
+                {errors.legal_name && (
+                  <p className="text-sm text-destructive">{errors.legal_name.message}</p>
+                )}
+              </div>
+
+              <Separator />
+
+              <div className="space-y-2">
+                <Label htmlFor="country_of_feared_persecution">Country of Feared Persecution</Label>
+                <Input
+                  id="country_of_feared_persecution"
+                  {...register('country_of_feared_persecution')}
+                  disabled={isLoading}
+                />
+                {errors.country_of_feared_persecution && (
+                  <p className="text-sm text-destructive">{errors.country_of_feared_persecution.message}</p>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="asylum_office_filed">Asylum Office Filed</Label>
+                  <Input
+                    id="asylum_office_filed"
+                    {...register('asylum_office_filed')}
+                    disabled={isLoading}
+                  />
+                  {errors.asylum_office_filed && (
+                    <p className="text-sm text-destructive">{errors.asylum_office_filed.message}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="language_preference">Language Preference</Label>
+                  <Input
+                    id="language_preference"
+                    {...register('language_preference')}
+                    disabled={isLoading}
+                    placeholder="e.g., English, Spanish, French"
+                  />
+                  {errors.language_preference && (
+                    <p className="text-sm text-destructive">{errors.language_preference.message}</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="date_filed">Date Filed</Label>
+                  <Input
+                    id="date_filed"
+                    type="date"
+                    {...register('date_filed')}
+                    disabled={isLoading}
+                  />
+                  {errors.date_filed && (
+                    <p className="text-sm text-destructive">{errors.date_filed.message}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="interview_date">Interview Date</Label>
+                  <Input
+                    id="interview_date"
+                    type="date"
+                    {...register('interview_date')}
+                    disabled={isLoading}
+                  />
+                  {errors.interview_date && (
+                    <p className="text-sm text-destructive">{errors.interview_date.message}</p>
+                  )}
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Asylum Story Section */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold flex items-center gap-2">
+                      <FileText className="w-5 h-5" />
+                      Asylum Story
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      Add your asylum story to help prepare for interviews
+                    </p>
+                  </div>
+                  
+                  <Dialog open={storyDialogOpen} onOpenChange={setStoryDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button>
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add Asylum Story
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
+                      <DialogHeader>
+                        <DialogTitle>Add Your Asylum Story</DialogTitle>
+                        <DialogDescription>
+                          Choose how you'd like to add your asylum story
+                        </DialogDescription>
+                      </DialogHeader>
+                      
+                      {/* Story Mode Selection */}
+                      <div className="flex gap-2 my-4">
+                        <Button
+                          variant={storyMode === 'upload' ? 'default' : 'outline'}
+                          onClick={() => setStoryMode('upload')}
+                          className="flex-1 h-auto py-4 px-6"
+                          size="lg"
+                        >
+                          <Upload className="w-5 h-5 mr-2" />
+                          <div>
+                            <div className="font-semibold">Upload Complete Form I-589</div>
+                            <div className="text-xs opacity-75">(Recommended)</div>
+                          </div>
+                        </Button>
+                        <Button
+                          variant={storyMode === 'text' ? 'default' : 'outline'}
+                          onClick={() => setStoryMode('text')}
+                          className="flex-1 h-auto py-4 px-6"
+                          size="lg"
+                        >
+                          <FileText className="w-5 h-5 mr-2" />
+                          <div>
+                            <div className="font-semibold">Paste Story as Text</div>
+                            <div className="text-xs opacity-75">Manual entry</div>
+                          </div>
+                        </Button>
+                      </div>
+
+                      {/* StoryUploader Component */}
+                      <div className="flex-1 overflow-auto">
+                        <StoryUploader
+                          activeMode={storyMode}
+                          onStoryAdded={handleStoryAdded}
+                          onStoryUpdated={handleStoryUpdated}
+                          onStoryDeleted={handleStoryDeleted}
+                        />
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+
+                {/* Active Story Display */}
+                {activeStory && (
+                  <div className="border rounded-lg p-4 bg-muted/50">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4 text-green-600" />
+                        <h4 className="font-medium">Active Story</h4>
+                        <Badge variant="secondary">{activeStory.source_type}</Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Created: {new Date(activeStory.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      {activeStory.story_text.substring(0, 200)}...
+                    </p>
+                  </div>
+                )}
+
+                {!activeStory && (
+                  <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
+                    <FileText className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
+                    <p className="text-sm text-muted-foreground">
+                      No active asylum story. Add your story to get started with interview practice.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <Button type="submit" disabled={isLoading}>
+                <Save className="w-4 h-4 mr-2" />
+                {isLoading ? 'Saving...' : 'Save Profile'}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+
+        {/* Previous Stories Section */}
+        {stories.filter(story => !story.is_active).length > 0 && (
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle>Previous Stories</CardTitle>
+              <CardDescription>
+                Stories you've uploaded previously. You can set any of these as your active story.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {stories.filter(story => !story.is_active).map((story) => (
+                  <div key={story.id} className="border rounded-lg p-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          {story.source_type === 'pdf' ? (
+                            <Upload className="w-4 h-4 text-blue-500" />
+                          ) : (
+                            <FileText className="w-4 h-4 text-green-500" />
+                          )}
+                          <h4 className="font-medium">{story.title || 'Asylum Story'}</h4>
+                          <Badge variant="outline">{story.source_type}</Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground mb-2">
+                          Created: {new Date(story.created_at).toLocaleDateString()}
+                        </p>
+                        <p className="text-sm line-clamp-2">{story.story_text}</p>
+                      </div>
+                      <div className="flex gap-2 ml-4">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setAsActiveStory(story.id)}
+                        >
+                          Set as Active
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => deleteStory(story.id)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );
