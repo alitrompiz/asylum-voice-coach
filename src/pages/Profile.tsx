@@ -29,7 +29,7 @@ const profileSchema = z.object({
 });
 
 const storySchema = z.object({
-  title: z.string().min(1, 'Title is required'),
+  title: z.string().optional(),
   story_text: z.string().min(1, 'Story text is required'),
 });
 
@@ -200,7 +200,6 @@ export default function Profile() {
 
   const editStory = (story: any) => {
     setIsEditingStory(story.id);
-    setStoryValue('title', story.title);
     setStoryValue('story_text', story.story_text);
   };
 
@@ -386,19 +385,6 @@ export default function Profile() {
                 <CardContent>
                   <form onSubmit={handleSubmitStory(onSubmitStory)} className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="story_title">Title</Label>
-                      <Input
-                        id="story_title"
-                        {...registerStory('title')}
-                        disabled={isLoading}
-                        placeholder="e.g., My Journey to Safety"
-                      />
-                      {storyErrors.title && (
-                        <p className="text-sm text-destructive">{storyErrors.title.message}</p>
-                      )}
-                    </div>
-
-                    <div className="space-y-2">
                       <Label htmlFor="story_text">Story</Label>
                       <Textarea
                         id="story_text"
@@ -452,7 +438,7 @@ export default function Profile() {
                         <div key={story.id} className="border rounded-lg p-4">
                           <div className="flex items-start justify-between mb-2">
                             <div>
-                              <h3 className="font-semibold">{story.title}</h3>
+                              <h3 className="font-semibold">{story.title || 'Asylum Story'}</h3>
                               <p className="text-sm text-muted-foreground">
                                 Created: {new Date(story.created_at).toLocaleDateString()}
                               </p>
