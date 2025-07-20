@@ -172,10 +172,11 @@ async function processOCRJob(jobId: string, supabase: any) {
     
     console.log('Sending to Azure Document Intelligence...');
     
-    // Force processing of ALL pages using the layout model - no page restriction
-    const analyzeUrl = `${azureEndpoint}/formrecognizer/documentModels/prebuilt-layout:analyze?api-version=2023-07-31&readingOrder=natural`;
+    // Try the read model which is specifically designed for comprehensive text extraction
+    const analyzeUrl = `${azureEndpoint}/formrecognizer/documentModels/prebuilt-read:analyze?api-version=2023-07-31`;
     
-    console.log('Using prebuilt-layout model with no page limits to process entire document');
+    console.log('Using prebuilt-read model for maximum text extraction coverage');
+    console.log('PDF file size being sent to Azure:', arrayBuffer.byteLength, 'bytes');
     
     const analyzeResponse = await fetch(analyzeUrl, {
       method: 'POST',
@@ -188,6 +189,7 @@ async function processOCRJob(jobId: string, supabase: any) {
     
     if (!analyzeResponse.ok) {
       const errorText = await analyzeResponse.text();
+      console.error('Azure OCR submission failed:', errorText);
       throw new Error(`Azure API error: ${analyzeResponse.status} - ${errorText}`);
     }
     
@@ -197,6 +199,8 @@ async function processOCRJob(jobId: string, supabase: any) {
       throw new Error('No operation location returned from Azure');
     }
     
+    console.log('Azure operation started:', operationLocation);
+    
     await supabase
       .from('ocr_jobs')
       .update({ progress: 60 })
@@ -204,52 +208,57 @@ async function processOCRJob(jobId: string, supabase: any) {
     
     console.log('Document submitted, polling for results...');
     
-    // Poll for results with longer timeout for large documents
+    // Poll for results with extended timeout
     let result;
     let attempts = 0;
-    const maxAttempts = 120; // 10 minutes maximum for large multi-page documents
+    const maxAttempts = 180; // 15 minutes for large documents
+    const pollInterval = 5000; // 5 seconds
     
     console.log('Starting polling for OCR results...');
     
     while (attempts < maxAttempts) {
-      await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
+      attempts++;
+      console.log(`Polling attempt ${attempts}: Checking status...`);
       
-      const resultResponse = await fetch(operationLocation, {
+      const pollResponse = await fetch(operationLocation, {
         headers: {
-          'Ocp-Apim-Subscription-Key': azureKey
-        }
+          'Ocp-Apim-Subscription-Key': azureKey,
+        },
       });
       
-      if (!resultResponse.ok) {
-        throw new Error(`Failed to get results: ${resultResponse.status}`);
+      if (!pollResponse.ok) {
+        console.error(`Polling failed: ${pollResponse.status}`);
+        throw new Error(`Polling failed: ${pollResponse.status}`);
       }
       
-      result = await resultResponse.json();
-      
-      console.log(`Polling attempt ${attempts + 1}: Status = ${result.status}`);
+      result = await pollResponse.json();
+      console.log(`Polling attempt ${attempts}: Status = ${result.status}`);
       
       if (result.status === 'succeeded') {
-        console.log('Azure OCR analysis completed successfully!');
+        console.log('OCR analysis completed successfully');
         break;
       } else if (result.status === 'failed') {
-        console.error('Azure analysis failed:', result);
-        throw new Error(`Document analysis failed: ${JSON.stringify(result)}`);
+        console.error('OCR analysis failed:', result);
+        throw new Error(`OCR analysis failed: ${result.error?.message || 'Unknown error'}`);
       } else if (result.status === 'running') {
-        console.log(`Analysis still running... (attempt ${attempts + 1}/${maxAttempts})`);
+        console.log(`Analysis still running... (attempt ${attempts}/${maxAttempts})`);
+        
+        // Update progress
+        const progress = Math.min(60 + (attempts * 30) / maxAttempts, 90);
+        await supabase
+          .from('ocr_jobs')
+          .update({ progress: Math.floor(progress) })
+          .eq('id', jobId);
+          
+        await new Promise(resolve => setTimeout(resolve, pollInterval));
+      } else {
+        console.log(`Unknown status: ${result.status}, continuing...`);
+        await new Promise(resolve => setTimeout(resolve, pollInterval));
       }
-      
-      attempts++;
-      
-      // Update progress more frequently for large documents
-      const progress = Math.min(60 + (attempts * 0.25), 90);
-      await supabase
-        .from('ocr_jobs')
-        .update({ progress: Math.floor(progress) })
-        .eq('id', jobId);
     }
     
     if (attempts >= maxAttempts) {
-      throw new Error('Document analysis timed out');
+      throw new Error('Document analysis timed out after 15 minutes');
     }
     
     console.log('OCR analysis completed successfully');
