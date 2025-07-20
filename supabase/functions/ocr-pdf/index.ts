@@ -1,29 +1,23 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.51.0';
 
-console.log('=== Enhanced OCR Function Started ===');
+console.log('=== OCR Function Started ===');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Initialize Supabase client
+// Initialize Supabase client with service role
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-// Background processing function
-async function processOCRJob(jobId: string, supabase: any): Promise<void> {
-  console.log('Starting background processing for job:', jobId);
+// Simplified background processing function
+async function processOCRJob(jobId: string): Promise<void> {
+  console.log('Starting OCR processing for job:', jobId);
   
   try {
-    // Update job status to processing
-    await supabase
-      .from('ocr_jobs')
-      .update({ status: 'processing', progress: 10 })
-      .eq('id', jobId);
-    
-    // Get job details
+    // Get job details using service role (bypass RLS)
     const { data: job, error: jobError } = await supabase
       .from('ocr_jobs')
       .select('*')
@@ -31,85 +25,34 @@ async function processOCRJob(jobId: string, supabase: any): Promise<void> {
       .single();
     
     if (jobError || !job) {
-      throw new Error('Job not found');
+      console.error('Job not found:', jobError);
+      return;
     }
     
     console.log('Processing file:', job.file_path);
     
-    // Download file from Supabase Storage
+    // Download file
     const { data: fileData, error: fileError } = await supabase.storage
       .from('story-files')
       .download(job.file_path);
     
     if (fileError) {
-      console.error('Storage download error:', fileError);
+      console.error('Storage error:', fileError);
       throw new Error(`Failed to download file: ${fileError.message}`);
     }
     
-    await supabase
-      .from('ocr_jobs')
-      .update({ progress: 30 })
-      .eq('id', jobId);
-    
-    console.log('=== FILE VALIDATION ===');
     console.log('File downloaded, size:', fileData.size);
-    
-    // Validate the PDF file thoroughly
-    const arrayBuffer = await fileData.arrayBuffer();
-    const uint8Array = new Uint8Array(arrayBuffer);
-    
-    console.log('Original file size:', fileData.size, 'bytes');
-    console.log('ArrayBuffer size:', arrayBuffer.byteLength, 'bytes');
-    
-    // Check PDF header
-    const pdfHeader = String.fromCharCode(...uint8Array.slice(0, 8));
-    console.log('PDF header:', pdfHeader);
-    
-    if (!pdfHeader.startsWith('%PDF-')) {
-      throw new Error(`Invalid PDF file - header is: ${pdfHeader}`);
-    }
-    
-    // Look for PDF version
-    const versionMatch = pdfHeader.match(/%PDF-(\d+\.\d+)/);
-    if (versionMatch) {
-      console.log('PDF version:', versionMatch[1]);
-    }
-    
-    // Check for common PDF elements to validate integrity
-    const pdfContent = String.fromCharCode(...uint8Array);
-    const xrefIndex = pdfContent.lastIndexOf('xref');
-    const trailerIndex = pdfContent.lastIndexOf('trailer');
-    const eofIndex = pdfContent.lastIndexOf('%%EOF');
-    
-    console.log('PDF structure markers found:');
-    console.log('- xref table:', xrefIndex !== -1 ? 'YES' : 'NO');
-    console.log('- trailer:', trailerIndex !== -1 ? 'YES' : 'NO');
-    console.log('- EOF marker:', eofIndex !== -1 ? 'YES' : 'NO');
-    
-    // Count potential pages by looking for page objects
-    const pageMatches = pdfContent.match(/\/Type\s*\/Page[^s]/g);
-    const estimatedPages = pageMatches ? pageMatches.length : 0;
-    console.log('Estimated pages from PDF content:', estimatedPages);
     
     // Get Azure credentials
     const azureKey = Deno.env.get('AZURE_DOCUMENT_INTELLIGENCE_KEY');
     const azureEndpoint = Deno.env.get('AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT');
     
     if (!azureKey || !azureEndpoint) {
-      throw new Error('Azure Document Intelligence credentials not configured');
+      throw new Error('Azure credentials not configured');
     }
     
-    await supabase
-      .from('ocr_jobs')
-      .update({ progress: 50 })
-      .eq('id', jobId);
-    
-    console.log('=== AZURE DOCUMENT INTELLIGENCE ===');
-    console.log('Azure endpoint:', azureEndpoint);
-    console.log('Sending PDF size:', arrayBuffer.byteLength, 'bytes');
-    console.log('Estimated pages to process:', estimatedPages);
-    
-    // Use read model for comprehensive text extraction
+    // Process with Azure
+    const arrayBuffer = await fileData.arrayBuffer();
     const analyzeUrl = `${azureEndpoint}/formrecognizer/documentModels/prebuilt-read:analyze?api-version=2023-07-31`;
     
     console.log('Submitting to Azure...');
@@ -123,186 +66,72 @@ async function processOCRJob(jobId: string, supabase: any): Promise<void> {
       body: arrayBuffer
     });
     
-    console.log('Azure submission response:', analyzeResponse.status, analyzeResponse.statusText);
-    
     if (!analyzeResponse.ok) {
       const errorText = await analyzeResponse.text();
-      console.error('Azure submission failed:', errorText);
+      console.error('Azure error:', errorText);
       throw new Error(`Azure API error: ${analyzeResponse.status} - ${errorText}`);
     }
     
-    // Get operation location
     const operationLocation = analyzeResponse.headers.get('operation-location');
     if (!operationLocation) {
-      throw new Error('No operation location returned from Azure');
+      throw new Error('No operation location returned');
     }
     
-    console.log('Azure operation started:', operationLocation);
+    console.log('Polling for results...');
     
-    await supabase
-      .from('ocr_jobs')
-      .update({ progress: 60 })
-      .eq('id', jobId);
-    
-    // Poll for results with extended timeout
+    // Poll for results
     let result;
     let attempts = 0;
-    const maxAttempts = 240; // 20 minutes for large documents
-    const pollInterval = 5000; // 5 seconds
-    
-    console.log('Starting polling for results...');
+    const maxAttempts = 120; // 10 minutes
     
     while (attempts < maxAttempts) {
       attempts++;
-      
-      await new Promise(resolve => setTimeout(resolve, pollInterval));
+      await new Promise(resolve => setTimeout(resolve, 5000));
       
       const pollResponse = await fetch(operationLocation, {
-        headers: {
-          'Ocp-Apim-Subscription-Key': azureKey,
-        },
+        headers: { 'Ocp-Apim-Subscription-Key': azureKey }
       });
       
       if (!pollResponse.ok) {
-        console.error(`Polling failed: ${pollResponse.status}`);
         throw new Error(`Polling failed: ${pollResponse.status}`);
       }
       
       result = await pollResponse.json();
-      console.log(`Polling attempt ${attempts}: Status = ${result.status}`);
+      console.log(`Attempt ${attempts}: ${result.status}`);
       
-      if (result.status === 'succeeded') {
-        console.log('Azure OCR analysis completed successfully!');
-        break;
-      } else if (result.status === 'failed') {
-        console.error('Azure analysis failed:', result);
-        throw new Error(`OCR analysis failed: ${result.error?.message || 'Unknown error'}`);
+      if (result.status === 'succeeded') break;
+      if (result.status === 'failed') {
+        throw new Error(`Analysis failed: ${result.error?.message || 'Unknown error'}`);
       }
-      
-      // Update progress
-      const progress = Math.min(60 + (attempts * 25) / maxAttempts, 90);
-      await supabase
-        .from('ocr_jobs')
-        .update({ progress: Math.floor(progress) })
-        .eq('id', jobId);
     }
     
     if (attempts >= maxAttempts) {
-      throw new Error('Document analysis timed out after 20 minutes');
+      throw new Error('Analysis timed out');
     }
     
-    console.log('=== AZURE RESULTS ANALYSIS ===');
-    console.log('Analysis result keys:', Object.keys(result));
-    
-    if (!result.analyzeResult) {
-      throw new Error('No analyzeResult in response');
-    }
-    
-    const analyzeResult = result.analyzeResult;
-    console.log('analyzeResult keys:', Object.keys(analyzeResult));
-    console.log('Pages in result:', analyzeResult.pages?.length || 0);
-    console.log('Paragraphs in result:', analyzeResult.paragraphs?.length || 0);
-    
-    // Log detailed page information
-    if (analyzeResult.pages) {
-      analyzeResult.pages.forEach((page: any, index: number) => {
-        console.log(`Page ${index + 1}: ${page.lines?.length || 0} lines, ${page.words?.length || 0} words`);
-      });
-    }
-    
-    // Extract text using multiple methods for maximum coverage
-    console.log('=== STARTING COMPREHENSIVE TEXT EXTRACTION ===');
-    
+    // Extract text
     let finalText = '';
-    let method1Text = '';
-    let method2Text = '';
-    let method3Text = '';
+    const analyzeResult = result.analyzeResult;
     
-    // Method 1: Direct content
-    if (analyzeResult.content) {
-      method1Text = analyzeResult.content;
-      console.log('Method 1 - Direct content:', method1Text.length, 'characters');
-    }
-    
-    // Method 2: Paragraphs
-    if (analyzeResult.paragraphs) {
-      console.log('Method 2 - Extracting paragraphs...');
-      const paragraphTexts = analyzeResult.paragraphs.map((p: any, index: number) => {
-        if (index % 10 === 0) {
-          console.log(`  Processed paragraph ${index + 1}/${analyzeResult.paragraphs.length}`);
-        }
-        return p.content || '';
-      });
-      method2Text = paragraphTexts.join('\n\n');
-      console.log('Method 2 - Paragraphs:', method2Text.length, 'characters');
-    }
-    
-    // Method 3: Page-by-page extraction
-    if (analyzeResult.pages) {
-      console.log('Method 3 - Page-by-page extraction...');
-      const pageTexts = [];
-      
-      for (let i = 0; i < analyzeResult.pages.length; i++) {
-        const page = analyzeResult.pages[i];
-        console.log(`\n--- Processing Page ${i + 1} ---`);
-        
-        let pageText = `\n=== PAGE ${i + 1} OF ${analyzeResult.pages.length} ===\n\n`;
-        
+    if (analyzeResult?.content) {
+      finalText = analyzeResult.content;
+    } else if (analyzeResult?.paragraphs) {
+      finalText = analyzeResult.paragraphs.map((p: any) => p.content || '').join('\n\n');
+    } else if (analyzeResult?.pages) {
+      const pageTexts = analyzeResult.pages.map((page: any, index: number) => {
+        let pageText = `\n=== PAGE ${index + 1} OF ${analyzeResult.pages.length} ===\n\n`;
         if (page.lines) {
-          const lineTexts = page.lines.map((line: any) => line.content || '').filter(Boolean);
-          pageText += lineTexts.join('\n');
-          console.log(`  Page ${i + 1}: Extracted ${lineTexts.length} lines, ${pageText.length} characters`);
-        } else if (page.words) {
-          const wordTexts = page.words.map((word: any) => word.content || '').filter(Boolean);
-          pageText += wordTexts.join(' ');
-          console.log(`  Page ${i + 1}: Extracted ${wordTexts.length} words, ${pageText.length} characters`);
+          pageText += page.lines.map((line: any) => line.content || '').join('\n');
         }
-        
-        pageTexts.push(pageText);
-      }
-      
-      method3Text = pageTexts.join('\n\n');
-      console.log('Method 3 - Page-by-page:', method3Text.length, 'characters');
+        return pageText;
+      });
+      finalText = pageTexts.join('\n\n');
     }
     
-    // Choose the best method (most comprehensive text)
-    const methods = [
-      { name: 'direct content', text: method1Text },
-      { name: 'paragraphs', text: method2Text },
-      { name: 'page-by-page', text: method3Text }
-    ];
+    console.log('Extracted text length:', finalText.length);
+    console.log('Pages processed:', analyzeResult?.pages?.length || 0);
     
-    const bestMethod = methods.reduce((best, current) => 
-      current.text.length > best.text.length ? current : best
-    );
-    
-    finalText = bestMethod.text;
-    
-    console.log('\n=== FINAL RESULTS ===');
-    console.log('Best method:', bestMethod.name);
-    console.log('Total pages:', analyzeResult.pages?.length || 0);
-    console.log('Total paragraphs:', analyzeResult.paragraphs?.length || 0);
-    console.log('Final text length:', finalText.length, 'characters');
-    
-    if (finalText.length < 100) {
-      console.error('WARNING: Very short text extracted - possible issue!');
-    }
-    
-    if (analyzeResult.pages && analyzeResult.pages.length < estimatedPages * 0.8) {
-      console.error(`WARNING: Processed ${analyzeResult.pages.length} pages but estimated ${estimatedPages} pages in PDF`);
-    }
-    
-    console.log('Final extracted text preview:');
-    console.log(finalText.substring(0, 500) + '...');
-    console.log('Final extracted text ending:');
-    console.log('...' + finalText.substring(Math.max(0, finalText.length - 200)));
-    
-    await supabase
-      .from('ocr_jobs')
-      .update({ progress: 95 })
-      .eq('id', jobId);
-    
-    // Insert story into database
+    // Create story directly using service role (bypass RLS)
     const { data: story, error: storyError } = await supabase
       .from('stories')
       .insert({
@@ -312,9 +141,7 @@ async function processOCRJob(jobId: string, supabase: any): Promise<void> {
         source_type: 'pdf',
         file_path: job.file_path,
         detected_sections: {
-          total_pages: analyzeResult.pages?.length || 0,
-          extraction_method: bestMethod.name,
-          estimated_pages: estimatedPages,
+          total_pages: analyzeResult?.pages?.length || 0,
           azure_model: 'prebuilt-read'
         }
       })
@@ -322,84 +149,76 @@ async function processOCRJob(jobId: string, supabase: any): Promise<void> {
       .single();
     
     if (storyError) {
-      console.error('Error saving story:', storyError);
-      throw new Error('Failed to save extracted story');
+      console.error('Story creation error:', storyError);
+      throw new Error('Failed to save story');
     }
     
-    console.log('Story saved successfully:', story.id);
+    console.log('Story created:', story.id);
     
-    // Complete the job
+    // Update job status to completed using service role
     await supabase
       .from('ocr_jobs')
-      .update({ 
-        status: 'completed', 
+      .update({
+        status: 'completed',
         progress: 100,
         completed_at: new Date().toISOString(),
         result: {
           story_id: story.id,
           text_length: finalText.length,
-          pages_processed: analyzeResult.pages?.length || 0,
-          extraction_method: bestMethod.name
+          pages_processed: analyzeResult?.pages?.length || 0
         }
       })
       .eq('id', jobId);
     
-    console.log('OCR job completed successfully:', jobId);
+    console.log('OCR job completed successfully');
     
   } catch (error) {
     console.error('OCR processing error:', error);
     
-    // Update job status to failed
+    // Update job to failed using service role
     await supabase
       .from('ocr_jobs')
-      .update({ 
+      .update({
         status: 'failed',
         error_message: error instanceof Error ? error.message : 'Unknown error',
         completed_at: new Date().toISOString()
       })
       .eq('id', jobId);
-    
-    throw error;
   }
 }
 
 // Main request handler
 Deno.serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    console.log('Handling CORS preflight request');
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const requestBody = await req.text();
-    console.log('Request body:', requestBody);
+    const { filePath, fileName } = await req.json();
+    console.log('Processing:', fileName, 'at:', filePath);
     
-    const { filePath, fileName } = JSON.parse(requestBody);
-    console.log('Processing file:', fileName, 'at path:', filePath);
-    
-    // Verify authentication
+    // Get user from auth header (if provided)
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      throw new Error('No authorization header');
+    let userId = null;
+    
+    if (authHeader) {
+      const { data: { user }, error: authError } = await supabase.auth.getUser(
+        authHeader.replace('Bearer ', '')
+      );
+      if (user && !authError) {
+        userId = user.id;
+      }
     }
     
-    const { data: { user }, error: authError } = await supabase.auth.getUser(
-      authHeader.replace('Bearer ', '')
-    );
-    
-    if (authError || !user) {
-      console.error('Auth error:', authError);
-      throw new Error('Invalid authorization token');
+    if (!userId) {
+      throw new Error('Authentication required');
     }
     
-    console.log('User authenticated:', user.id);
-    
-    // Create OCR job entry
+    // Create OCR job using service role
     const { data: job, error: jobError } = await supabase
       .from('ocr_jobs')
       .insert({
-        user_id: user.id,
+        user_id: userId,
         file_path: filePath,
         file_name: fileName,
         status: 'pending'
@@ -408,40 +227,33 @@ Deno.serve(async (req) => {
       .single();
     
     if (jobError) {
-      console.error('Error creating job:', jobError);
+      console.error('Job creation error:', jobError);
       throw new Error('Failed to create OCR job');
     }
     
-    console.log('Created OCR job:', job.id);
+    console.log('Created job:', job.id);
     
     // Start background processing
-    EdgeRuntime.waitUntil(processOCRJob(job.id, supabase));
+    EdgeRuntime.waitUntil(processOCRJob(job.id));
     
-    // Return immediate response with job ID
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         jobId: job.id,
         status: 'pending',
-        message: 'OCR processing started. Check job status for progress.'
+        message: 'OCR processing started'
       }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
     
   } catch (error) {
-    console.error('Error in OCR function:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    
+    console.error('Error:', error);
     return new Response(
-      JSON.stringify({ 
-        error: errorMessage,
-        details: 'Check function logs for more details',
-        timestamp: new Date().toISOString()
+      JSON.stringify({
+        error: error instanceof Error ? error.message : 'Unknown error'
       }),
       {
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     );
   }
