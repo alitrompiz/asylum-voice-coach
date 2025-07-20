@@ -179,11 +179,9 @@ async function processOCRJob(jobId: string, supabase: any) {
       method: 'POST',
       headers: {
         'Ocp-Apim-Subscription-Key': azureKey,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/pdf'
       },
-      body: JSON.stringify({
-        base64Source: base64Data
-      })
+      body: arrayBuffer
     });
     
     if (!analyzeResponse.ok) {
