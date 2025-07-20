@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -11,17 +10,23 @@ import { usePersonas } from '@/hooks/usePersonas';
 import { useAudioRecording } from '@/hooks/useAudioRecording';
 import { useInterviewConversation } from '@/hooks/useInterviewConversation';
 import { useTextToSpeech } from '@/hooks/useTextToSpeech';
+import { useLanguagePreference } from '@/hooks/useLanguagePreference';
 import { Waveform } from '@/components/Waveform';
 import { cn } from '@/lib/utils';
 
 export default function Interview() {
-  const [isAiSpeaking, setIsAiSpeaking] = useState(true);
+  const [isAiSpeaking, setIsAiSpeaking] = useState(false);
   const [showSubtitles, setShowSubtitles] = useState(true);
   const [displayedSubtitle, setDisplayedSubtitle] = useState('');
   const [isPaused, setIsPaused] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
+  const [isInitialTTSPlaying, setIsInitialTTSPlaying] = useState(false);
   const subtitleTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const navigate = useNavigate();
+  
+  // Get user's language preference
+  const { language, languageCode, isLoading: languageLoading } = useLanguagePreference();
+  
   // Audio recording and conversation hooks
   const { isRecording, duration, audioLevel, error: recordingError, startRecording, stopRecording, cancelRecording } = useAudioRecording();
   const { messages, isProcessing, currentSubtitle, processAudioMessage, clearConversation, formatTime, initializeInterview, hasInitialized } = useInterviewConversation();
@@ -35,22 +40,32 @@ export default function Interview() {
   
   const selectedPersonaData = personas.find(p => p.id === selectedPersona);
 
+  console.log('Interview component - Language info:', {
+    languageCode,
+    language: language?.name,
+    selectedPersona,
+    hasInitialized,
+    currentSubtitle: currentSubtitle?.substring(0, 50) + '...'
+  });
+
   // Initialize interview with AI greeting
   useEffect(() => {
-    if (selectedPersonaData && !hasInitialized) {
+    if (selectedPersonaData && !hasInitialized && !languageLoading) {
+      console.log('Initializing interview with language:', languageCode);
       initializeInterview();
     }
-  }, [selectedPersonaData, hasInitialized, initializeInterview]);
+  }, [selectedPersonaData, hasInitialized, languageLoading, languageCode, initializeInterview]);
 
-  // Auto-play TTS when AI responds, but only for actual AI responses (not system messages)
+  // Auto-play TTS when AI responds - with proper deduplication
   useEffect(() => {
-    console.log('TTS Check:', {
-      currentSubtitle,
-      selectedPersonaData,
+    console.log('TTS Effect triggered:', {
+      currentSubtitle: currentSubtitle?.substring(0, 50) + '...',
+      selectedPersonaData: !!selectedPersonaData,
       tts_voice: selectedPersonaData?.tts_voice,
-      hasSubtitle: !!currentSubtitle,
-      notProcessing: !currentSubtitle?.includes("Processing your message"),
-      notTranscribing: !currentSubtitle?.includes("Transcribing your message")
+      isProcessing,
+      isTTSPlaying,
+      isInitialTTSPlaying,
+      languageCode
     });
     
     // Only speak if it's an actual AI response (not processing/transcribing/system messages)
@@ -58,7 +73,13 @@ export default function Interview() {
         !currentSubtitle.includes("Processing your message") && 
         !currentSubtitle.includes("Transcribing your message") &&
         !currentSubtitle.includes("Connecting...") &&
-        selectedPersonaData?.tts_voice) {
+        selectedPersonaData?.tts_voice &&
+        !isProcessing &&
+        !isTTSPlaying &&
+        !isInitialTTSPlaying) {
+      
+      console.log('Starting TTS for:', currentSubtitle.substring(0, 50) + '...');
+      setIsInitialTTSPlaying(true);
       
       // Clear any existing subtitle timeout
       if (subtitleTimeoutRef.current) {
@@ -69,9 +90,13 @@ export default function Interview() {
       // Hide subtitle initially
       setDisplayedSubtitle('');
       
+      // Get the appropriate voice for the user's selected language
+      const voiceToUse = selectedPersonaData.tts_voice;
+      
       speak(currentSubtitle, {
-        voice: selectedPersonaData.tts_voice,
+        voice: voiceToUse,
         onStart: () => {
+          console.log('TTS started');
           setIsAiSpeaking(true);
           
           // Start subtitles 0.5 seconds after speech starts
@@ -80,13 +105,16 @@ export default function Interview() {
           }, 500);
         },
         onEnd: () => {
+          console.log('TTS ended');
           setIsAiSpeaking(false);
           setDisplayedSubtitle('');
+          setIsInitialTTSPlaying(false);
         },
         onError: (error) => {
           console.error('TTS error:', error);
           setIsAiSpeaking(false);
           setDisplayedSubtitle(currentSubtitle); // Show subtitle immediately on error
+          setIsInitialTTSPlaying(false);
         }
       });
     }
@@ -97,7 +125,7 @@ export default function Interview() {
         clearTimeout(subtitleTimeoutRef.current);
       }
     };
-  }, [currentSubtitle, selectedPersonaData?.tts_voice, speak]);
+  }, [currentSubtitle, selectedPersonaData?.tts_voice, speak, isProcessing, isTTSPlaying, isInitialTTSPlaying]);
 
   // Handle click-to-toggle functionality for desktop mouse events
   const handleMouseClick = async (e: React.MouseEvent) => {
@@ -110,6 +138,7 @@ export default function Interview() {
     // Stop TTS if playing
     if (isTTSPlaying) {
       stopTTS();
+      setIsInitialTTSPlaying(false);
     }
     
     if (!isRecording && !pressToTalkRef.current) {
@@ -150,6 +179,7 @@ export default function Interview() {
     // Stop TTS if playing
     if (isTTSPlaying) {
       stopTTS();
+      setIsInitialTTSPlaying(false);
     }
     
     pressToTalkRef.current = true;
@@ -203,6 +233,7 @@ export default function Interview() {
     // Stop TTS if playing
     if (isTTSPlaying) {
       stopTTS();
+      setIsInitialTTSPlaying(false);
     }
     
     pressToTalkRef.current = true;
@@ -249,6 +280,7 @@ export default function Interview() {
   const handleEndSession = () => {
     setIsAiSpeaking(false);
     stopTTS();
+    setIsInitialTTSPlaying(false);
     clearConversation();
     setShowFeedback(true);
   };
@@ -256,10 +288,13 @@ export default function Interview() {
    const handleTTSToggle = () => {
     if (isTTSPlaying) {
       stopTTS();
+      setIsInitialTTSPlaying(false);
     } else if (currentSubtitle && 
                !currentSubtitle.includes("Processing your message") && 
                !currentSubtitle.includes("Transcribing your message") &&
                selectedPersonaData?.tts_voice) {
+      
+      setIsInitialTTSPlaying(true);
       
       // Clear any existing subtitle timeout
       if (subtitleTimeoutRef.current) {
@@ -283,11 +318,13 @@ export default function Interview() {
         onEnd: () => {
           setIsAiSpeaking(false);
           setDisplayedSubtitle('');
+          setIsInitialTTSPlaying(false);
         },
         onError: (error) => {
           console.error('TTS error:', error);
           setIsAiSpeaking(false);
           setDisplayedSubtitle(currentSubtitle); // Show subtitle immediately on error
+          setIsInitialTTSPlaying(false);
         }
       });
     }
@@ -369,7 +406,7 @@ export default function Interview() {
             </div>
 
             {/* Waveform - positioned in front of officer's picture at 25% height */}
-            {isTTSPlaying && !isPaused && (
+            {(isTTSPlaying || isInitialTTSPlaying) && !isPaused && (
               <div className="absolute bottom-24 left-1/2 transform -translate-x-1/2 w-80 animate-fade-in">
                 <Waveform 
                   isActive={true} 
@@ -390,11 +427,17 @@ export default function Interview() {
                 {selectedPersonaData.mood}
               </p>
             )}
+            {/* Language indicator */}
+            {language && (
+              <p className="text-blue-300 text-xs mt-1">
+                Speaking in {language.name}
+              </p>
+            )}
           </div>
 
           {/* Subtitles with TTS Controls */}
           <div className="max-w-md mx-auto h-16 flex items-center justify-center relative">
-            {showSubtitles && isTTSPlaying && !isPaused && (
+            {showSubtitles && (isTTSPlaying || isInitialTTSPlaying) && !isPaused && (
               <div className="flex items-center gap-2">
                 <p className="text-center text-white/90 bg-black/30 px-4 py-2 rounded-lg backdrop-blur-sm animate-fade-in text-sm">
                   {displayedSubtitle}

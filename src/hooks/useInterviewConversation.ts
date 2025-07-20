@@ -1,7 +1,9 @@
+
 import { useState, useRef } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/supabase';
 import { usePersonaStore } from '@/stores/personaStore';
+import { useLanguagePreference } from '@/hooks/useLanguagePreference';
 import { AudioRecordingResult } from './useAudioRecording';
 
 export interface ConversationMessage {
@@ -19,12 +21,15 @@ export const useInterviewConversation = () => {
   const [hasInitialized, setHasInitialized] = useState(false);
   const { toast } = useToast();
   const { selectedPersona } = usePersonaStore();
+  const { languageCode } = useLanguagePreference();
   const sessionIdRef = useRef<string | null>(null);
 
   // Initialize session ID
   if (!sessionIdRef.current) {
     sessionIdRef.current = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
+
+  console.log('useInterviewConversation - Language:', languageCode);
 
   // Initialize with AI greeting
   const initializeInterview = async () => {
@@ -35,6 +40,8 @@ export const useInterviewConversation = () => {
     setCurrentSubtitle('Connecting...');
 
     try {
+      console.log('Initializing interview with language:', languageCode);
+      
       // Get initial AI greeting
       const aiResponse = await sendToAI([]);
       
@@ -64,8 +71,13 @@ export const useInterviewConversation = () => {
 
   const transcribeAudio = async (audioData: string): Promise<string> => {
     try {
+      console.log('Transcribing audio with language:', languageCode);
+      
       const { data, error } = await supabase.functions.invoke('voice-to-text', {
-        body: { audio: audioData, language: 'en' }
+        body: { 
+          audio: audioData, 
+          language: languageCode || 'en' 
+        }
       });
 
       if (error) {
@@ -82,11 +94,13 @@ export const useInterviewConversation = () => {
 
   const sendToAI = async (conversationMessages: ConversationMessage[]): Promise<string> => {
     try {
+      console.log('Sending to AI with language:', languageCode);
+      
       const { data, error } = await supabase.functions.invoke('interview-ai', {
         body: {
           messages: conversationMessages,
           personaId: selectedPersona,
-          language: 'en',
+          language: languageCode || 'en',
           skills: [], // Could be passed as props if needed
           sessionId: sessionIdRef.current
         }
