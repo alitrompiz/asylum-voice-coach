@@ -65,7 +65,7 @@ export const LanguageSelector = ({ selectedLanguage, onLanguageChange }: Languag
 
   return (
     <div className="bg-card rounded-lg p-3 border">
-      <div className="flex items-center gap-2 mb-3">
+      <div className="flex items-center gap-2 mb-2">
         <Globe className="w-4 h-4" />
         <h3 className="text-lg font-semibold">{t('language.title')}</h3>
       </div>

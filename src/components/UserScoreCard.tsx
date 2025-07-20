@@ -117,14 +117,11 @@ export const UserScoreCard = () => {
           <ScoreRing score={0} label={t('scores.story_clarity')} tooltip={t('scores.story_clarity_tooltip')} />
           <ScoreRing score={0} label={t('scores.case_strength')} tooltip={t('scores.case_strength_tooltip')} />
         </div>
-        <div className="mt-2 text-center">
-          <p className="text-sm text-muted-foreground">
-            {t('scores.overall_readiness', { score: 0 })}
-          </p>
-          <p className="text-xs text-muted-foreground mt-1">
-            {t('scores.complete_interviews')}
-          </p>
-        </div>
+      <div className="mt-1 text-center">
+        <p className="text-sm text-muted-foreground">
+          {t('scores.overall_readiness', { score: 0 })}
+        </p>
+      </div>
       </div>
     );
   }
@@ -154,7 +151,7 @@ export const UserScoreCard = () => {
           tooltip={t('scores.case_strength_tooltip')} 
         />
       </div>
-      <div className="mt-2 text-center">
+      <div className="mt-1 text-center">
         <p className="text-sm font-medium">
           {t('scores.overall_readiness', { score: overallAverage })}
         </p>

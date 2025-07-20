@@ -58,7 +58,7 @@ export const PersonaCarousel = ({ onSelect }: PersonaCarouselProps) => {
   if (isLoading) {
     return (
       <div className="bg-card rounded-lg p-3 border">
-        <h3 className="text-lg font-semibold mb-3">{t('personas.title')}</h3>
+        <h3 className="text-lg font-semibold mb-2">{t('personas.title')}</h3>
         <div className="flex gap-3">
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="flex flex-col items-center animate-pulse">
@@ -75,7 +75,7 @@ export const PersonaCarousel = ({ onSelect }: PersonaCarouselProps) => {
   if (error || !personas || personas.length === 0) {
     return (
       <div className="bg-card rounded-lg p-3 border">
-        <h3 className="text-lg font-semibold mb-3">{t('personas.title')}</h3>
+        <h3 className="text-lg font-semibold mb-2">{t('personas.title')}</h3>
         <p className="text-muted-foreground">{t('personas.no_officers')}</p>
       </div>
     );
@@ -83,7 +83,7 @@ export const PersonaCarousel = ({ onSelect }: PersonaCarouselProps) => {
 
   return (
     <div className="bg-card rounded-lg p-3 border">
-      <h3 className="text-lg font-semibold mb-3">{t('personas.title')}</h3>
+      <h3 className="text-lg font-semibold mb-2">{t('personas.title')}</h3>
       <ScrollArea className="w-full">
         <div className="flex gap-3 pb-4 snap-x snap-mandatory overflow-x-auto">
           {personas.map((persona) => (

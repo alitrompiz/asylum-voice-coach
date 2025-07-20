@@ -54,19 +54,19 @@ export default function Dashboard() {
           </div>
         </header>
 
-        <div className="mb-3">
+        <div className="mb-2">
           <UserScoreCard />
         </div>
 
-        <div className="mb-3">
+        <div className="mb-2">
           <PersonaCarousel />
         </div>
 
-        <div className="mb-3">
+        <div className="mb-2">
           <LanguageSelector />
         </div>
 
-        <div className="mb-3">
+        <div className="mb-2">
           <SkillsScroller />
         </div>
       </div>

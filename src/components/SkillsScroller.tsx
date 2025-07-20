@@ -59,7 +59,7 @@ export const SkillsScroller = () => {
   if (isLoading) {
     return (
       <div className="bg-card rounded-lg p-3 border">
-        <h3 className="text-lg font-semibold mb-3">{t('skills.title')}</h3>
+        <h3 className="text-lg font-semibold mb-2">{t('skills.title')}</h3>
         <div className="space-y-3">
           {[1, 2].map((row) => (
             <div key={row} className="flex gap-2 animate-pulse">
@@ -76,7 +76,7 @@ export const SkillsScroller = () => {
   if (error || !skills || skills.length === 0) {
     return (
       <div className="bg-card rounded-lg p-3 border">
-        <h3 className="text-lg font-semibold mb-3">{t('skills.title')}</h3>
+        <h3 className="text-lg font-semibold mb-2">{t('skills.title')}</h3>
         <div className="flex flex-col items-center justify-center py-6">
           <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
             <ChevronRight className="w-8 h-8 text-muted-foreground" />
@@ -95,8 +95,8 @@ export const SkillsScroller = () => {
 
   return (
     <div className="bg-card rounded-lg p-3 border">
-      <h3 className="text-lg font-semibold mb-3">{t('skills.title')}</h3>
-      <div className="space-y-3">
+      <h3 className="text-lg font-semibold mb-2">{t('skills.title')}</h3>
+      <div className="space-y-1">
         {/* Row 1 */}
         <ScrollArea className="w-full h-[68px]">
           <div className="flex gap-2 py-2 snap-x snap-mandatory overflow-x-auto min-h-[52px]">
