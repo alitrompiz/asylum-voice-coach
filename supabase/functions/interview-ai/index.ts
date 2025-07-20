@@ -82,40 +82,65 @@ serve(async (req) => {
       };
     }
 
-    // Get persona description
-    let personaDesc = 'professional';
+    // Get persona (officer) data with AI instructions
+    let personaData: any = { mood: 'professional', name: 'Officer', ai_instructions: null };
     if (personaId) {
       const { data: persona } = await supabase
         .from('personas')
-        .select('mood, name')
+        .select('mood, name, ai_instructions')
         .eq('id', personaId)
         .single();
       
       if (persona) {
-        personaDesc = persona.mood;
+        personaData = persona;
       }
     }
 
-    // Get active interview conduct prompt - REQUIRED
+    // Get active base template prompt - REQUIRED
     const { data: promptData, error: promptError } = await supabase
       .from('prompts')
       .select('*')
       .eq('prompt_type', 'interview_conduct')
+      .eq('is_base_template', true)
       .eq('is_active', true)
       .single();
 
     if (!promptData) {
-      console.error('No active interview prompt found:', promptError);
-      throw new Error('No active interview prompt configured. Please contact an administrator.');
+      console.error('No active base template prompt found:', promptError);
+      throw new Error('No active interview base template configured. Please contact an administrator.');
     }
 
-    // Use admin-defined prompt with variable substitution
+    // Get focus area AI instructions from skills
+    let focusAreasInstructions = 'Conduct a general asylum interview.';
+    if (skills.length > 0) {
+      const { data: skillsData, error: skillsError } = await supabase
+        .from('skills')
+        .select('name, ai_instructions')
+        .in('name', skills);
+
+      if (skillsError) {
+        console.error('Skills fetch error:', skillsError);
+      } else if (skillsData?.length > 0) {
+        focusAreasInstructions = skillsData
+          .map(skill => skill.ai_instructions || `Ask relevant questions about ${skill.name}`)
+          .join('\n\n');
+      }
+    }
+
+    // Generate officer instructions
+    const officerInstructions = personaData.ai_instructions || 
+      `You are ${personaData.name}, a professional USCIS asylum officer with a ${personaData.mood} demeanor.`;
+
+    // Use new efficient prompt structure
     const promptVariables = {
+      officer_instructions: officerInstructions,
       user_story: userContext.userStory || 'No story provided',
+      focus_areas: focusAreasInstructions,
+      language: language || 'English',
+      // Backwards compatibility
       country_of_persecution: userContext.profile?.country_of_feared_persecution || 'Not specified',
       skills_selected: skills.length > 0 ? skills.join(', ') : 'General interview skills',
-      persona_mood: personaDesc,
-      language: language || 'English'
+      persona_mood: personaData.mood
     };
 
     const systemPrompt = processPromptTemplate(promptData.content, promptVariables);

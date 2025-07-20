@@ -162,6 +162,7 @@ export type Database = {
       }
       personas: {
         Row: {
+          ai_instructions: string | null
           alt_text: string
           created_at: string
           id: string
@@ -174,6 +175,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          ai_instructions?: string | null
           alt_text: string
           created_at?: string
           id?: string
@@ -186,6 +188,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          ai_instructions?: string | null
           alt_text?: string
           created_at?: string
           id?: string
@@ -264,7 +267,9 @@ export type Database = {
           description: string | null
           id: string
           is_active: boolean
+          is_base_template: boolean
           name: string
+          placeholder_documentation: string | null
           prompt_type: Database["public"]["Enums"]["prompt_type"] | null
           prompt_variables: Json | null
           updated_at: string
@@ -277,7 +282,9 @@ export type Database = {
           description?: string | null
           id?: string
           is_active?: boolean
+          is_base_template?: boolean
           name: string
+          placeholder_documentation?: string | null
           prompt_type?: Database["public"]["Enums"]["prompt_type"] | null
           prompt_variables?: Json | null
           updated_at?: string
@@ -290,7 +297,9 @@ export type Database = {
           description?: string | null
           id?: string
           is_active?: boolean
+          is_base_template?: boolean
           name?: string
+          placeholder_documentation?: string | null
           prompt_type?: Database["public"]["Enums"]["prompt_type"] | null
           prompt_variables?: Json | null
           updated_at?: string
@@ -330,6 +339,7 @@ export type Database = {
       }
       skills: {
         Row: {
+          ai_instructions: string | null
           created_at: string
           group_name: string
           id: string
@@ -339,6 +349,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          ai_instructions?: string | null
           created_at?: string
           group_name: string
           id?: string
@@ -348,6 +359,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          ai_instructions?: string | null
           created_at?: string
           group_name?: string
           id?: string

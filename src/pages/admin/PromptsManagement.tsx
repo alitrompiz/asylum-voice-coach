@@ -10,10 +10,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Plus, Edit, Trash2, MessageSquare, Eye, Loader2, Play, TrendingUp, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Plus, Edit, Trash2, MessageSquare, Eye, Loader2, Play, TrendingUp, AlertTriangle, CheckCircle2, Settings } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { PromptPreviewTool } from '@/components/admin/PromptPreviewTool';
 
 interface Prompt {
   id: string;
@@ -52,6 +53,7 @@ export default function PromptsManagement() {
   });
   const [previewMode, setPreviewMode] = useState(false);
   const [previewContent, setPreviewContent] = useState('');
+  const [showPreviewTool, setShowPreviewTool] = useState(false);
 
   // Fetch prompts
   const { data: prompts = [], isLoading } = useQuery({
@@ -290,17 +292,25 @@ export default function PromptsManagement() {
             Manage system prompts and AI instructions
           </p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={() => {
-              setEditingPrompt(null);
-              resetForm();
-            }}>
-              <Plus className="w-4 h-4 mr-2" />
-              Add Prompt
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => setShowPreviewTool(true)}
+          >
+            <Settings className="w-4 h-4 mr-2" />
+            Prompt Preview Tool
+          </Button>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={() => {
+                setEditingPrompt(null);
+                resetForm();
+              }}>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Prompt
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>
                 {editingPrompt ? 'Edit Prompt' : 'Create New Prompt'}
@@ -422,8 +432,9 @@ export default function PromptsManagement() {
                 </Button>
               </div>
             </div>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-4">
@@ -588,6 +599,11 @@ export default function PromptsManagement() {
           </Table>
         </CardContent>
       </Card>
+
+      <PromptPreviewTool 
+        open={showPreviewTool} 
+        onOpenChange={setShowPreviewTool} 
+      />
     </div>
   );
 }

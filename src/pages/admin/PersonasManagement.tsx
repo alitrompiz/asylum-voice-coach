@@ -20,6 +20,7 @@ interface Persona {
   position: number;
   is_visible: boolean;
   tts_voice: string;
+  ai_instructions?: string;
   created_at: string;
   updated_at: string;
 }

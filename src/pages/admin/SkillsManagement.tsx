@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { Plus, Edit, Trash2, Upload, GripVertical, RefreshCw } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -21,6 +22,7 @@ import { trackEvent } from '@/lib/tracking';
 const skillSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   group_name: z.string().min(1, 'Group is required'),
+  ai_instructions: z.string().optional(),
 });
 
 type SkillFormData = z.infer<typeof skillSchema>;
@@ -30,6 +32,7 @@ interface Skill {
   name: string;
   group_name: string;
   sort_order: number;
+  ai_instructions?: string;
   created_at: string;
   updated_at: string;
 }
@@ -63,6 +66,7 @@ export default function SkillsManagement() {
     defaultValues: {
       name: '',
       group_name: '',
+      ai_instructions: '',
     },
   });
 
@@ -129,6 +133,7 @@ export default function SkillsManagement() {
           .insert({
             name: data.name,
             group_name: data.group_name,
+            ai_instructions: data.ai_instructions,
             sort_order: maxOrder + 1,
           });
 
@@ -300,6 +305,7 @@ export default function SkillsManagement() {
     form.reset({
       name: skill.name,
       group_name: skill.group_name,
+      ai_instructions: skill.ai_instructions || '',
     });
     setIsAddModalOpen(true);
   };
@@ -325,9 +331,9 @@ export default function SkillsManagement() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Skills Management</h2>
+          <h2 className="text-3xl font-bold tracking-tight">Focus Areas Management</h2>
           <p className="text-muted-foreground">
-            Manage interview skills and categories
+            Manage interview focus areas and AI questioning guidelines
           </p>
         </div>
         <div className="flex gap-2">
@@ -348,7 +354,7 @@ export default function SkillsManagement() {
           </Button>
           <Button onClick={() => setIsAddModalOpen(true)}>
             <Plus className="w-4 h-4 mr-2" />
-            Add Skill
+            Add Focus Area
           </Button>
         </div>
       </div>
@@ -418,8 +424,9 @@ export default function SkillsManagement() {
                     <TableHeader>
                       <TableRow>
                         <TableHead className="w-12"></TableHead>
-                        <TableHead>Skill Name</TableHead>
+                        <TableHead>Focus Area Name</TableHead>
                         <TableHead>Group</TableHead>
+                        <TableHead>AI Instructions</TableHead>
                         <TableHead>Order</TableHead>
                         <TableHead>Actions</TableHead>
                       </TableRow>
@@ -438,6 +445,11 @@ export default function SkillsManagement() {
                               <TableCell className="font-medium">{skill.name}</TableCell>
                               <TableCell>
                                 <Badge variant="secondary">{skill.group_name}</Badge>
+                              </TableCell>
+                              <TableCell className="max-w-48">
+                                <div className="text-xs text-muted-foreground truncate">
+                                  {skill.ai_instructions || 'No instructions'}
+                                </div>
                               </TableCell>
                               <TableCell>{skill.sort_order}</TableCell>
                               <TableCell>
@@ -478,7 +490,7 @@ export default function SkillsManagement() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {editingSkill ? 'Edit Skill' : 'Add New Skill'}
+              {editingSkill ? 'Edit Focus Area' : 'Add New Focus Area'}
             </DialogTitle>
           </DialogHeader>
           <Form {...form}>
@@ -488,15 +500,15 @@ export default function SkillsManagement() {
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Skill Name</FormLabel>
+                    <FormLabel>Focus Area Name</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="Enter skill name" />
+                      <Input {...field} placeholder="Enter focus area name" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              <FormField
+               <FormField
                 control={form.control}
                 name="group_name"
                 render={({ field }) => (
@@ -520,6 +532,19 @@ export default function SkillsManagement() {
                   </FormItem>
                 )}
               />
+              <FormField
+                control={form.control}
+                name="ai_instructions"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>AI Instructions (Focus Area Questioning)</FormLabel>
+                    <FormControl>
+                      <Textarea {...field} placeholder="Define how the AI should question this focus area..." />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <div className="flex justify-end gap-2">
                 <Button
                   type="button"
@@ -533,7 +558,7 @@ export default function SkillsManagement() {
                   Cancel
                 </Button>
                 <Button type="submit">
-                  {editingSkill ? 'Update' : 'Add'} Skill
+                  {editingSkill ? 'Update' : 'Add'} Focus Area
                 </Button>
               </div>
             </form>

@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -22,6 +23,7 @@ interface Persona {
   position: number;
   is_visible: boolean;
   tts_voice: string;
+  ai_instructions?: string;
   created_at: string;
   updated_at: string;
 }
@@ -209,6 +211,22 @@ export const PersonaCard = ({ persona, onDelete, onToggleVisibility }: PersonaCa
                 <X className="w-3 h-3" />
               </Button>
             )}
+          </div>
+
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <Label htmlFor={`ai-instructions-${persona.id}`} className="text-sm font-medium">
+                AI Instructions (Officer Personality)
+              </Label>
+              {getSaveIcon('ai_instructions')}
+            </div>
+            <Textarea
+              id={`ai-instructions-${persona.id}`}
+              value={getCurrentValue('ai_instructions') || ''}
+              onChange={(e) => handleFieldChange('ai_instructions', e.target.value)}
+              placeholder="Define how this officer should behave during interviews..."
+              className="min-h-16 text-xs"
+            />
           </div>
 
           <div className="space-y-1">
