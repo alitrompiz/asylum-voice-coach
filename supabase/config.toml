@@ -14,3 +14,6 @@ major_version = 15
 
 [functions.delete-user-data]
 verify_jwt = true
+
+[functions.ocr-pdf]
+verify_jwt = false

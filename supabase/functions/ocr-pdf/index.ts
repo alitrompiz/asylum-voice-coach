@@ -46,8 +46,7 @@ async function processRequest(req: Request): Promise<Response> {
     
     // Convert file to base64 for Textract
     const fileBuffer = await fileData.arrayBuffer();
-    const uint8Array = new Uint8Array(fileBuffer);
-    const base64Data = btoa(String.fromCharCode.apply(null, Array.from(uint8Array)));
+    const base64Data = btoa(String.fromCharCode(...new Uint8Array(fileBuffer)));
     
     // Create timestamp for AWS signature
     const now = new Date();
