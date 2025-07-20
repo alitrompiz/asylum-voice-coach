@@ -96,7 +96,7 @@ export const SkillsScroller = () => {
   return (
     <div className="bg-card rounded-lg p-3 border">
       <h3 className="text-lg font-semibold mb-2">{t('skills.title')}</h3>
-      <div className="space-y-1">
+      <div className="space-y-0">
         {/* Row 1 */}
         <ScrollArea className="w-full h-[68px]">
           <div className="flex gap-2 py-2 snap-x snap-mandatory overflow-x-auto min-h-[52px]">
