@@ -281,23 +281,75 @@ function extractI589Data(analyzeResult: any) {
   const tables = analyzeResult.tables || [];
   const paragraphs = analyzeResult.paragraphs || [];
   
-  // Extract text content
+  // Extract text content from multiple sources for completeness
   let fullText = '';
+  
+  // Method 1: Extract from paragraphs (structured text)
   for (const paragraph of paragraphs) {
     fullText += paragraph.content + '\n';
   }
   
+  // Method 2: Extract from individual lines for any missed content
+  let lineText = '';
+  for (const page of pages) {
+    if (page.lines) {
+      for (const line of page.lines) {
+        lineText += line.content + '\n';
+      }
+    }
+  }
+  
+  // Method 3: Extract from words if lines/paragraphs miss content
+  let wordText = '';
+  for (const page of pages) {
+    if (page.words) {
+      let currentLine = '';
+      let lastTop = -1;
+      
+      for (const word of page.words) {
+        const wordTop = word.boundingBox ? word.boundingBox[1] : 0;
+        
+        // Start new line if word is significantly below the last one
+        if (lastTop >= 0 && Math.abs(wordTop - lastTop) > 10) {
+          wordText += currentLine.trim() + '\n';
+          currentLine = '';
+        }
+        
+        currentLine += word.content + ' ';
+        lastTop = wordTop;
+      }
+      
+      if (currentLine.trim()) {
+        wordText += currentLine.trim() + '\n';
+      }
+    }
+  }
+  
+  // Use the most complete text source
+  let bestText = fullText;
+  if (lineText.length > bestText.length) {
+    bestText = lineText;
+    console.log('Using line-based extraction as it captured more text');
+  }
+  if (wordText.length > bestText.length) {
+    bestText = wordText;
+    console.log('Using word-based extraction as it captured more text');
+  }
+  
+  console.log(`Extracted text lengths - Paragraphs: ${fullText.length}, Lines: ${lineText.length}, Words: ${wordText.length}`);
+  console.log(`Using text with length: ${bestText.length}`);
+  
   // Extract structured data for I-589 form
   const extractedSections = {
-    personalInfo: extractPersonalInfo(fullText, tables),
-    asylumClaim: extractAsylumClaim(fullText),
-    narrative: extractNarrative(fullText),
+    personalInfo: extractPersonalInfo(bestText, tables),
+    asylumClaim: extractAsylumClaim(bestText),
+    narrative: extractNarrative(bestText),
     tables: extractTables(tables),
     checkboxes: extractCheckboxes(pages)
   };
   
   return {
-    text: fullText,
+    text: bestText,
     sections: extractedSections,
     confidence: calculateConfidence(analyzeResult),
     pageCount: pages.length,
