@@ -22,7 +22,25 @@
   "skills": {
     "title": "Pick areas of focus",
     "no_areas": "No focus areas are currently active.",
-    "contact_admin": "Contact your administrator to add areas."
+    "contact_admin": "Contact your administrator to add areas.",
+    "names": {
+      "describe_past_harm": "Describe past harm",
+      "explain_violent_events": "Explain violent events",
+      "explain_delay_in_applying": "Explain delay in applying",
+      "respond_to_disbelief": "Respond to disbelief",
+      "show_fear_of_returning": "Show fear of returning",
+      "address_time_in_other_countries": "Address time in other countries",
+      "explain_why_you_were_targeted": "Explain why YOU were targeted",
+      "improve_story_clarity": "Improve Story clarity",
+      "story_consistency": "Story consistency",
+      "prove_lack_of_protection": "Prove lack of protection",
+      "recall_dates_and_places": "Recall dates and places",
+      "elaborate_details": "Elaborate details",
+      "handle_doubt": "Handle doubt",
+      "talk_about_sensitive_events": "Talk about sensitive events",
+      "fix_contradictions": "Fix contradictions",
+      "internal_relocation": "Internal Relocation"
+    }
   },
   "scores": {
     "credibility": "Credibility",

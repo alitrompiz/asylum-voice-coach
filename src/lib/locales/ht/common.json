@@ -22,7 +22,25 @@
   "skills": {
     "title": "Chwazi zòn konsantrasyon",
     "no_areas": "Pa gen zòn konsantrasyon ki aktif koulye a.",
-    "contact_admin": "Kontakte administratè ou pou ajoute zòn yo."
+    "contact_admin": "Kontakte administratè ou pou ajoute zòn yo.",
+    "names": {
+      "describe_past_harm": "Dekri mal ki te rive nan pase",
+      "explain_violent_events": "Eksplike evènman vyolan yo",
+      "explain_delay_in_applying": "Eksplike reta nan aplikasyon",
+      "respond_to_disbelief": "Reponn ak mekwè",
+      "show_fear_of_returning": "Montre pè retounen",
+      "address_time_in_other_countries": "Abòde tan nan lòt peyi yo",
+      "explain_why_you_were_targeted": "Eksplike poukisa OU te yon sib",
+      "improve_story_clarity": "Amelyore klate istwa",
+      "story_consistency": "Konsistans istwa",
+      "prove_lack_of_protection": "Prèv mank pwoteksyon",
+      "recall_dates_and_places": "Sonje dat ak kote yo",
+      "elaborate_details": "Elabore detay yo",
+      "handle_doubt": "Jere dout yo",
+      "talk_about_sensitive_events": "Pale sou evènman sensib yo",
+      "fix_contradictions": "Kòrije kontradiksyon yo",
+      "internal_relocation": "Relokasyon entèn"
+    }
   },
   "scores": {
     "credibility": "Kredibilite",

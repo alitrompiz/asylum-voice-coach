@@ -22,7 +22,25 @@
   "skills": {
     "title": "Виберіть області фокусу",
     "no_areas": "Наразі немає активних областей фокусу.",
-    "contact_admin": "Зверніться до адміністратора для додавання областей."
+    "contact_admin": "Зверніться до адміністратора для додавання областей.",
+    "names": {
+      "describe_past_harm": "Опишіть минулу шкоду",
+      "explain_violent_events": "Поясніть насильницькі події",
+      "explain_delay_in_applying": "Поясніть затримку в поданні заяви",
+      "respond_to_disbelief": "Відповідайте на недовіру",
+      "show_fear_of_returning": "Покажіть страх повернення",
+      "address_time_in_other_countries": "Розгляньте час в інших країнах",
+      "explain_why_you_were_targeted": "Поясніть, чому ВИ стали мішенню",
+      "improve_story_clarity": "Покращте ясність історії",
+      "story_consistency": "Послідовність історії",
+      "prove_lack_of_protection": "Доведіть відсутність захисту",
+      "recall_dates_and_places": "Згадайте дати та місця",
+      "elaborate_details": "Деталізуйте подробиці",
+      "handle_doubt": "Справляйтеся з сумнівами",
+      "talk_about_sensitive_events": "Говоріть про чутливі події",
+      "fix_contradictions": "Виправте протиріччя",
+      "internal_relocation": "Внутрішнє переміщення"
+    }
   },
   "scores": {
     "credibility": "Довіра",

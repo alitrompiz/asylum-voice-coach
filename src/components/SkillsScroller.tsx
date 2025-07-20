@@ -36,6 +36,15 @@ export const SkillsScroller = () => {
   const { data: skills, isLoading, error } = useSkills();
   const { skillsSelected, toggleSkill } = useSkillsStore();
 
+  // Function to translate skill names
+  const translateSkillName = (skillName: string) => {
+    // Create a key from the skill name for translation lookup
+    const key = `skills.names.${skillName.toLowerCase().replace(/ /g, '_').replace(/[^a-z_]/g, '')}`;
+    const translated = t(key);
+    // If translation exists (key is different from translated), use it, otherwise fallback to original
+    return translated !== key ? translated : skillName;
+  };
+
   const handleSkillToggle = (skillId: string) => {
     toggleSkill(skillId);
   };
@@ -109,7 +118,7 @@ export const SkillsScroller = () => {
                 aria-pressed={skillsSelected.includes(skill.id)}
                 data-testid={`skill-chip-${skill.id}`}
               >
-                {skill.name}
+                {translateSkillName(skill.name)}
               </Badge>
             ))}
           </div>
@@ -136,7 +145,7 @@ export const SkillsScroller = () => {
                 aria-pressed={skillsSelected.includes(skill.id)}
                 data-testid={`skill-chip-${skill.id}`}
               >
-                {skill.name}
+                {translateSkillName(skill.name)}
               </Badge>
             ))}
           </div>

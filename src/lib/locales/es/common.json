@@ -22,7 +22,25 @@
   "skills": {
     "title": "Elige áreas de enfoque",
     "no_areas": "No hay áreas de enfoque actualmente activas.",
-    "contact_admin": "Contacta a tu administrador para agregar áreas."
+    "contact_admin": "Contacta a tu administrador para agregar áreas.",
+    "names": {
+      "describe_past_harm": "Describir daño pasado",
+      "explain_violent_events": "Explicar eventos violentos",
+      "explain_delay_in_applying": "Explicar retraso en solicitar",
+      "respond_to_disbelief": "Responder a la incredulidad",
+      "show_fear_of_returning": "Mostrar miedo de regresar",
+      "address_time_in_other_countries": "Abordar tiempo en otros países",
+      "explain_why_you_were_targeted": "Explicar por qué USTED fue objetivo",
+      "improve_story_clarity": "Mejorar claridad de la historia",
+      "story_consistency": "Consistencia de la historia",
+      "prove_lack_of_protection": "Probar falta de protección",
+      "recall_dates_and_places": "Recordar fechas y lugares",
+      "elaborate_details": "Elaborar detalles",
+      "handle_doubt": "Manejar dudas",
+      "talk_about_sensitive_events": "Hablar sobre eventos sensibles",
+      "fix_contradictions": "Corregir contradicciones",
+      "internal_relocation": "Reubicación interna"
+    }
   },
   "scores": {
     "credibility": "Credibilidad",

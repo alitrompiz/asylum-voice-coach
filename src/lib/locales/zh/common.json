@@ -22,7 +22,25 @@
   "skills": {
     "title": "选择关注领域",
     "no_areas": "当前没有活跃的关注领域。",
-    "contact_admin": "联系管理员添加领域。"
+    "contact_admin": "联系管理员添加领域。",
+    "names": {
+      "describe_past_harm": "描述过去的伤害",
+      "explain_violent_events": "解释暴力事件",
+      "explain_delay_in_applying": "解释申请延迟",
+      "respond_to_disbelief": "回应怀疑",
+      "show_fear_of_returning": "表明回国恐惧",
+      "address_time_in_other_countries": "说明在其他国家的时间",
+      "explain_why_you_were_targeted": "解释为什么你被针对",
+      "improve_story_clarity": "提高故事清晰度",
+      "story_consistency": "故事一致性",
+      "prove_lack_of_protection": "证明缺乏保护",
+      "recall_dates_and_places": "回忆日期和地点",
+      "elaborate_details": "详细说明",
+      "handle_doubt": "处理疑虑",
+      "talk_about_sensitive_events": "谈论敏感事件",
+      "fix_contradictions": "修正矛盾",
+      "internal_relocation": "国内迁移"
+    }
   },
   "scores": {
     "credibility": "可信度",
