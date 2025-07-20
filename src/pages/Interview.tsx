@@ -56,7 +56,10 @@ export default function Interview() {
     }
   }, [selectedPersonaData, hasInitialized, languageLoading, languageCode, initializeInterview]);
 
-  // Auto-play TTS when AI responds - simplified version
+  // Track last spoken subtitle to prevent rapid repeated TTS calls
+  const lastSpokenSubtitle = useRef<string>('');
+
+  // Auto-play TTS when AI responds - with deduplication
   useEffect(() => {
     console.log('TTS Effect triggered:', {
       currentSubtitle: currentSubtitle?.substring(0, 50) + '...',
@@ -64,19 +67,24 @@ export default function Interview() {
       tts_voice: selectedPersonaData?.tts_voice,
       isProcessing,
       isTTSPlaying,
-      languageCode
+      languageCode,
+      lastSpoken: lastSpokenSubtitle.current?.substring(0, 50) + '...'
     });
     
     // Only speak if it's an actual AI response (not processing/transcribing/system messages)
+    // AND it's different from the last spoken subtitle
     if (currentSubtitle && 
         !currentSubtitle.includes("Processing your message") && 
         !currentSubtitle.includes("Transcribing your message") &&
         !currentSubtitle.includes("Connecting...") &&
+        !currentSubtitle.includes("Processing failed") &&
         selectedPersonaData?.tts_voice &&
         !isProcessing &&
-        !isTTSPlaying) {
+        !isTTSPlaying &&
+        currentSubtitle !== lastSpokenSubtitle.current) {
       
-      console.log('Starting TTS for:', currentSubtitle.substring(0, 50) + '...');
+      console.log('Starting TTS for NEW content:', currentSubtitle.substring(0, 50) + '...');
+      lastSpokenSubtitle.current = currentSubtitle;
       
       // Get the appropriate voice for the user's selected language
       const voiceToUse = selectedPersonaData.tts_voice;
@@ -96,6 +104,8 @@ export default function Interview() {
           setIsAiSpeaking(false);
         }
       });
+    } else if (currentSubtitle === lastSpokenSubtitle.current) {
+      console.log('Skipping TTS - same content as last spoken');
     }
   }, [currentSubtitle, selectedPersonaData?.tts_voice, speak, isProcessing, isTTSPlaying]);
 

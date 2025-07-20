@@ -82,7 +82,13 @@ export const useInterviewConversation = () => {
 
       if (error) {
         console.error('Transcription error:', error);
-        throw new Error('Failed to transcribe audio');
+        
+        // Check if it's a quota exceeded error
+        if (error.message?.includes('quota') || error.message?.includes('429')) {
+          throw new Error('OpenAI quota exceeded. Please check your API billing or try again later.');
+        } else {
+          throw new Error('Failed to transcribe audio');
+        }
       }
 
       return data.text || '';
