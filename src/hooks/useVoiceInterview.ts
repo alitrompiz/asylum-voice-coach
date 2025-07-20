@@ -318,6 +318,36 @@ export const useVoiceInterview = (options: UseVoiceInterviewOptions = {}): UseVo
   const startInterview = useCallback(async () => {
     try {
       setError(null);
+      
+      // Validate session inputs before starting interview
+      const { data: validationData, error: validationError } = await supabase.rpc('validate_session_inputs', {
+        p_user_id: (await supabase.auth.getUser()).data.user?.id
+      });
+      
+      if (validationError) {
+        throw new Error(`Validation failed: ${validationError.message}`);
+      }
+      
+      // Type the validation response properly
+      const validation = validationData as { missing_fields: string[] } | null;
+      if (validation?.missing_fields && validation.missing_fields.length > 0) {
+        const missingFieldsList = validation.missing_fields.join(', ');
+        setError(`Please complete the following before starting: ${missingFieldsList}.`);
+        return; // Don't proceed with interview
+      }
+      
+      // Validate persona selection at runtime
+      if (!personaId) {
+        setError('Please complete the following before starting: officer selection.');
+        return;
+      }
+      
+      // Validate skills selection at runtime  
+      if (!skills || skills.length === 0) {
+        setError('Please complete the following before starting: focus areas selection.');
+        return;
+      }
+      
       setInterviewActive(true);
       const newInterviewId = `interview_${Date.now()}`;
       setInterviewId(newInterviewId);

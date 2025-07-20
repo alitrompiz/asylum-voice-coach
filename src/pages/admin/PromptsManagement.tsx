@@ -191,22 +191,33 @@ export default function PromptsManagement() {
   };
 
   const validatePrompt = () => {
-    const requiredVars = formData.prompt_type === 'interview_conduct' 
-      ? ['user_story', 'skills_selected', 'persona_mood', 'language']
-      : ['user_story', 'skills_selected', 'transcript'];
+    // Only validate template syntax - no user-specific data validation
+    const templateVarPattern = /\{\{(\w+)\}\}/g;
+    const matches = formData.content.match(templateVarPattern);
     
-    const missingVars = requiredVars.filter(varName => 
-      !formData.content.includes(`{{${varName}}}`)
-    );
-    
-    if (missingVars.length > 0) {
+    if (!matches) {
       toast({
-        title: "Validation Warning",
-        description: `Missing recommended variables: ${missingVars.join(', ')}`,
+        title: "Validation Info",
+        description: "No template variables found in prompt content",
+      });
+      return true; // Still valid, just informational
+    }
+    
+    // Check for malformed template variables
+    const malformedPattern = /\{[^{}]*\{|\}[^{}]*\}/;
+    if (malformedPattern.test(formData.content)) {
+      toast({
+        title: "Validation Error",
+        description: "Malformed template variables detected. Use {{variable_name}} format.",
         variant: "destructive",
       });
       return false;
     }
+    
+    toast({
+      title: "Validation Success",
+      description: `Template syntax valid. Found variables: ${matches.map(m => m.replace(/[{}]/g, '')).join(', ')}`,
+    });
     return true;
   };
 
@@ -250,7 +261,7 @@ export default function PromptsManagement() {
     const submitData = {
       ...formData,
       template_variables: templateVars,
-      validation_status: validatePrompt() ? 'validated' as const : 'needs_review' as const
+      validation_status: 'validated' as const // Always validated since we only check syntax
     };
 
     if (editingPrompt) {

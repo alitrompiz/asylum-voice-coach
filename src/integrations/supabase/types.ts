@@ -602,6 +602,10 @@ export type Database = {
         Args: { content: string; required_vars: string[] }
         Returns: boolean
       }
+      validate_session_inputs: {
+        Args: { p_user_id: string }
+        Returns: Json
+      }
     }
     Enums: {
       app_role: "admin" | "user"
