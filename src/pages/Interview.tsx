@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { MessageSquare, Mic, X, Pause, Play, Send, MicOff, Volume2, EyeOff, Eye } from 'lucide-react';
+import { MessageSquare, Mic, X, Pause, Play, Send, MicOff, Volume2, EyeOff, Eye, Captions, Type } from 'lucide-react';
 import { usePersonaStore } from '@/stores/personaStore';
 import { usePersonas } from '@/hooks/usePersonas';
 import { useAudioRecording } from '@/hooks/useAudioRecording';
@@ -265,19 +265,11 @@ export default function Interview() {
         <div className="text-center pt-4 mb-2">
           <h1 className="text-white text-base font-medium">Asylum Prep</h1>
         </div>
-        
-        {/* Header Warning */}
-        <div className="text-center mb-8">
-          <p className="text-gray-300 text-sm">
-            This is not legal advice
-          </p>
-        </div>
-
         {/* Main Content Area */}
-        <div className="flex-1 flex flex-col items-center justify-center space-y-8">
+        <div className="flex-1 flex flex-col items-center justify-start space-y-6 pt-8">
           {/* Profile Picture with AI Badge and Waveform */}
           <div className="relative">
-            <div className="w-96 h-96 rounded-full overflow-hidden border-4 border-white/20 shadow-2xl">
+            <div className="w-80 h-80 rounded-full overflow-hidden border-4 border-white/20 shadow-2xl">
               <img
                 src={selectedPersonaData?.image_url || '/placeholder.svg'}
                 alt={selectedPersonaData?.alt_text || 'AI Interviewer'}
@@ -305,15 +297,15 @@ export default function Interview() {
               title={showSubtitles ? "Hide Subtitles" : "Show Subtitles"}
             >
               {showSubtitles ? (
-                <Eye className="w-5 h-5 text-white" />
+                <Captions className="w-5 h-5 text-white" />
               ) : (
-                <EyeOff className="w-5 h-5 text-white" />
+                <Type className="w-5 h-5 text-white" />
               )}
             </button>
 
             {/* Waveform - positioned in front of officer's picture at 25% height */}
             {isAiSpeaking && (
-              <div className="absolute bottom-24 left-1/2 transform -translate-x-1/2 w-80 animate-fade-in">
+              <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 w-64 animate-fade-in">
                 <Waveform 
                   isActive={true} 
                   className="h-16"
@@ -341,11 +333,11 @@ export default function Interview() {
             )}
           </div>
 
-          {/* Subtitles - Simplified version that shows immediately */}
-          <div className="max-w-md mx-auto h-16 flex items-center justify-center relative">
+          {/* Subtitles - Larger area with smaller font */}
+          <div className="max-w-lg mx-auto h-24 flex items-center justify-center relative px-4">
             {showSubtitles && currentSubtitle && (
               <div className="flex items-center gap-2">
-                <p className="text-center text-white/90 bg-black/30 px-4 py-2 rounded-lg backdrop-blur-sm animate-fade-in text-sm">
+                <p className="text-center text-white/90 bg-black/30 px-4 py-3 rounded-lg backdrop-blur-sm animate-fade-in text-xs leading-relaxed">
                   {currentSubtitle}
                 </p>
               </div>
