@@ -14,12 +14,14 @@ import { useTextToSpeech } from '@/hooks/useTextToSpeech';
 import { useLanguagePreference } from '@/hooks/useLanguagePreference';
 import { Waveform } from '@/components/Waveform';
 import { cn } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export default function Interview() {
   const [isAiSpeaking, setIsAiSpeaking] = useState(false);
   const [showSubtitles, setShowSubtitles] = useState(true);
   const [isPaused, setIsPaused] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
+  const isMobile = useIsMobile();
   const navigate = useNavigate();
   
   // Get user's language preference
@@ -155,8 +157,9 @@ export default function Interview() {
   const handleTouchPressStart = async (e: React.TouchEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    console.log('Touch press start called', { isProcessing, pressToTalkRef: pressToTalkRef.current });
-    if (isProcessing || pressToTalkRef.current) return;
+    console.log('Touch press start called', { isProcessing, pressToTalkRef: pressToTalkRef.current, isMobile });
+    
+    if (isProcessing) return;
     
     // Stop TTS if playing
     if (isTTSPlaying) {
@@ -164,21 +167,61 @@ export default function Interview() {
       setIsAiSpeaking(false);
     }
     
-    pressToTalkRef.current = true;
-    try {
-      console.log('Starting recording...');
-      await startRecording();
-      setIsAiSpeaking(false);
-      console.log('Recording started successfully');
-    } catch (error) {
-      console.error('Failed to start recording:', error);
-      pressToTalkRef.current = false;
+    if (isMobile) {
+      // Mobile: Toggle recording on/off with each press
+      if (!isRecording && !pressToTalkRef.current) {
+        // Start recording
+        pressToTalkRef.current = true;
+        try {
+          console.log('Starting recording on mobile...');
+          await startRecording();
+          setIsAiSpeaking(false);
+          console.log('Recording started successfully on mobile');
+        } catch (error) {
+          console.error('Failed to start recording on mobile:', error);
+          pressToTalkRef.current = false;
+        }
+      } else if (isRecording && pressToTalkRef.current) {
+        // Stop recording
+        pressToTalkRef.current = false;
+        try {
+          console.log('Stopping recording on mobile...');
+          const recording = await stopRecording();
+          if (recording.duration > 0) {
+            console.log('Processing audio message on mobile...');
+            await processAudioMessage(recording);
+          }
+        } catch (error) {
+          console.error('Failed to stop recording on mobile:', error);
+        }
+      }
+    } else {
+      // Desktop: Start recording (hold-to-talk behavior, but we'll use click-to-toggle)
+      if (!isRecording && !pressToTalkRef.current) {
+        pressToTalkRef.current = true;
+        try {
+          console.log('Starting recording...');
+          await startRecording();
+          setIsAiSpeaking(false);
+          console.log('Recording started successfully');
+        } catch (error) {
+          console.error('Failed to start recording:', error);
+          pressToTalkRef.current = false;
+        }
+      }
     }
   };
 
   const handleTouchPressEnd = async (e: React.TouchEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    
+    if (isMobile) {
+      // On mobile, we handle everything in handleTouchPressStart (toggle behavior)
+      return;
+    }
+    
+    // Desktop: Stop recording on touch end (for touch devices used as desktop)
     console.log('Touch press end called', { pressToTalkRef: pressToTalkRef.current, isRecording });
     if (!pressToTalkRef.current || !isRecording) return;
     
@@ -391,7 +434,7 @@ export default function Interview() {
                 <Mic className="w-8 h-8 text-white" />
               </div>
               <span className="text-white text-sm font-medium">
-                {isRecording ? "Click to stop" : isProcessing ? "Processing..." : "Click to talk"}
+                {isRecording ? "Press to stop" : isProcessing ? "Processing..." : "Press to talk"}
               </span>
             </button>
           </div>
