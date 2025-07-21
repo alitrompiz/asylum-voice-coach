@@ -72,11 +72,11 @@ export const LanguageSelector = ({ selectedLanguage, onLanguageChange }: Languag
           onValueChange={handleLanguageChange}
           disabled={isUpdating || isLoading}
         >
-          <SelectTrigger className="w-auto min-w-[140px]">
-            <SelectValue className="overflow-visible">
-              <div className="flex items-center gap-2 whitespace-nowrap overflow-visible">
+          <SelectTrigger className="w-auto min-w-[140px] [&>span]:line-clamp-none">
+            <SelectValue>
+              <div className="flex items-center gap-2">
                 <span className="text-lg">{currentLanguageData?.flag}</span>
-                <span className="truncate-none overflow-visible">{currentLanguageData?.name}</span>
+                <span>{currentLanguageData?.name}</span>
               </div>
             </SelectValue>
           </SelectTrigger>
