@@ -10,90 +10,20 @@ interface TTSOptions {
   onError?: (error: Error) => void;
 }
 
-// iOS Audio Manager Class
-class IOSAudioManager {
-  private audioContext: AudioContext | null = null;
-  private initialized = false;
+// Simple audio manager for cross-platform compatibility
+const createAudioElement = (base64Data: string): HTMLAudioElement => {
+  const audio = new Audio(`data:audio/mpeg;base64,${base64Data}`);
+  
+  // Set properties for better compatibility
+  audio.crossOrigin = 'anonymous';
+  audio.preload = 'metadata';
+  
+  // Force load the audio
+  audio.load();
+  
+  return audio;
+};
 
-  async initialize() {
-    if (this.initialized) return;
-    
-    try {
-      // Create audio context
-      this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-      
-      // Resume if suspended (required for iOS)
-      if (this.audioContext.state === 'suspended') {
-        await this.audioContext.resume();
-      }
-      
-      this.initialized = true;
-      console.log('iOS Audio Manager initialized, state:', this.audioContext.state);
-    } catch (error) {
-      console.error('Failed to initialize iOS Audio Manager:', error);
-      throw error;
-    }
-  }
-
-  async playBase64Audio(base64Data: string): Promise<HTMLAudioElement> {
-    await this.initialize();
-    
-    // Convert base64 to blob for better iOS compatibility
-    const binaryString = atob(base64Data);
-    const bytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
-    }
-    
-    // Create blob with explicit MIME type
-    const blob = new Blob([bytes], { type: 'audio/mpeg' });
-    const audioUrl = URL.createObjectURL(blob);
-    
-    // Create audio element
-    const audio = new Audio();
-    audio.crossOrigin = 'anonymous';
-    audio.preload = 'auto';
-    
-    // Set up promise for loading
-    return new Promise((resolve, reject) => {
-      let resolved = false;
-      
-      const cleanup = () => {
-        URL.revokeObjectURL(audioUrl);
-      };
-      
-      audio.addEventListener('canplaythrough', () => {
-        if (!resolved) {
-          resolved = true;
-          console.log('iOS Audio ready to play');
-          resolve(audio);
-        }
-      });
-      
-      audio.addEventListener('error', (e) => {
-        if (!resolved) {
-          resolved = true;
-          cleanup();
-          console.error('iOS Audio loading error:', e);
-          reject(new Error('Failed to load audio on iOS'));
-        }
-      });
-      
-      audio.addEventListener('ended', cleanup);
-      
-      // Set source and load
-      audio.src = audioUrl;
-      audio.load();
-    });
-  }
-
-  getState() {
-    return this.audioContext?.state || 'not-initialized';
-  }
-}
-
-// Global iOS audio manager instance
-const iosAudioManager = new IOSAudioManager();
 
 export const useTextToSpeech = () => {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -139,13 +69,16 @@ export const useTextToSpeech = () => {
       setIsLoading(true);
       options.onStart?.();
 
-      // Initialize iOS audio manager on first interaction
+      // Initialize AudioContext on iOS if needed
       if (isIOS) {
         try {
-          await iosAudioManager.initialize();
-          console.log('iOS Audio Manager state:', iosAudioManager.getState());
+          const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+          if (audioContext.state === 'suspended') {
+            await audioContext.resume();
+            console.log('iOS AudioContext resumed');
+          }
         } catch (error) {
-          console.warn('iOS Audio Manager initialization warning:', error);
+          console.warn('iOS AudioContext warning:', error);
         }
       }
 
@@ -198,23 +131,9 @@ export const useTextToSpeech = () => {
           return;
         }
 
-        let audio: HTMLAudioElement;
-
-        if (isIOS) {
-          // Use iOS-specific audio manager
-          console.log('Using iOS audio playback');
-          try {
-            audio = await iosAudioManager.playBase64Audio(data.audioContent);
-          } catch (iosError) {
-            console.error('iOS audio failed, trying fallback:', iosError);
-            // Fallback to regular audio element
-            audio = new Audio(`data:audio/mpeg;base64,${data.audioContent}`);
-          }
-        } else {
-          // Regular audio element for non-iOS
-          console.log('Using standard audio playback');
-          audio = new Audio(`data:audio/mpeg;base64,${data.audioContent}`);
-        }
+        // Create audio element with cross-platform compatibility
+        console.log(`Creating audio element for ${isIOS ? 'iOS' : 'standard'} device`);
+        const audio = createAudioElement(data.audioContent);
 
         audioRef.current = audio;
 
@@ -252,48 +171,20 @@ export const useTextToSpeech = () => {
         audio.addEventListener('ended', handleEnded);
         audio.addEventListener('error', handleError);
 
-        // Start playback
+        // Start playback immediately 
         try {
           console.log('Starting audio playback...');
-          const playPromise = audio.play();
+          await audio.play();
+          console.log('Audio playback started successfully');
           
-          if (playPromise !== undefined) {
-            await playPromise;
-            console.log('Audio playback started successfully');
-            
-            // Set states if not already set by canplay event
-            if (currentRequestRef.current === requestId) {
-              setIsLoading(false);
-              setIsPlaying(true);
-            }
+          // Set states after successful play
+          if (currentRequestRef.current === requestId) {
+            setIsLoading(false);
+            setIsPlaying(true);
           }
         } catch (playError) {
           console.error('Audio play() failed:', playError);
-          
-          // Try a different approach for iOS
-          if (isIOS) {
-            try {
-              console.log('Trying iOS fallback approach...');
-              // Create a user-triggered audio element
-              const fallbackAudio = new Audio();
-              fallbackAudio.src = `data:audio/mpeg;base64,${data.audioContent}`;
-              
-              // Try immediate play (works if called during user gesture)
-              await fallbackAudio.play();
-              
-              audioRef.current = fallbackAudio;
-              fallbackAudio.addEventListener('ended', handleEnded);
-              
-              setIsLoading(false);
-              setIsPlaying(true);
-              console.log('iOS fallback playback successful');
-            } catch (fallbackError) {
-              console.error('iOS fallback also failed:', fallbackError);
-              throw new Error('Audio playback not supported on this iOS device. Please check your device settings.');
-            }
-          } else {
-            throw playError;
-          }
+          throw new Error(`Audio playback failed: ${playError.message}`);
         }
       }
     } catch (error) {
