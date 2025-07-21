@@ -389,10 +389,10 @@ export default function Interview() {
         </div>
 
         {/* Press to Talk Button - Bottom Middle */}
-        <div className="flex flex-col items-center pb-8 gap-4">
-          {/* Timer and Recording Indicator */}
+        <div className="flex flex-col items-center pb-8 relative">
+          {/* Timer and Recording Indicator - Positioned absolutely to not affect button position */}
           {isRecording && (
-            <div className="flex flex-col items-center gap-2">
+            <div className="absolute -top-20 left-1/2 transform -translate-x-1/2 flex flex-col items-center gap-2">
               <div className="w-32 h-8 bg-black/30 rounded-lg backdrop-blur-sm overflow-hidden flex items-center justify-center">
                 <Waveform 
                   isActive={true}
