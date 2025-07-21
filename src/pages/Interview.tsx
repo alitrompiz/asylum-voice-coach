@@ -331,7 +331,7 @@ export default function Interview() {
         </div>
 
         {/* App Name */}
-        <div className="text-center pt-4 mb-2">
+        <div className="text-center pt-1.5 mb-0.5">
           <h1 className="text-white text-base font-medium">Asylum Prep</h1>
         </div>
         {/* Main Content Area */}
