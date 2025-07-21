@@ -164,6 +164,18 @@ export default function Interview() {
   const handleTouchPressStart = async (e: React.TouchEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    
+    // Initialize audio context on iOS Safari (required for audio playback)
+    try {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      if (audioContext.state === 'suspended') {
+        await audioContext.resume();
+        console.log('Audio context resumed for iOS Safari');
+      }
+    } catch (error) {
+      console.warn('Could not initialize audio context:', error);
+    }
+    
     console.log('Touch press start called', { 
       isProcessing, 
       pressToTalkRef: pressToTalkRef.current, 
