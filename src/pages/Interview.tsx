@@ -111,17 +111,12 @@ export default function Interview() {
     }
   }, [currentSubtitle, selectedPersonaData?.tts_voice, speak, isProcessing, isTTSPlaying]);
 
-  // Handle click-to-toggle functionality for desktop mouse events
-  const handleMouseClick = async (e: React.MouseEvent) => {
+  // Handle touch events (primary for mobile)
+  const handleTouch = async (e: React.TouchEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    console.log('Mouse click called', { isProcessing, isRecording, pressToTalkRef: pressToTalkRef.current, isMobile });
     
-    // On mobile, prefer touch events over click events to avoid conflicts
-    if (isMobile) {
-      console.log('Ignoring mouse click on mobile device');
-      return;
-    }
+    console.log('Touch event called', { isProcessing, isRecording, pressToTalkRef: pressToTalkRef.current });
     
     if (isProcessing) return;
     
@@ -131,7 +126,18 @@ export default function Interview() {
       setIsAiSpeaking(false);
     }
     
-    // Desktop: Toggle recording on/off with each click
+    // Initialize audio context on iOS Safari (required for audio playback)
+    try {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      if (audioContext.state === 'suspended') {
+        await audioContext.resume();
+        console.log('Audio context resumed for iOS Safari');
+      }
+    } catch (error) {
+      console.warn('Could not initialize audio context:', error);
+    }
+    
+    // Toggle recording state
     if (!isRecording && !pressToTalkRef.current) {
       // Start recording
       pressToTalkRef.current = true;
@@ -160,33 +166,13 @@ export default function Interview() {
     }
   };
 
-  // Handle press-to-talk functionality for touch events
-  const handleTouchPressStart = async (e: React.TouchEvent) => {
+  // Handle click events for desktop
+  const handleMouseClick = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    console.log('Mouse click called', { isProcessing, isRecording, pressToTalkRef: pressToTalkRef.current });
     
-    // Initialize audio context on iOS Safari (required for audio playback)
-    try {
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-      if (audioContext.state === 'suspended') {
-        await audioContext.resume();
-        console.log('Audio context resumed for iOS Safari');
-      }
-    } catch (error) {
-      console.warn('Could not initialize audio context:', error);
-    }
-    
-    console.log('Touch press start called', { 
-      isProcessing, 
-      pressToTalkRef: pressToTalkRef.current, 
-      isMobile, 
-      isRecording 
-    });
-    
-    if (isProcessing) {
-      console.log('Skipping touch start - processing');
-      return;
-    }
+    if (isProcessing) return;
     
     // Stop TTS if playing
     if (isTTSPlaying) {
@@ -194,97 +180,35 @@ export default function Interview() {
       setIsAiSpeaking(false);
     }
     
-    if (isMobile) {
-      // Mobile: Toggle recording on/off with each press
-      if (!isRecording && !pressToTalkRef.current) {
-        // Start recording
-        console.log('Mobile: Starting recording...');
-        pressToTalkRef.current = true;
-        try {
-          await startRecording();
-          setIsAiSpeaking(false);
-          console.log('Mobile: Recording started successfully');
-        } catch (error) {
-          console.error('Mobile: Failed to start recording:', error);
-          pressToTalkRef.current = false;
-        }
-      } else if (isRecording && pressToTalkRef.current) {
-        // Stop recording
-        console.log('Mobile: Stopping recording...');
+    // Toggle recording state
+    if (!isRecording && !pressToTalkRef.current) {
+      // Start recording
+      pressToTalkRef.current = true;
+      try {
+        console.log('Starting recording...');
+        await startRecording();
+        setIsAiSpeaking(false);
+        console.log('Recording started successfully');
+      } catch (error) {
+        console.error('Failed to start recording:', error);
         pressToTalkRef.current = false;
-        try {
-          const recording = await stopRecording();
-          if (recording.duration > 0) {
-            console.log('Mobile: Processing audio message...');
-            await processAudioMessage(recording);
-          }
-          console.log('Mobile: Recording stopped and processed');
-        } catch (error) {
-          console.error('Mobile: Failed to stop recording:', error);
-          // Reset state on error
-          pressToTalkRef.current = false;
-        }
       }
-    } else {
-      // Desktop: Start recording (hold-to-talk behavior, but we'll use click-to-toggle)
-      if (!isRecording && !pressToTalkRef.current) {
-        pressToTalkRef.current = true;
-        try {
-          console.log('Desktop: Starting recording...');
-          await startRecording();
-          setIsAiSpeaking(false);
-          console.log('Desktop: Recording started successfully');
-        } catch (error) {
-          console.error('Desktop: Failed to start recording:', error);
-          pressToTalkRef.current = false;
-        }
-      }
-    }
-  };
-
-  const handleTouchPressEnd = async (e: React.TouchEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    if (isMobile) {
-      // On mobile, we handle everything in handleTouchPressStart (toggle behavior)
-      console.log('Mobile: Touch end - ignoring (toggle behavior)');
-      return;
-    }
-    
-    // Desktop: Stop recording on touch end (for touch devices used as desktop)
-    console.log('Desktop: Touch press end called', { 
-      pressToTalkRef: pressToTalkRef.current, 
-      isRecording 
-    });
-    
-    if (!pressToTalkRef.current || !isRecording) {
-      console.log('Desktop: Skipping touch end - not recording or ref false');
-      return;
-    }
-    
-    pressToTalkRef.current = false;
-    try {
-      console.log('Desktop: Stopping recording on touch end...');
-      const recording = await stopRecording();
-      if (recording.duration > 0) {
-        console.log('Desktop: Processing audio message...');
-        await processAudioMessage(recording);
-      }
-    } catch (error) {
-      console.error('Desktop: Failed to stop recording:', error);
-    }
-  };
-
-  const handleTouchPressCancel = (e: React.TouchEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    console.log('Touch press cancel called');
-    if (pressToTalkRef.current) {
+    } else if (isRecording && pressToTalkRef.current) {
+      // Stop recording
       pressToTalkRef.current = false;
-      cancelRecording();
+      try {
+        console.log('Stopping recording...');
+        const recording = await stopRecording();
+        if (recording.duration > 0) {
+          console.log('Processing audio message...');
+          await processAudioMessage(recording);
+        }
+      } catch (error) {
+        console.error('Failed to stop recording:', error);
+      }
     }
   };
+
 
   const handleEndSession = () => {
     setIsAiSpeaking(false);
@@ -449,10 +373,10 @@ export default function Interview() {
            {/* Press to Talk Button */}
           <div className="flex justify-center">
             <button
-              onClick={handleMouseClick}
-              onTouchStart={handleTouchPressStart}
-              onTouchEnd={handleTouchPressEnd}
-              onTouchCancel={handleTouchPressCancel}
+              onClick={isMobile ? undefined : handleMouseClick}
+              onTouchStart={handleTouch}
+              onTouchEnd={undefined}
+              onTouchCancel={undefined}
               onContextMenu={(e) => e.preventDefault()}
               disabled={isProcessing}
               className={cn(
