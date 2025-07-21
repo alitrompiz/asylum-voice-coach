@@ -164,9 +164,17 @@ export default function Interview() {
   const handleTouchPressStart = async (e: React.TouchEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    console.log('Touch press start called', { isProcessing, pressToTalkRef: pressToTalkRef.current, isMobile });
+    console.log('Touch press start called', { 
+      isProcessing, 
+      pressToTalkRef: pressToTalkRef.current, 
+      isMobile, 
+      isRecording 
+    });
     
-    if (isProcessing) return;
+    if (isProcessing) {
+      console.log('Skipping touch start - processing');
+      return;
+    }
     
     // Stop TTS if playing
     if (isTTSPlaying) {
@@ -178,28 +186,31 @@ export default function Interview() {
       // Mobile: Toggle recording on/off with each press
       if (!isRecording && !pressToTalkRef.current) {
         // Start recording
+        console.log('Mobile: Starting recording...');
         pressToTalkRef.current = true;
         try {
-          console.log('Starting recording on mobile...');
           await startRecording();
           setIsAiSpeaking(false);
-          console.log('Recording started successfully on mobile');
+          console.log('Mobile: Recording started successfully');
         } catch (error) {
-          console.error('Failed to start recording on mobile:', error);
+          console.error('Mobile: Failed to start recording:', error);
           pressToTalkRef.current = false;
         }
       } else if (isRecording && pressToTalkRef.current) {
         // Stop recording
+        console.log('Mobile: Stopping recording...');
         pressToTalkRef.current = false;
         try {
-          console.log('Stopping recording on mobile...');
           const recording = await stopRecording();
           if (recording.duration > 0) {
-            console.log('Processing audio message on mobile...');
+            console.log('Mobile: Processing audio message...');
             await processAudioMessage(recording);
           }
+          console.log('Mobile: Recording stopped and processed');
         } catch (error) {
-          console.error('Failed to stop recording on mobile:', error);
+          console.error('Mobile: Failed to stop recording:', error);
+          // Reset state on error
+          pressToTalkRef.current = false;
         }
       }
     } else {
@@ -207,12 +218,12 @@ export default function Interview() {
       if (!isRecording && !pressToTalkRef.current) {
         pressToTalkRef.current = true;
         try {
-          console.log('Starting recording...');
+          console.log('Desktop: Starting recording...');
           await startRecording();
           setIsAiSpeaking(false);
-          console.log('Recording started successfully');
+          console.log('Desktop: Recording started successfully');
         } catch (error) {
-          console.error('Failed to start recording:', error);
+          console.error('Desktop: Failed to start recording:', error);
           pressToTalkRef.current = false;
         }
       }
@@ -225,23 +236,31 @@ export default function Interview() {
     
     if (isMobile) {
       // On mobile, we handle everything in handleTouchPressStart (toggle behavior)
+      console.log('Mobile: Touch end - ignoring (toggle behavior)');
       return;
     }
     
     // Desktop: Stop recording on touch end (for touch devices used as desktop)
-    console.log('Touch press end called', { pressToTalkRef: pressToTalkRef.current, isRecording });
-    if (!pressToTalkRef.current || !isRecording) return;
+    console.log('Desktop: Touch press end called', { 
+      pressToTalkRef: pressToTalkRef.current, 
+      isRecording 
+    });
+    
+    if (!pressToTalkRef.current || !isRecording) {
+      console.log('Desktop: Skipping touch end - not recording or ref false');
+      return;
+    }
     
     pressToTalkRef.current = false;
     try {
-      console.log('Stopping recording...');
+      console.log('Desktop: Stopping recording on touch end...');
       const recording = await stopRecording();
       if (recording.duration > 0) {
-        console.log('Processing audio message...');
+        console.log('Desktop: Processing audio message...');
         await processAudioMessage(recording);
       }
     } catch (error) {
-      console.error('Failed to stop recording:', error);
+      console.error('Desktop: Failed to stop recording:', error);
     }
   };
 
