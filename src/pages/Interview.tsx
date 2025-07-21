@@ -115,7 +115,13 @@ export default function Interview() {
   const handleMouseClick = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    console.log('Mouse click called', { isProcessing, isRecording, pressToTalkRef: pressToTalkRef.current });
+    console.log('Mouse click called', { isProcessing, isRecording, pressToTalkRef: pressToTalkRef.current, isMobile });
+    
+    // On mobile, prefer touch events over click events to avoid conflicts
+    if (isMobile) {
+      console.log('Ignoring mouse click on mobile device');
+      return;
+    }
     
     if (isProcessing) return;
     
@@ -125,6 +131,7 @@ export default function Interview() {
       setIsAiSpeaking(false);
     }
     
+    // Desktop: Toggle recording on/off with each click
     if (!isRecording && !pressToTalkRef.current) {
       // Start recording
       pressToTalkRef.current = true;
