@@ -88,11 +88,24 @@ export default function Interview() {
       console.log('Starting TTS for NEW content:', currentSubtitle.substring(0, 50) + '...');
       lastSpokenSubtitle.current = currentSubtitle;
       
-      // Get the appropriate voice for the user's selected language
-      const voiceToUse = selectedPersonaData.tts_voice;
+      // Map OpenAI voice to ElevenLabs voice for compatibility
+      const mapToElevenLabsVoice = (openaiVoice: string) => {
+        const voiceMap: Record<string, string> = {
+          'alloy': '9BWtsMINqrJLrRacOk9x', // Aria
+          'echo': 'EXAVITQu4vr4xnSDxMaL', // Sarah  
+          'fable': 'pFZP5JQG7iQjIQuC4Bku', // Lily
+          'onyx': 'CwhRBWXzGAHq8TQ4Fs17', // Roger
+          'nova': 'cgSgspJ2msm6clMCkdW9', // Jessica
+          'shimmer': 'XB0fDUnXU5powFXDhCwa', // Charlotte
+        };
+        return voiceMap[openaiVoice] || '9BWtsMINqrJLrRacOk9x'; // Default to Aria
+      };
+      
+      const elevenLabsVoice = mapToElevenLabsVoice(selectedPersonaData.tts_voice);
+      console.log('🔄 Voice mapping:', selectedPersonaData.tts_voice, '->', elevenLabsVoice);
       
       speak(currentSubtitle, {
-        voice: voiceToUse,
+        voice: elevenLabsVoice,
         onStart: () => {
           console.log('TTS started');
           setIsAiSpeaking(true);
@@ -221,8 +234,21 @@ export default function Interview() {
                !currentSubtitle.includes("Transcribing your message") &&
                selectedPersonaData?.tts_voice) {
       
+      // Map OpenAI voice to ElevenLabs voice for compatibility  
+      const mapToElevenLabsVoice = (openaiVoice: string) => {
+        const voiceMap: Record<string, string> = {
+          'alloy': '9BWtsMINqrJLrRacOk9x', // Aria
+          'echo': 'EXAVITQu4vr4xnSDxMaL', // Sarah  
+          'fable': 'pFZP5JQG7iQjIQuC4Bku', // Lily
+          'onyx': 'CwhRBWXzGAHq8TQ4Fs17', // Roger
+          'nova': 'cgSgspJ2msm6clMCkdW9', // Jessica
+          'shimmer': 'XB0fDUnXU5powFXDhCwa', // Charlotte
+        };
+        return voiceMap[openaiVoice] || '9BWtsMINqrJLrRacOk9x';
+      };
+      
       speak(currentSubtitle, {
-        voice: selectedPersonaData.tts_voice,
+        voice: mapToElevenLabsVoice(selectedPersonaData.tts_voice),
         onStart: () => {
           setIsAiSpeaking(true);
         },
