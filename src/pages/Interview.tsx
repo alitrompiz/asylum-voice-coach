@@ -256,9 +256,28 @@ export default function Interview() {
       
       {/* Content */}
       <div className="relative z-10 flex flex-col h-screen p-6">
-        {/* Top Controls - Empty for now */}
-        <div className="absolute top-6 left-6 z-20 flex gap-4">
-          {/* Top controls removed - buttons moved to officer photo area */}
+        {/* Top Controls with Debug Button */}
+        <div className="absolute top-6 left-6 right-6 z-20 flex justify-between items-center">
+          <div></div>
+          {/* Debug Test Audio Button */}
+          <Button 
+            onClick={async () => {
+              console.log('🧪 Testing iOS audio from interview screen');
+              try {
+                // Test with ElevenLabs TTS directly
+                await speak('Testing audio playback on iOS device');
+                console.log('✅ TTS test completed');
+              } catch (error) {
+                console.error('❌ TTS test failed:', error);
+                alert(`iOS Audio Error: ${error.message}`);
+              }
+            }}
+            variant="outline"
+            size="sm"
+            className="bg-white/10 hover:bg-white/20 text-white border-white/20"
+          >
+            🧪 Test Audio
+          </Button>
         </div>
 
         {/* App Name */}

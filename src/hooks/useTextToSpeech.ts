@@ -9,31 +9,6 @@ interface TTSOptions {
   onError?: (error: Error) => void;
 }
 
-// iOS-optimized audio manager
-const createAudioElement = (base64Data: string): HTMLAudioElement => {
-  console.log('🔊 Creating audio element for iOS');
-  
-  // Create audio with iOS-safe data URL
-  const audio = new Audio(`data:audio/mpeg;base64,${base64Data}`);
-  
-  // Essential iOS properties
-  audio.volume = 1.0;
-  audio.muted = false;
-  audio.preload = 'auto';
-  audio.crossOrigin = 'anonymous';
-  
-  // Force iOS to prepare audio immediately
-  audio.load();
-  
-  console.log('🔊 Audio element created:', {
-    volume: audio.volume,
-    muted: audio.muted,
-    readyState: audio.readyState
-  });
-  
-  return audio;
-};
-
 export const useTextToSpeech = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -69,27 +44,6 @@ export const useTextToSpeech = () => {
       }
       setIsPlaying(false);
       setIsLoading(false);
-    }
-
-    // Ensure AudioContext is active on iOS
-    if (isIOS) {
-      console.log('🍎 Ensuring iOS AudioContext is active');
-      try {
-        const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-        
-        if (!(window as any).audioContext) {
-          (window as any).audioContext = new AudioContextClass();
-        }
-        
-        if ((window as any).audioContext.state === 'suspended') {
-          await (window as any).audioContext.resume();
-          console.log('🍎 AudioContext resumed');
-        }
-        
-        console.log('🍎 AudioContext state:', (window as any).audioContext.state);
-      } catch (err) {
-        console.error('🍎 AudioContext error:', err);
-      }
     }
 
     try {
@@ -129,81 +83,119 @@ export const useTextToSpeech = () => {
           contentLength: data.audioContent.length
         });
 
-        // Create and configure audio element
-        const audio = createAudioElement(data.audioContent);
-        audioRef.current = audio;
-
-        // Set up event handlers
-        const cleanup = () => {
-          if (currentRequestRef.current === requestId) {
-            setIsPlaying(false);
-            audioRef.current = null;
-            options.onEnd?.();
-          }
-        };
-
-        const handleError = (e: any) => {
-          console.error('❌ Audio error:', e);
-          if (currentRequestRef.current === requestId) {
-            setIsLoading(false);
-            setIsPlaying(false);
-            audioRef.current = null;
-            options.onError?.(new Error('Audio playback failed'));
-          }
-        };
-
-        audio.addEventListener('ended', cleanup);
-        audio.addEventListener('error', handleError);
-
-        // iOS-specific playback approach
+        // Create audio element with special iOS handling
+        console.log('🔊 Creating audio element for iOS');
+        
+        // For iOS, we need to use a different approach due to autoplay restrictions
         if (isIOS) {
-          console.log('🍎 Using iOS playback method');
+          console.log('🍎 Using iOS-compatible approach');
           
-          // Wait for audio to be ready
-          const waitForReady = () => new Promise<void>((resolve) => {
-            if (audio.readyState >= 2) { // HAVE_CURRENT_DATA
-              resolve();
-            } else {
-              audio.addEventListener('canplay', () => resolve(), { once: true });
+          // Create a blob URL instead of data URL for iOS compatibility
+          const audioBytes = atob(data.audioContent);
+          const arrayBuffer = new ArrayBuffer(audioBytes.length);
+          const uint8Array = new Uint8Array(arrayBuffer);
+          
+          for (let i = 0; i < audioBytes.length; i++) {
+            uint8Array[i] = audioBytes.charCodeAt(i);
+          }
+          
+          const blob = new Blob([arrayBuffer], { type: 'audio/mpeg' });
+          const audioUrl = URL.createObjectURL(blob);
+          
+          const audio = new Audio(audioUrl);
+          audio.preload = 'auto';
+          
+          audioRef.current = audio;
+
+          // Set up event handlers
+          const cleanup = () => {
+            if (currentRequestRef.current === requestId) {
+              setIsPlaying(false);
+              audioRef.current = null;
+              URL.revokeObjectURL(audioUrl); // Clean up blob URL
+              options.onEnd?.();
             }
+          };
+
+          const handleError = (e: any) => {
+            console.error('❌ iOS Audio error:', e);
+            if (currentRequestRef.current === requestId) {
+              setIsLoading(false);
+              setIsPlaying(false);
+              audioRef.current = null;
+              URL.revokeObjectURL(audioUrl);
+              options.onError?.(new Error('iOS audio playback failed'));
+            }
+          };
+
+          audio.addEventListener('ended', cleanup);
+          audio.addEventListener('error', handleError);
+          
+          // Wait for the audio to be ready
+          await new Promise<void>((resolve, reject) => {
+            const timeout = setTimeout(() => {
+              reject(new Error('Audio load timeout'));
+            }, 5000);
+            
+            audio.addEventListener('canplaythrough', () => {
+              clearTimeout(timeout);
+              resolve();
+            }, { once: true });
+            
+            audio.addEventListener('error', () => {
+              clearTimeout(timeout);
+              reject(new Error('Audio load failed'));
+            }, { once: true });
           });
 
-          await waitForReady();
-          console.log('🍎 Audio ready for playback');
+          console.log('🍎 Audio ready, attempting playback');
           
-          // Try playback with retry
-          let playAttempts = 0;
-          const maxAttempts = 3;
-          
-          while (playAttempts < maxAttempts) {
-            try {
-              console.log(`🍎 Play attempt ${playAttempts + 1}`);
-              await audio.play();
-              console.log('✅ iOS audio playback started');
-              
-              if (currentRequestRef.current === requestId) {
-                setIsLoading(false);
-                setIsPlaying(true);
-              }
-              break;
-              
-            } catch (playError) {
-              playAttempts++;
-              console.warn(`🍎 Play attempt ${playAttempts} failed:`, playError);
-              
-              if (playAttempts >= maxAttempts) {
-                throw playError;
-              }
-              
-              // Wait before retry
-              await new Promise(resolve => setTimeout(resolve, 100));
+          try {
+            await audio.play();
+            console.log('✅ iOS audio playback started');
+            
+            if (currentRequestRef.current === requestId) {
+              setIsLoading(false);
+              setIsPlaying(true);
             }
+          } catch (playError) {
+            console.error('❌ iOS play() failed:', playError);
+            throw new Error(`iOS audio playback failed: ${playError.message}`);
           }
+          
         } else {
-          // Standard playback for non-iOS
-          console.log('🖥️ Using standard playback');
+          // Standard approach for non-iOS
+          console.log('🖥️ Using standard audio approach');
+          const audio = new Audio(`data:audio/mpeg;base64,${data.audioContent}`);
+          audio.volume = 1.0;
+          audio.muted = false;
+          audio.preload = 'auto';
+          
+          audioRef.current = audio;
+
+          const cleanup = () => {
+            if (currentRequestRef.current === requestId) {
+              setIsPlaying(false);
+              audioRef.current = null;
+              options.onEnd?.();
+            }
+          };
+
+          const handleError = (e: any) => {
+            console.error('❌ Audio error:', e);
+            if (currentRequestRef.current === requestId) {
+              setIsLoading(false);
+              setIsPlaying(false);
+              audioRef.current = null;
+              options.onError?.(new Error('Audio playback failed'));
+            }
+          };
+
+          audio.addEventListener('ended', cleanup);
+          audio.addEventListener('error', handleError);
+
           await audio.play();
-          console.log('✅ Audio playback started');
+          console.log('✅ Standard audio playback started');
           
           if (currentRequestRef.current === requestId) {
             setIsLoading(false);
@@ -213,11 +205,11 @@ export const useTextToSpeech = () => {
 
         // Verify playback after 100ms
         setTimeout(() => {
-          if (audio && !audio.paused) {
+          if (audioRef.current && !audioRef.current.paused) {
             console.log('📊 Audio confirmed playing:', {
-              currentTime: audio.currentTime,
-              duration: audio.duration,
-              paused: audio.paused
+              currentTime: audioRef.current.currentTime,
+              duration: audioRef.current.duration,
+              paused: audioRef.current.paused
             });
           } else {
             console.warn('⚠️ Audio may not be playing');

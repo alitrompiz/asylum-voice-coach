@@ -28,32 +28,6 @@ export default function Dashboard() {
     console.log('Admin access status:', { isAdmin, loading, error });
   }, [isAdmin, loading, error]);
 
-  // Test audio function to debug TTS issues
-  const testAudio = async () => {
-    console.log('🧪 Testing audio playback directly');
-    try {
-      // Test with a simple base64 audio (very short beep)
-      const testAudioBase64 = "SUQzBAAAAAABEVRYWFgAAAAtAAADY29tbWVudABCaWdTb3VuZEJhbmsuY29tIC8gTGFTb25vdGhlcXVlLm9yZwBURU5DAAAAHQAAAA==";
-      const audio = new Audio(`data:audio/mpeg;base64,${testAudioBase64}`);
-      
-      audio.volume = 1.0;
-      audio.muted = false;
-      
-      console.log('🧪 Audio properties:', {
-        volume: audio.volume,
-        muted: audio.muted,
-        readyState: audio.readyState
-      });
-      
-      await audio.play();
-      console.log('✅ Test audio played successfully');
-      
-    } catch (error) {
-      console.error('❌ Test audio failed:', error);
-      alert(`Audio test failed: ${error.message}`);
-    }
-  };
-
   // Handle Start Interview button click and initialize AudioContext for iOS
   const handleStartInterview = () => {
     // Initialize AudioContext on iOS to unlock audio playback
@@ -124,36 +98,23 @@ export default function Dashboard() {
 
       {/* Fixed Start Interview Button */}
       <div className="fixed bottom-2 left-2 right-2 md:relative md:bottom-auto md:left-auto md:right-auto md:max-w-6xl md:mx-auto">
-        <div className="flex flex-col gap-2">
-          <Button 
-            size="lg" 
-            onClick={handleStartInterview}
-            className="w-full shadow-lg"
-            disabled={skillsSelected.length === 0}
-          >
-            <Play className="w-5 h-5 mr-2" />
-            {t('interview.start')}
-            {skillsSelected.length > 0 && (
-              <span className="ml-2 text-xs">({t('interview.areas_count', { count: skillsSelected.length })})</span>
-            )}
-          </Button>
-          
-          {/* Test Audio Button - remove after debugging */}
-          <Button 
-            onClick={testAudio}
-            variant="outline"
-            size="sm"
-            className="w-full"
-          >
-            Test Audio 🧪
-          </Button>
-          
-          {skillsSelected.length === 0 && (
-            <p className="text-sm text-muted-foreground text-center mt-1">
-              {t('interview.select_areas')}
-            </p>
+        <Button 
+          size="lg" 
+          onClick={handleStartInterview}
+          className="w-full shadow-lg"
+          disabled={skillsSelected.length === 0}
+        >
+          <Play className="w-5 h-5 mr-2" />
+          {t('interview.start')}
+          {skillsSelected.length > 0 && (
+            <span className="ml-2 text-xs">({t('interview.areas_count', { count: skillsSelected.length })})</span>
           )}
-        </div>
+        </Button>
+        {skillsSelected.length === 0 && (
+          <p className="text-sm text-muted-foreground text-center mt-1">
+            {t('interview.select_areas')}
+          </p>
+        )}
       </div>
 
       {/* Admin Panel Button - Fixed position bottom right */}
