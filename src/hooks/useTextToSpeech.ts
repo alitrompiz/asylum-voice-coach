@@ -22,7 +22,10 @@ export const useTextToSpeech = () => {
     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
   const speak = useCallback(async (text: string, options: TTSOptions = {}) => {
-    if (!text.trim()) return;
+    if (!text.trim()) {
+      console.log('❌ TTS: Empty text provided');
+      return;
+    }
 
     const requestId = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     currentRequestRef.current = requestId;
@@ -32,7 +35,10 @@ export const useTextToSpeech = () => {
       textLength: text.length, 
       languageCode,
       isIOS,
-      textPreview: text.substring(0, 50) + '...'
+      textPreview: text.substring(0, 50) + '...',
+      currentAudioElement: !!audioRef.current,
+      isCurrentlyPlaying: isPlaying,
+      isCurrentlyLoading: isLoading
     });
 
     // Stop any existing audio

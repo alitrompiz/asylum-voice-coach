@@ -63,7 +63,7 @@ export default function Interview() {
 
   // Auto-play TTS when AI responds - with deduplication
   useEffect(() => {
-    console.log('TTS Effect triggered:', {
+    console.log('🎯 TTS Effect triggered:', {
       currentSubtitle: currentSubtitle?.substring(0, 50) + '...',
       selectedPersonaData: !!selectedPersonaData,
       tts_voice: selectedPersonaData?.tts_voice,
@@ -71,7 +71,16 @@ export default function Interview() {
       isTTSPlaying,
       languageCode,
       lastSpoken: lastSpokenSubtitle.current?.substring(0, 50) + '...',
-      subtitleLength: currentSubtitle?.length || 0
+      subtitleLength: currentSubtitle?.length || 0,
+      shouldSpeak: !!(currentSubtitle && 
+        !currentSubtitle.includes("Processing your message") && 
+        !currentSubtitle.includes("Transcribing your message") &&
+        !currentSubtitle.includes("Connecting...") &&
+        !currentSubtitle.includes("Processing failed") &&
+        selectedPersonaData?.tts_voice &&
+        !isProcessing &&
+        !isTTSPlaying &&
+        currentSubtitle !== lastSpokenSubtitle.current)
     });
     
     // Only speak if it's an actual AI response (not processing/transcribing/system messages)
@@ -86,9 +95,13 @@ export default function Interview() {
         !isTTSPlaying &&
         currentSubtitle !== lastSpokenSubtitle.current) {
       
-      console.log('Starting TTS for NEW content:', currentSubtitle.substring(0, 50) + '...');
+      console.log('🚀 STARTING TTS for NEW content:', {
+        text: currentSubtitle.substring(0, 50) + '...',
+        voice: selectedPersonaData.tts_voice,
+        timestamp: Date.now()
+      });
       lastSpokenSubtitle.current = currentSubtitle;
-      
+
       // Map OpenAI voice to ElevenLabs voice for compatibility
       const mapToElevenLabsVoice = (openaiVoice: string) => {
         const voiceMap: Record<string, string> = {
@@ -108,20 +121,32 @@ export default function Interview() {
       speak(currentSubtitle, {
         voice: elevenLabsVoice,
         onStart: () => {
-          console.log('TTS started');
+          console.log('✅ TTS STARTED - Audio should be playing now');
           setIsAiSpeaking(true);
         },
         onEnd: () => {
-          console.log('TTS ended');
+          console.log('✅ TTS ENDED - Audio finished playing');
           setIsAiSpeaking(false);
         },
         onError: (error) => {
-          console.error('TTS error:', error);
+          console.error('❌ TTS ERROR:', error);
           setIsAiSpeaking(false);
+          alert(`TTS Error: ${error.message}`);
         }
       });
     } else if (currentSubtitle === lastSpokenSubtitle.current) {
-      console.log('Skipping TTS - same content as last spoken');
+      console.log('⏭️ Skipping TTS - same content as last spoken');
+    } else {
+      console.log('⏭️ Skipping TTS - conditions not met:', {
+        hasSubtitle: !!currentSubtitle,
+        isProcessingMessage: currentSubtitle?.includes("Processing your message"),
+        isTranscribingMessage: currentSubtitle?.includes("Transcribing your message"),
+        isConnecting: currentSubtitle?.includes("Connecting..."),
+        hasVoice: !!selectedPersonaData?.tts_voice,
+        isProcessing,
+        isTTSPlaying,
+        isSameAsLast: currentSubtitle === lastSpokenSubtitle.current
+      });
     }
   }, [currentSubtitle, selectedPersonaData?.tts_voice, speak, isProcessing, isTTSPlaying]);
 
@@ -405,6 +430,31 @@ export default function Interview() {
               className="bg-orange-600/40 hover:bg-orange-600/60 text-white border-white/20"
             >
               🔍 Debug Audio
+            </Button>
+            <Button 
+              onClick={() => {
+                console.log('📋 COMPLETE TTS STATUS REPORT:', {
+                  currentSubtitle: currentSubtitle?.substring(0, 50) + '...',
+                  selectedPersona: selectedPersona,
+                  selectedPersonaData: selectedPersonaData ? {
+                    name: selectedPersonaData.name,
+                    tts_voice: selectedPersonaData.tts_voice
+                  } : null,
+                  isProcessing,
+                  isTTSPlaying,
+                  isTTSLoading,
+                  isAiSpeaking,
+                  lastSpokenSubtitle: lastSpokenSubtitle.current?.substring(0, 30) + '...',
+                  hasInitialized,
+                  messagesCount: messages.length
+                });
+                alert('Complete status logged to console');
+              }}
+              variant="outline"
+              size="sm"
+              className="bg-yellow-600/40 hover:bg-yellow-600/60 text-white border-white/20"
+            >
+              📋 Status
             </Button>
           </div>
         </div>
