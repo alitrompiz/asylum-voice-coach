@@ -336,9 +336,8 @@ export default function Interview() {
                   alert(`❌ Error: ${error.message}`);
                 }
               }}
-              variant="outline"
+              variant="default"
               size="sm"
-              className="bg-blue-600/40 hover:bg-blue-600/60 text-white border-white/20"
             >
               🔊 Init Audio
             </Button>
@@ -348,9 +347,8 @@ export default function Interview() {
                 lastSpokenSubtitle.current = '';
                 alert('TTS cache reset. Officer will speak next message.');
               }}
-              variant="outline"
+              variant="default"
               size="sm"
-              className="bg-purple-600/40 hover:bg-purple-600/60 text-white border-white/20"
             >
               🔄 Reset TTS
             </Button>
@@ -414,9 +412,8 @@ export default function Interview() {
                   initializeInterview();
                 }, 100);
               }}
-              variant="outline"
+              variant="default"
               size="sm"
-              className="bg-green-600/40 hover:bg-green-600/60 text-white border-white/20"
             >
               🔁 Restart TTS
             </Button>
@@ -425,9 +422,8 @@ export default function Interview() {
                 const debugInfo = debugAudio();
                 alert('Debug info in console and on screen');
               }}
-              variant="outline"
+              variant="default"
               size="sm"
-              className="bg-orange-600/40 hover:bg-orange-600/60 text-white border-white/20"
             >
               🔍 Debug Audio
             </Button>
@@ -450,9 +446,8 @@ export default function Interview() {
                 });
                 alert('Complete status logged to console');
               }}
-              variant="outline"
+              variant="default"
               size="sm"
-              className="bg-yellow-600/40 hover:bg-yellow-600/60 text-white border-white/20"
             >
               📋 Status
             </Button>
@@ -461,7 +456,7 @@ export default function Interview() {
         
         {/* Debug Info Panel */}
         {debugInfo && (
-          <div className="absolute top-16 right-6 z-20 max-w-md p-3 bg-black/70 backdrop-blur-sm rounded-lg text-xs font-mono text-white whitespace-pre-wrap">
+          <div className="absolute bottom-16 right-6 z-20 max-w-md p-3 bg-black/70 backdrop-blur-sm rounded-lg text-xs font-mono text-white whitespace-pre-wrap">
             {debugInfo}
           </div>
         )}
