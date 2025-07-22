@@ -463,9 +463,9 @@ export default function Interview() {
 
               {/* Officer Subtitles - overlaid on the bottom center of the image */}
               {showSubtitles && currentSubtitle && (
-                <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 w-11/12 z-10">
+                <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 w-screen z-10">
                   <div className="bg-black/60 backdrop-blur-sm rounded-lg px-3 py-2 text-center">
-                    <p className="text-sm text-white leading-relaxed">{currentSubtitle}</p>
+                    <p className="text-xs text-white leading-relaxed">{currentSubtitle}</p>
                   </div>
                 </div>
               )}
