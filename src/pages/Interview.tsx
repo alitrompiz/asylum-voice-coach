@@ -522,7 +522,7 @@ export default function Interview() {
 
             {/* Language indicator */}
             {language && (
-              <p className="text-blue-300 text-sm mt-1">
+              <p className="text-blue-300 text-sm -mt-2">
                 Speaking in {language.name}
               </p>
             )}
