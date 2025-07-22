@@ -356,12 +356,12 @@ export default function Interview() {
         <div className="flex-1 flex flex-col items-center justify-center relative">
           {/* Officer Image and Info */}
           <div className="flex flex-col items-center space-y-6 relative">
-            {/* Debug Dropdown Button */}
-            <div className="absolute -top-20 -left-24 z-20">
+            {/* Debug Dropdown Button - Upper Right */}
+            <div className="absolute -top-2 -right-16 z-20">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="bg-white/10 hover:bg-white/20 text-white border border-white/20">
-                    <Bug className="h-4 w-4" />
+                  <Button variant="ghost" size="sm" className="bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-full p-2">
+                    🐛
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="bg-background/95 backdrop-blur-sm z-50">
@@ -470,19 +470,19 @@ export default function Interview() {
                 </div>
               )}
 
-              {/* End Session Button */}
+              {/* End Session Button - Upper Left */}
               <button
                 onClick={handleEndSession}
-                className="absolute -top-2 -right-2 bg-red-600 hover:bg-red-500 rounded-full p-2 border-2 border-white/20 transition-colors"
+                className="absolute -top-2 -left-2 bg-red-600 hover:bg-red-500 rounded-full p-2 border-2 border-white/20 transition-colors"
                 title="End Session"
               >
                 <X className="w-4 h-4 text-white" />
               </button>
 
-              {/* Subtitles Toggle Button */}
+              {/* Subtitles Toggle Button - Lower Left */}
               <button
                 onClick={() => setShowSubtitles(!showSubtitles)}
-                className={`absolute -top-2 -left-2 rounded-full p-2 border-2 border-white/20 transition-colors ${
+                className={`absolute bottom-2 -left-2 rounded-full p-2 border-2 border-white/20 transition-colors ${
                   showSubtitles 
                     ? "bg-blue-600 hover:bg-blue-500" 
                     : "bg-gray-600 hover:bg-gray-500"
@@ -496,10 +496,10 @@ export default function Interview() {
                 )}
               </button>
 
-              {/* TTS Toggle Button */}
+              {/* TTS Toggle Button - Lower Right */}
               <button
                 onClick={handleTTSToggle}
-                className={`absolute top-1/2 -right-8 rounded-full p-2 border-2 border-white/20 transition-colors ${
+                className={`absolute bottom-2 -right-2 rounded-full p-2 border-2 border-white/20 transition-colors ${
                   isTTSPlaying 
                     ? "bg-green-600 hover:bg-green-500" 
                     : "bg-purple-600 hover:bg-purple-500"
