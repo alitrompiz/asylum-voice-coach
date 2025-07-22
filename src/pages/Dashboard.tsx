@@ -29,20 +29,23 @@ export default function Dashboard() {
   }, [isAdmin, loading, error]);
 
   // Handle Start Interview button click and initialize AudioContext for iOS
-  const handleStartInterview = async () => {
+  const handleStartInterview = () => {
     // Initialize AudioContext on iOS to unlock audio playback
     try {
       // Create and resume AudioContext on button tap (iOS requires user gesture)
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
       if (audioContext.state === 'suspended') {
-        await audioContext.resume();
-        console.log('AudioContext initialized and resumed from Start Interview button');
+        audioContext.resume().then(() => {
+          console.log('AudioContext initialized and resumed from Start Interview button');
+        }).catch(err => {
+          console.warn('AudioContext resume error:', err);
+        });
       }
       
       // Create and play a silent audio element to fully unlock audio on iOS
       const unlockAudio = new Audio();
       unlockAudio.autoplay = true;
-      await unlockAudio.play().catch(e => console.log('Silent audio play prevented:', e));
+      unlockAudio.play().catch(e => console.log('Silent audio play prevented:', e));
       
       // Store audioContext in sessionStorage so it can be accessed in Interview component
       window.sessionStorage.setItem('audioContextInitialized', 'true');
@@ -50,7 +53,7 @@ export default function Dashboard() {
       console.warn('Could not initialize AudioContext:', error);
     }
     
-    // Navigate to interview
+    // Navigate to interview - do this immediately rather than waiting for audio context
     navigate('/interview');
   };
 
