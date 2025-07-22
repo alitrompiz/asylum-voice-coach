@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguagePreference } from './useLanguagePreference';
 
@@ -15,11 +15,63 @@ export const useTextToSpeech = () => {
   const [debugInfo, setDebugInfo] = useState<string>('');
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const currentRequestRef = useRef<string | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
   const { language, getVoiceForTTS, languageCode } = useLanguagePreference();
 
   // Detect iOS
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+  // Audio recovery system for handling interruptions
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      console.log('👁️ Visibility changed:', document.hidden ? 'hidden' : 'visible');
+      if (!document.hidden && audioRef.current) {
+        // Page became visible again, check if audio needs recovery
+        setTimeout(() => {
+          if (audioRef.current && audioRef.current.paused && isPlaying) {
+            console.log('🔄 Attempting audio recovery after visibility change');
+            audioRef.current.play().catch(err => {
+              console.error('❌ Audio recovery failed:', err);
+            });
+          }
+        }, 100);
+      }
+    };
+
+    const handleInterruption = () => {
+      console.log('📱 Audio interruption detected');
+      if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
+        console.log('🔄 Resuming AudioContext after interruption');
+        audioContextRef.current.resume().catch(err => {
+          console.error('❌ AudioContext resume failed:', err);
+        });
+      }
+    };
+
+    // Listen for page visibility changes
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    // Listen for focus events (app coming back to foreground)
+    window.addEventListener('focus', handleInterruption);
+    window.addEventListener('pageshow', handleInterruption);
+    
+    // iOS specific interruption handling
+    if (isIOS) {
+      document.addEventListener('touchstart', handleInterruption, { once: true });
+      document.addEventListener('click', handleInterruption, { once: true });
+    }
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleInterruption);
+      window.removeEventListener('pageshow', handleInterruption);
+      if (isIOS) {
+        document.removeEventListener('touchstart', handleInterruption);
+        document.removeEventListener('click', handleInterruption);
+      }
+    };
+  }, [isPlaying, isIOS]);
 
   const speak = useCallback(async (text: string, options: TTSOptions = {}) => {
     if (!text.trim()) {
@@ -129,6 +181,7 @@ export const useTextToSpeech = () => {
             
             if (AudioContext) {
               audioContext = new AudioContext();
+              audioContextRef.current = audioContext; // Store for recovery
               console.log('🔊 AudioContext created, state:', audioContext.state);
               
               // Resume audio context if suspended (critical for iOS)
@@ -344,9 +397,15 @@ export const useTextToSpeech = () => {
     setIsLoading(false);
   }, []);
   
-  // Debug function to inspect audio state
+  // Enhanced debug function to inspect audio state and diagnose interruptions
   const debugAudio = useCallback(() => {
     const debugMessages: string[] = [];
+    
+    // Current state info
+    debugMessages.push(`🎵 TTS State: playing=${isPlaying}, loading=${isLoading}`);
+    debugMessages.push(`📱 Platform: ${isIOS ? 'iOS' : 'non-iOS'}`);
+    debugMessages.push(`👁️ Page visible: ${!document.hidden}`);
+    debugMessages.push(`🔊 Page focused: ${document.hasFocus()}`);
     
     // Check if we have an audio element
     if (!audioRef.current) {
@@ -359,38 +418,53 @@ export const useTextToSpeech = () => {
       debugMessages.push(`📊 Duration: ${audio.duration ? audio.duration.toFixed(2) + 's' : 'unknown'}`);
       debugMessages.push(`📊 Volume: ${audio.volume}`);
       debugMessages.push(`📊 Muted: ${audio.muted}`);
+      debugMessages.push(`📊 Ready state: ${audio.readyState}`);
+      debugMessages.push(`📊 Network state: ${audio.networkState}`);
+      debugMessages.push(`📊 Error: ${audio.error ? audio.error.message : 'none'}`);
       
-      // Try to force play
+      // Try to force play and report result immediately
       audio.play().then(() => {
+        console.log('✅ Forced play successful');
         debugMessages.push('✅ Forced play successful');
         setDebugInfo(debugMessages.join('\n'));
       }).catch(err => {
+        console.log('❌ Forced play failed:', err.message);
         debugMessages.push(`❌ Forced play failed: ${err.message}`);
         setDebugInfo(debugMessages.join('\n'));
       });
     }
     
-    // OS detection
-    debugMessages.push(`📱 Platform: ${isIOS ? 'iOS' : 'non-iOS'}`);
-    debugMessages.push(`📱 User Agent: ${navigator.userAgent}`);
+    // Check AudioContext state
+    if (audioContextRef.current) {
+      debugMessages.push(`🔊 AudioContext state: ${audioContextRef.current.state}`);
+      debugMessages.push(`🔊 AudioContext sample rate: ${audioContextRef.current.sampleRate}`);
+    } else {
+      debugMessages.push('⚠️ No AudioContext available');
+    }
     
-    // Check AudioContext support
+    // Check for common interruption scenarios
     const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
     if (!AudioContext) {
       debugMessages.push('⚠️ AudioContext not supported');
     } else {
       debugMessages.push('✅ AudioContext supported');
       try {
-        const ctx = new AudioContext();
-        debugMessages.push(`📊 AudioContext state: ${ctx.state}`);
+        const testCtx = new AudioContext();
+        debugMessages.push(`📊 New AudioContext state: ${testCtx.state}`);
+        testCtx.close(); // Clean up test context
       } catch (e) {
         debugMessages.push(`❌ AudioContext creation failed: ${e.message}`);
       }
     }
     
+    // Browser compatibility checks
+    debugMessages.push(`🌐 User Agent: ${navigator.userAgent.substring(0, 60)}...`);
+    debugMessages.push(`🔊 Audio support: ${!!window.Audio}`);
+    debugMessages.push(`🎵 MediaDevices: ${!!navigator.mediaDevices}`);
+    
     setDebugInfo(debugMessages.join('\n'));
     return debugMessages.join('\n');
-  }, [isIOS]);
+  }, [isIOS, isPlaying, isLoading]);
 
   return {
     speak,
