@@ -12,40 +12,24 @@ interface TTSOptions {
 
 // Enhanced audio manager for cross-platform compatibility with improved iOS support
 const createAudioElement = (base64Data: string): HTMLAudioElement => {
+  console.log('🔊 createAudioElement called');
   const audio = new Audio(`data:audio/mpeg;base64,${base64Data}`);
   
-  // Set properties for better compatibility
+  // Essential iOS properties
+  audio.volume = 1.0;
+  audio.muted = false;
   audio.crossOrigin = 'anonymous';
-  audio.preload = 'auto'; // Use 'auto' instead of 'metadata' for better iOS support
-  audio.autoplay = false; // We'll control playback manually
+  audio.preload = 'auto';
+  audio.autoplay = false;
 
-  // iOS-specific optimizations
-  const isiOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
-    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-  
-  if (isiOS) {
-    // Force iOS to prepare the audio for immediate playback
-    audio.load();
-    
-    // iOS Safari requires at least one manual interaction with the audio element
-    const silentPlayAttempt = audio.play();
-    if (silentPlayAttempt) {
-      silentPlayAttempt.catch(() => {
-        // Silently ignore the expected "play() failed" error
-        // This is expected and helps prime the audio for later playback
-        console.log("iOS silent play attempt (expected to fail, but helps prepare audio)");
-      });
-    }
-    
-    // Set a small volume and then restore to prepare audio pipeline
-    audio.volume = 0.1;
-    setTimeout(() => {
-      audio.volume = 1.0;
-    }, 0);
-  } else {
-    // For non-iOS, just load the audio
-    audio.load();
-  }
+  console.log('🔊 Audio element created with properties:', {
+    volume: audio.volume,
+    muted: audio.muted,
+    src: audio.src.substring(0, 50) + '...'
+  });
+
+  // Load the audio immediately
+  audio.load();
   
   return audio;
 };
@@ -74,7 +58,7 @@ export const useTextToSpeech = () => {
     const requestId = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     currentRequestRef.current = requestId;
     
-    console.log('TTS speak() called:', { 
+    console.log('🎤 TTS speak() called:', { 
       requestId,
       textLength: text.length, 
       languageCode,
@@ -84,9 +68,29 @@ export const useTextToSpeech = () => {
       textPreview: text.substring(0, 50) + '...'
     });
 
+    // Force audio context initialization right now if iOS
+    if (isIOS) {
+      console.log('🍎 iOS detected - ensuring AudioContext is active');
+      try {
+        const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+        const audioContext = new AudioContextClass();
+        console.log('🍎 AudioContext state:', audioContext.state);
+        
+        if (audioContext.state === 'suspended') {
+          await audioContext.resume();
+          console.log('🍎 AudioContext resumed');
+        }
+        
+        // Store global reference for audio elements to use
+        (window as any).__audioContext = audioContext;
+      } catch (err) {
+        console.error('🍎 AudioContext initialization failed:', err);
+      }
+    }
+    
     // If already playing or loading, stop first
     if (isPlaying || isLoading) {
-      console.log('Stopping existing TTS for new request');
+      console.log('🛑 Stopping existing TTS for new request');
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
@@ -100,28 +104,7 @@ export const useTextToSpeech = () => {
       setIsLoading(true);
       options.onStart?.();
 
-      // Initialize AudioContext on iOS if needed and not already initialized
-      // This should only be needed if the user somehow bypassed the Dashboard initialization
-      if (isIOS && !wasAudioContextInitialized.current) {
-        console.log('Audio context not initialized from Dashboard, attempting to initialize now');
-        try {
-          // Try to create and resume AudioContext as a fallback
-          const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-          if (audioContext.state === 'suspended') {
-            await audioContext.resume();
-            console.log('iOS AudioContext resumed as fallback');
-            
-            // Create and play a silent audio element to fully unlock audio on iOS
-            const unlockAudio = document.createElement('audio');
-            unlockAudio.autoplay = true;
-            await unlockAudio.play().catch(e => console.log('Silent audio play prevented:', e));
-          }
-        } catch (error) {
-          console.warn('iOS AudioContext warning:', error);
-        }
-      } else if (wasAudioContextInitialized.current) {
-        console.log('Using AudioContext initialized from Start Interview button');
-      }
+      console.log('🔍 Checking audio context state before TTS call');
 
       // Get the appropriate voice for the selected language
       const voice = options.voice || getVoiceForTTS('openai');
@@ -213,7 +196,7 @@ export const useTextToSpeech = () => {
         audio.addEventListener('error', handleError);
 
         // Debug audio element properties before playback
-        console.log('Audio element properties before play:', {
+        console.log('🔊 Audio element properties before play:', {
           requestId,
           volume: audio.volume,
           muted: audio.muted,
@@ -222,43 +205,75 @@ export const useTextToSpeech = () => {
           currentTime: audio.currentTime,
           duration: audio.duration,
           src: audio.src.substring(0, 50) + '...',
-          audioContextState: wasAudioContextInitialized.current ? 'initialized' : 'not-initialized'
+          audioContextState: (window as any).__audioContext?.state || 'none'
         });
 
         // Start playback immediately 
         try {
-          console.log('Starting audio playback...');
+          console.log('▶️ Starting audio playback...');
+          
+          // For iOS, ensure volume is set correctly
+          if (isIOS) {
+            audio.volume = 1.0;
+            audio.muted = false;
+            console.log('🍎 iOS audio settings enforced');
+          }
+          
           const playPromise = audio.play();
-          console.log('Audio.play() promise created:', !!playPromise);
+          console.log('🎵 Audio.play() promise created:', !!playPromise);
           
-          await playPromise;
-          console.log('Audio playback started successfully');
-          
-          // Verify audio is actually playing
-          setTimeout(() => {
-            console.log('Audio status after 100ms:', {
-              paused: audio.paused,
-              currentTime: audio.currentTime,
-              volume: audio.volume,
-              muted: audio.muted
-            });
-          }, 100);
-          
-          // Set states after successful play
-          if (currentRequestRef.current === requestId) {
-            setIsLoading(false);
-            setIsPlaying(true);
+          if (playPromise) {
+            await playPromise;
+            console.log('✅ Audio playback started successfully');
+            
+            // Verify audio is actually playing
+            setTimeout(() => {
+              console.log('📊 Audio status after 100ms:', {
+                paused: audio.paused,
+                currentTime: audio.currentTime,
+                volume: audio.volume,
+                muted: audio.muted,
+                readyState: audio.readyState
+              });
+            }, 100);
+            
+            // Set states after successful play
+            if (currentRequestRef.current === requestId) {
+              setIsLoading(false);
+              setIsPlaying(true);
+            }
           }
         } catch (playError) {
-          console.error('Audio play() failed:', playError);
-          console.error('Audio element state on error:', {
+          console.error('❌ Audio play() failed:', playError);
+          console.error('📋 Audio element state on error:', {
             volume: audio.volume,
             muted: audio.muted,
             readyState: audio.readyState,
             paused: audio.paused,
-            networkState: audio.networkState
+            networkState: audio.networkState,
+            error: audio.error
           });
-          throw new Error(`Audio playback failed: ${playError.message}`);
+          
+          // Try alternative approach for iOS
+          if (isIOS) {
+            console.log('🍎 Attempting iOS fallback playback method');
+            try {
+              // Force load and try again
+              audio.load();
+              await new Promise(resolve => setTimeout(resolve, 100));
+              await audio.play();
+              console.log('✅ iOS fallback successful');
+              if (currentRequestRef.current === requestId) {
+                setIsLoading(false);
+                setIsPlaying(true);
+              }
+            } catch (fallbackError) {
+              console.error('❌ iOS fallback also failed:', fallbackError);
+              throw new Error(`Audio playback failed: ${playError.message}`);
+            }
+          } else {
+            throw new Error(`Audio playback failed: ${playError.message}`);
+          }
         }
       }
     } catch (error) {
