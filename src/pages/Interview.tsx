@@ -478,6 +478,36 @@ export default function Interview() {
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
+
+              {/* Subtitles Toggle Button - Lower Left */}
+              <button
+                onClick={() => setShowSubtitles(!showSubtitles)}
+                className={`absolute bottom-2 -left-2 rounded-full p-2 border-2 border-white/20 transition-colors ${
+                  showSubtitles 
+                    ? "bg-blue-600 hover:bg-blue-500" 
+                    : "bg-gray-600 hover:bg-gray-500"
+                }`}
+                title={showSubtitles ? "Hide Subtitles" : "Show Subtitles"}
+              >
+                {showSubtitles ? (
+                  <Captions className="w-4 h-4 text-white" />
+                ) : (
+                  <Type className="w-4 h-4 text-white" />
+                )}
+              </button>
+
+              {/* TTS Toggle Button - Lower Right */}
+              <button
+                onClick={handleTTSToggle}
+                className={`absolute bottom-2 -right-2 rounded-full p-2 border-2 border-white/20 transition-colors ${
+                  isTTSPlaying 
+                    ? "bg-green-600 hover:bg-green-500" 
+                    : "bg-purple-600 hover:bg-purple-500"
+                }`}
+                title={isTTSPlaying ? "Stop Speaking" : "Repeat Message"}
+              >
+                <Volume2 className="w-4 h-4 text-white" />
+              </button>
             </div>
             
             {/* Waveform - smaller and above officer name */}
