@@ -564,10 +564,10 @@ export default function Interview() {
           
           {/* Press to Talk Button */}
           <button
-            onClick={isMobile ? undefined : handleMouseClick}
-            onTouchStart={handleTouch}
-            onTouchEnd={undefined}
-            onTouchCancel={undefined}
+            onClick={!isMobile ? handleMouseClick : undefined}
+            onTouchStart={isMobile ? handleTouch : undefined}
+            onTouchEnd={isMobile ? handleTouch : undefined}
+            onTouchCancel={isMobile ? handleTouch : undefined}
             onContextMenu={(e) => e.preventDefault()}
             disabled={isProcessing}
             className={cn(
