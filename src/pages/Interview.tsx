@@ -356,98 +356,128 @@ export default function Interview() {
         <div className="flex-1 flex flex-col items-center justify-center relative">
           {/* Officer Image and Info */}
           <div className="flex flex-col items-center space-y-6 relative">
-            {/* Debug Dropdown Button - Upper Right */}
-            <div className="absolute -top-2 -right-16 z-20">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-full p-2">
-                    🐛
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="bg-background/95 backdrop-blur-sm z-50">
-                  <DropdownMenuItem onClick={async () => {
-                    console.log('🔊 Initializing AudioContext for iOS');
-                    try {
-                      const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-                      if (AudioContext) {
-                        const audioCtx = new AudioContext();
-                        console.log('AudioContext state before:', audioCtx.state);
-                        if (audioCtx.state === 'suspended') {
-                          await audioCtx.resume();
-                          console.log('AudioContext state after resume:', audioCtx.state);
-                          alert('✅ AudioContext activated! Now try TTS.');
-                        } else {
-                          alert('✅ AudioContext already running!');
-                        }
-                      } else {
-                        alert('❌ AudioContext not supported');
-                      }
-                    } catch (error) {
-                      console.error('❌ AudioContext init failed:', error);
-                      alert(`❌ Error: ${error.message}`);
-                    }
-                  }}>
-                    🔊 Init Audio
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => {
-                    console.log('🔄 Manually resetting lastSpokenSubtitle to empty');
-                    lastSpokenSubtitle.current = '';
-                    alert('TTS cache reset. Officer will speak next message.');
-                  }}>
-                    🔄 Reset TTS
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={async () => {
-                    console.log('🧪 Testing iOS audio from interview screen');
-                    try {
-                      const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-                      if (AudioContext) {
-                        const audioCtx = new AudioContext();
-                        if (audioCtx.state === 'suspended') {
-                          await audioCtx.resume();
-                          console.log('✅ AudioContext resumed');
-                        }
-                      }
-                      
-                      await speak('Testing audio playback on iOS device', {
-                        onStart: () => console.log('✅ Test TTS started'),
-                        onEnd: () => console.log('✅ Test TTS completed'),
-                        onError: (e) => console.error('❌ Test TTS failed:', e)
-                      });
-                    } catch (error) {
-                      console.error('❌ TTS test failed:', error);
-                      alert(`iOS Audio Error: ${error.message}`);
-                    }
-                  }}>
-                    🧪 Test Audio
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={async () => {
-                    console.log('🔄 Forcing TTS reload with current message');
-                    const currentMessage = currentSubtitle;
-                    clearConversation();
-                    setTimeout(() => {
-                      lastSpokenSubtitle.current = '';
-                      initializeInterview();
-                    }, 100);
-                  }}>
-                    🔁 Restart TTS
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => {
-                    const debugInfo = debugAudio();
-                    alert('Debug info in console and on screen');
-                  }}>
-                    🔍 Debug Audio
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => {
-                    setShowDebugPanel(!showDebugPanel);
-                  }}>
-                    📋 Status
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-
             {/* Officer Image */}
             <div className="relative">
+              <img 
+                src={selectedPersonaData?.image_url || "/persona-1.png"} 
+                alt={selectedPersonaData?.name || "Officer"} 
+                className="w-48 h-48 rounded-full object-cover border-4 border-white/20 shadow-2xl"
+              />
+              
+              {/* AI Speaking Indicator */}
+              {isAiSpeaking && (
+                <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2">
+                  <div className="bg-green-500 w-4 h-4 rounded-full animate-pulse shadow-lg"></div>
+                </div>
+              )}
+
+              {/* Officer Subtitles - overlaid on the bottom center of the image */}
+              {showSubtitles && currentSubtitle && (
+                <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 w-screen z-10">
+                  <div className="bg-black/60 backdrop-blur-sm rounded-lg px-3 py-2 text-center">
+                    <p className="text-xs text-white leading-relaxed">{currentSubtitle}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* End Session Button - Upper Left */}
+              <button
+                onClick={handleEndSession}
+                className="absolute -top-2 -left-2 bg-red-600 hover:bg-red-500 rounded-full p-2 border-2 border-white/20 transition-colors"
+                title="End Session"
+              >
+                <X className="w-4 h-4 text-white" />
+              </button>
+
+              {/* Debug Dropdown Button - Upper Right */}
+              <div className="absolute -top-2 -right-2 z-20">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-full p-2">
+                      🐛
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="bg-background/95 backdrop-blur-sm z-50">
+                    <DropdownMenuItem onClick={async () => {
+                      console.log('🔊 Initializing AudioContext for iOS');
+                      try {
+                        const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+                        if (AudioContext) {
+                          const audioCtx = new AudioContext();
+                          console.log('AudioContext state before:', audioCtx.state);
+                          if (audioCtx.state === 'suspended') {
+                            await audioCtx.resume();
+                            console.log('AudioContext state after resume:', audioCtx.state);
+                            alert('✅ AudioContext activated! Now try TTS.');
+                          } else {
+                            alert('✅ AudioContext already running!');
+                          }
+                        } else {
+                          alert('❌ AudioContext not supported');
+                        }
+                      } catch (error) {
+                        console.error('❌ AudioContext init failed:', error);
+                        alert(`❌ Error: ${error.message}`);
+                      }
+                    }}>
+                      🔊 Init Audio
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => {
+                      console.log('🔄 Manually resetting lastSpokenSubtitle to empty');
+                      lastSpokenSubtitle.current = '';
+                      alert('TTS cache reset. Officer will speak next message.');
+                    }}>
+                      🔄 Reset TTS
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={async () => {
+                      console.log('🧪 Testing iOS audio from interview screen');
+                      try {
+                        const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+                        if (AudioContext) {
+                          const audioCtx = new AudioContext();
+                          if (audioCtx.state === 'suspended') {
+                            await audioCtx.resume();
+                            console.log('✅ AudioContext resumed');
+                          }
+                        }
+                        
+                        await speak('Testing audio playback on iOS device', {
+                          onStart: () => console.log('✅ Test TTS started'),
+                          onEnd: () => console.log('✅ Test TTS completed'),
+                          onError: (e) => console.error('❌ Test TTS failed:', e)
+                        });
+                      } catch (error) {
+                        console.error('❌ TTS test failed:', error);
+                        alert(`iOS Audio Error: ${error.message}`);
+                      }
+                    }}>
+                      🧪 Test Audio
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={async () => {
+                      console.log('🔄 Forcing TTS reload with current message');
+                      const currentMessage = currentSubtitle;
+                      clearConversation();
+                      setTimeout(() => {
+                        lastSpokenSubtitle.current = '';
+                        initializeInterview();
+                      }, 100);
+                    }}>
+                      🔁 Restart TTS
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => {
+                      const debugInfo = debugAudio();
+                      alert('Debug info in console and on screen');
+                    }}>
+                      🔍 Debug Audio
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => {
+                      setShowDebugPanel(!showDebugPanel);
+                    }}>
+                      📋 Status
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
               <img 
                 src={selectedPersonaData?.image_url || "/persona-1.png"} 
                 alt={selectedPersonaData?.name || "Officer"} 
