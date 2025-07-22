@@ -51,8 +51,14 @@ export const useLanguagePreference = () => {
 
   const language = SUPPORTED_LANGUAGES.find(l => l.code === languageCode) || SUPPORTED_LANGUAGES[0];
 
-  const getVoiceForTTS = (ttsProvider: 'polly' | 'google' | 'openai' = language.primaryTTS) => {
+  const getVoiceForTTS = (ttsProvider: 'polly' | 'google' | 'openai' | 'elevenlabs' = 'elevenlabs') => {
     switch (ttsProvider) {
+      case 'elevenlabs':
+        // Use ElevenLabs voices - default to Aria for most languages
+        if (languageCode === 'es') return 'EXAVITQu4vr4xnSDxMaL'; // Sarah - good for Spanish
+        if (languageCode === 'fr') return 'pFZP5JQG7iQjIQuC4Bku'; // Lily - good for French
+        if (languageCode === 'pt') return 'cgSgspJ2msm6clMCkdW9'; // Jessica - good for Portuguese
+        return '9BWtsMINqrJLrRacOk9x'; // Aria - default for English and others
       case 'polly':
         return language.pollyVoice || language.googleVoice || language.openaiVoice || 'alloy';
       case 'google':
@@ -60,7 +66,7 @@ export const useLanguagePreference = () => {
       case 'openai':
         return language.openaiVoice || 'alloy';
       default:
-        return language.openaiVoice || 'alloy';
+        return '9BWtsMINqrJLrRacOk9x'; // Default to ElevenLabs Aria
     }
   };
 

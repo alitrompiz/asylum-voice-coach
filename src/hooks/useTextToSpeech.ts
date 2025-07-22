@@ -106,8 +106,8 @@ export const useTextToSpeech = () => {
 
       console.log('🔍 Checking audio context state before TTS call');
 
-      // Get the appropriate voice for the selected language
-      const voice = options.voice || getVoiceForTTS('openai');
+      // Get the appropriate ElevenLabs voice for the selected language
+      const voice = options.voice || getVoiceForTTS('elevenlabs');
 
       console.log('📞 Calling ElevenLabs TTS edge function with:', { 
         requestId,
