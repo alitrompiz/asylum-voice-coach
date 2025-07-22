@@ -456,7 +456,7 @@ export default function Interview() {
         
         {/* Debug Info Panel */}
         {debugInfo && (
-          <div className="absolute top-32 right-6 left-6 z-20 p-3 bg-black/70 backdrop-blur-sm rounded-lg text-xs font-mono text-white whitespace-pre-wrap max-h-40 overflow-y-auto">
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30 p-4 bg-black/90 backdrop-blur-sm rounded-lg text-xs font-mono text-white whitespace-pre-wrap max-w-sm max-h-60 overflow-y-auto border border-white/20">
             {debugInfo}
           </div>
         )}
