@@ -508,14 +508,17 @@ export default function Interview() {
               >
                 <Volume2 className="w-4 h-4 text-white" />
               </button>
+
+              {/* Waveform - 20% size, positioned between subtitles and TTS button */}
+              {isAiSpeaking && (
+                <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2">
+                  <div className="w-5 h-1">
+                    <Waveform isActive={isAiSpeaking} intensity={0.8} />
+                  </div>
+                </div>
+              )}
             </div>
             
-            {/* Waveform - smaller and above officer name */}
-            {isAiSpeaking && (
-              <div className="w-24 h-6 -mb-2">
-                <Waveform isActive={isAiSpeaking} intensity={0.8} />
-              </div>
-            )}
             
             {/* Officer Name */}
             <div className="text-center">
