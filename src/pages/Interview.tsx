@@ -564,14 +564,14 @@ export default function Interview() {
           
           {/* Press to Talk Button */}
           <button
-            onClick={!isMobile ? handleMouseClick : undefined}
+            onClick={handleMouseClick}
             onTouchStart={isMobile ? handleTouch : undefined}
             onTouchEnd={isMobile ? handleTouch : undefined}
             onTouchCancel={isMobile ? handleTouch : undefined}
             onContextMenu={(e) => e.preventDefault()}
             disabled={isProcessing}
             className={cn(
-              "flex flex-col items-center gap-3 group select-none touch-none",
+              "flex flex-col items-center gap-3 group select-none",
               "transition-all duration-200",
               isRecording && "scale-110"
             )}
