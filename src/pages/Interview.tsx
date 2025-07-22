@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { MessageSquare, Mic, X, Pause, Play, Send, MicOff, Volume2, EyeOff, Eye, Captions, Type } from 'lucide-react';
+import { MessageSquare, Mic, X, Pause, Play, Send, MicOff, Volume2, EyeOff, Eye, Captions, Type, Bug } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { usePersonaStore } from '@/stores/personaStore';
 import { usePersonas } from '@/hooks/usePersonas';
 import { useAudioRecording } from '@/hooks/useAudioRecording';
@@ -21,6 +22,8 @@ export default function Interview() {
   const [showSubtitles, setShowSubtitles] = useState(true);
   const [isPaused, setIsPaused] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
+  const [showDebugPanel, setShowDebugPanel] = useState(false);
+  const [userTranscription, setUserTranscription] = useState('');
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   
@@ -192,7 +195,11 @@ export default function Interview() {
         const recording = await stopRecording();
         if (recording.duration > 0) {
           console.log('Processing audio message...');
+          // Show transcription feedback
+          setUserTranscription('Transcribing your message...');
           await processAudioMessage(recording);
+          // Clear transcription after processing
+          setTimeout(() => setUserTranscription(''), 3000);
         }
       } catch (error) {
         console.error('Failed to stop recording:', error);
@@ -235,7 +242,11 @@ export default function Interview() {
         const recording = await stopRecording();
         if (recording.duration > 0) {
           console.log('Processing audio message...');
+          // Show transcription feedback
+          setUserTranscription('Transcribing your message...');
           await processAudioMessage(recording);
+          // Clear transcription after processing
+          setTimeout(() => setUserTranscription(''), 3000);
         }
       } catch (error) {
         console.error('Failed to stop recording:', error);
@@ -308,151 +319,27 @@ export default function Interview() {
       
       {/* Content */}
       <div className="relative z-10 flex flex-col h-screen p-6">
-        {/* Top Controls with Debug Button */}
-        <div className="absolute top-6 left-6 right-6 z-20 flex justify-between items-center">
-          <div></div>
-          {/* Debug Buttons */}
-          <div className="flex gap-2 flex-wrap">
+        {/* Debug Panel */}
+        {showDebugPanel && (
+          <div className="absolute top-6 left-6 right-6 z-30 bg-black/70 backdrop-blur-sm rounded-lg p-3">
+            <div className="text-xs text-white/80 space-y-1">
+              <div><strong>Subtitle:</strong> {currentSubtitle?.substring(0, 100)}...</div>
+              <div><strong>TTS State:</strong> Playing: {isTTSPlaying}, Loading: {isTTSLoading}, AI Speaking: {isAiSpeaking}</div>
+              <div><strong>Recording:</strong> {isRecording ? 'Active' : 'Inactive'}, Processing: {isProcessing}</div>
+              <div><strong>Persona:</strong> {selectedPersonaData?.name} ({selectedPersonaData?.tts_voice})</div>
+              <div><strong>Language:</strong> {languageCode}</div>
+              <div><strong>Messages:</strong> {messages.length}</div>
+            </div>
             <Button 
-              onClick={async () => {
-                console.log('🔊 Initializing AudioContext for iOS');
-                try {
-                  const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-                  if (AudioContext) {
-                    const audioCtx = new AudioContext();
-                    console.log('AudioContext state before:', audioCtx.state);
-                    if (audioCtx.state === 'suspended') {
-                      await audioCtx.resume();
-                      console.log('AudioContext state after resume:', audioCtx.state);
-                      alert('✅ AudioContext activated! Now try TTS.');
-                    } else {
-                      alert('✅ AudioContext already running!');
-                    }
-                  } else {
-                    alert('❌ AudioContext not supported');
-                  }
-                } catch (error) {
-                  console.error('❌ AudioContext init failed:', error);
-                  alert(`❌ Error: ${error.message}`);
-                }
-              }}
-              variant="default"
-              size="sm"
+              onClick={() => setShowDebugPanel(false)}
+              variant="ghost" 
+              size="sm" 
+              className="absolute top-2 right-2 text-white/60 hover:text-white"
             >
-              🔊 Init Audio
-            </Button>
-            <Button 
-              onClick={() => {
-                console.log('🔄 Manually resetting lastSpokenSubtitle to empty');
-                lastSpokenSubtitle.current = '';
-                alert('TTS cache reset. Officer will speak next message.');
-              }}
-              variant="default"
-              size="sm"
-            >
-              🔄 Reset TTS
-            </Button>
-            <Button 
-              onClick={async () => {
-                console.log('🧪 Testing iOS audio from interview screen');
-                try {
-                  // Force audio context activation
-                  const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-                  if (AudioContext) {
-                    const audioCtx = new AudioContext();
-                    if (audioCtx.state === 'suspended') {
-                      await audioCtx.resume();
-                      console.log('✅ AudioContext resumed');
-                    }
-                  }
-                  
-                  // Test with ElevenLabs TTS directly
-                  await speak('Testing audio playback on iOS device', {
-                    onStart: () => console.log('✅ Test TTS started'),
-                    onEnd: () => console.log('✅ Test TTS completed'),
-                    onError: (e) => console.error('❌ Test TTS failed:', e)
-                  });
-                } catch (error) {
-                  console.error('❌ TTS test failed:', error);
-                  alert(`iOS Audio Error: ${error.message}`);
-                }
-              }}
-              variant="outline"
-              size="sm"
-              className="bg-white/10 hover:bg-white/20 text-white border-white/20"
-            >
-              🧪 Test Audio
-            </Button>
-            <Button 
-              onClick={async () => {
-                // Force a TTS reset by using the useInterviewConversation hook
-                console.log('🔄 Forcing TTS reload with current message');
-                const currentMessage = currentSubtitle;
-                
-                // First, clear the subtitle
-                clearConversation();
-                
-                // Then set it again with a small delay
-                setTimeout(() => {
-                  // Create a "fake" AI message with the same content
-                  const aiMessage = {
-                    id: `ai_retry_${Date.now()}`,
-                    role: 'assistant',
-                    text: currentMessage,
-                    timestamp: Date.now()
-                  };
-                  
-                  // Call the raw setter from useInterviewConversation hook
-                  console.log('🔄 Resetting with message:', currentMessage.substring(0, 30) + '...');
-                  
-                  // Force the lastSpokenSubtitle to be reset
-                  lastSpokenSubtitle.current = '';
-                  
-                  // Re-initialize the interview (this will trigger the TTS)
-                  initializeInterview();
-                }, 100);
-              }}
-              variant="default"
-              size="sm"
-            >
-              🔁 Restart TTS
-            </Button>
-            <Button 
-              onClick={() => {
-                const debugInfo = debugAudio();
-                alert('Debug info in console and on screen');
-              }}
-              variant="default"
-              size="sm"
-            >
-              🔍 Debug Audio
-            </Button>
-            <Button 
-              onClick={() => {
-                console.log('📋 COMPLETE TTS STATUS REPORT:', {
-                  currentSubtitle: currentSubtitle?.substring(0, 50) + '...',
-                  selectedPersona: selectedPersona,
-                  selectedPersonaData: selectedPersonaData ? {
-                    name: selectedPersonaData.name,
-                    tts_voice: selectedPersonaData.tts_voice
-                  } : null,
-                  isProcessing,
-                  isTTSPlaying,
-                  isTTSLoading,
-                  isAiSpeaking,
-                  lastSpokenSubtitle: lastSpokenSubtitle.current?.substring(0, 30) + '...',
-                  hasInitialized,
-                  messagesCount: messages.length
-                });
-                alert('Complete status logged to console');
-              }}
-              variant="default"
-              size="sm"
-            >
-              📋 Status
+              <X className="h-3 w-3" />
             </Button>
           </div>
-        </div>
+        )}
         
         {/* Debug Info Panel */}
         {debugInfo && (
@@ -465,91 +352,197 @@ export default function Interview() {
         <div className="text-center pt-1.5 mb-0.5">
           <h1 className="text-white text-base font-medium">Asylum Prep</h1>
         </div>
-        {/* Main Content Area */}
-        <div className="flex-1 flex flex-col items-center justify-start space-y-6 pt-8">
-          {/* Profile Picture with AI Badge and Waveform */}
-          <div className="relative">
-            <div className="w-80 h-80 rounded-full overflow-hidden border-4 border-white/20 shadow-2xl">
-              <img
-                src={selectedPersonaData?.image_url || '/placeholder.svg'}
-                alt={selectedPersonaData?.alt_text || 'AI Interviewer'}
-                className="w-full h-full object-cover"
+        {/* Main Content */}
+        <div className="flex-1 flex flex-col items-center justify-center relative">
+          {/* Officer Image and Info */}
+          <div className="flex flex-col items-center space-y-6 relative">
+            {/* Debug Dropdown Button */}
+            <div className="absolute -top-20 -left-24 z-20">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="bg-white/10 hover:bg-white/20 text-white border border-white/20">
+                    <Bug className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="bg-background/95 backdrop-blur-sm z-50">
+                  <DropdownMenuItem onClick={async () => {
+                    console.log('🔊 Initializing AudioContext for iOS');
+                    try {
+                      const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+                      if (AudioContext) {
+                        const audioCtx = new AudioContext();
+                        console.log('AudioContext state before:', audioCtx.state);
+                        if (audioCtx.state === 'suspended') {
+                          await audioCtx.resume();
+                          console.log('AudioContext state after resume:', audioCtx.state);
+                          alert('✅ AudioContext activated! Now try TTS.');
+                        } else {
+                          alert('✅ AudioContext already running!');
+                        }
+                      } else {
+                        alert('❌ AudioContext not supported');
+                      }
+                    } catch (error) {
+                      console.error('❌ AudioContext init failed:', error);
+                      alert(`❌ Error: ${error.message}`);
+                    }
+                  }}>
+                    🔊 Init Audio
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => {
+                    console.log('🔄 Manually resetting lastSpokenSubtitle to empty');
+                    lastSpokenSubtitle.current = '';
+                    alert('TTS cache reset. Officer will speak next message.');
+                  }}>
+                    🔄 Reset TTS
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={async () => {
+                    console.log('🧪 Testing iOS audio from interview screen');
+                    try {
+                      const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+                      if (AudioContext) {
+                        const audioCtx = new AudioContext();
+                        if (audioCtx.state === 'suspended') {
+                          await audioCtx.resume();
+                          console.log('✅ AudioContext resumed');
+                        }
+                      }
+                      
+                      await speak('Testing audio playback on iOS device', {
+                        onStart: () => console.log('✅ Test TTS started'),
+                        onEnd: () => console.log('✅ Test TTS completed'),
+                        onError: (e) => console.error('❌ Test TTS failed:', e)
+                      });
+                    } catch (error) {
+                      console.error('❌ TTS test failed:', error);
+                      alert(`iOS Audio Error: ${error.message}`);
+                    }
+                  }}>
+                    🧪 Test Audio
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={async () => {
+                    console.log('🔄 Forcing TTS reload with current message');
+                    const currentMessage = currentSubtitle;
+                    clearConversation();
+                    setTimeout(() => {
+                      lastSpokenSubtitle.current = '';
+                      initializeInterview();
+                    }, 100);
+                  }}>
+                    🔁 Restart TTS
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => {
+                    const debugInfo = debugAudio();
+                    alert('Debug info in console and on screen');
+                  }}>
+                    🔍 Debug Audio
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => {
+                    setShowDebugPanel(!showDebugPanel);
+                  }}>
+                    📋 Status
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+
+            {/* Officer Image */}
+            <div className="relative">
+              <img 
+                src={selectedPersonaData?.image_url || "/persona-1.png"} 
+                alt={selectedPersonaData?.name || "Officer"} 
+                className="w-48 h-48 rounded-full object-cover border-4 border-white/20 shadow-2xl"
               />
+              
+              {/* AI Speaking Indicator */}
+              {isAiSpeaking && (
+                <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2">
+                  <div className="bg-green-500 w-4 h-4 rounded-full animate-pulse shadow-lg"></div>
+                </div>
+              )}
+
+              {/* Officer Subtitles - overlaid on the bottom center of the image */}
+              {showSubtitles && currentSubtitle && (
+                <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 w-11/12 z-10">
+                  <div className="bg-black/60 backdrop-blur-sm rounded-lg px-3 py-2 text-center">
+                    <p className="text-sm text-white leading-relaxed">{currentSubtitle}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* End Session Button */}
+              <button
+                onClick={handleEndSession}
+                className="absolute -top-2 -right-2 bg-red-600 hover:bg-red-500 rounded-full p-2 border-2 border-white/20 transition-colors"
+                title="End Session"
+              >
+                <X className="w-4 h-4 text-white" />
+              </button>
+
+              {/* Subtitles Toggle Button */}
+              <button
+                onClick={() => setShowSubtitles(!showSubtitles)}
+                className={`absolute -top-2 -left-2 rounded-full p-2 border-2 border-white/20 transition-colors ${
+                  showSubtitles 
+                    ? "bg-blue-600 hover:bg-blue-500" 
+                    : "bg-gray-600 hover:bg-gray-500"
+                }`}
+                title={showSubtitles ? "Hide Subtitles" : "Show Subtitles"}
+              >
+                {showSubtitles ? (
+                  <Captions className="w-4 h-4 text-white" />
+                ) : (
+                  <Type className="w-4 h-4 text-white" />
+                )}
+              </button>
+
+              {/* TTS Toggle Button */}
+              <button
+                onClick={handleTTSToggle}
+                className={`absolute top-1/2 -right-8 rounded-full p-2 border-2 border-white/20 transition-colors ${
+                  isTTSPlaying 
+                    ? "bg-green-600 hover:bg-green-500" 
+                    : "bg-purple-600 hover:bg-purple-500"
+                }`}
+                title={isTTSPlaying ? "Stop Speaking" : "Repeat Message"}
+              >
+                <Volume2 className="w-4 h-4 text-white" />
+              </button>
             </div>
             
-            {/* End Session Button - Bottom left */}
-            <button
-              onClick={handleEndSession}
-              className="absolute -bottom-2 -left-2 bg-red-600 hover:bg-red-500 rounded-full p-3 border-2 border-white/20 transition-colors"
-              title="End Session"
-            >
-              <X className="w-5 h-5 text-white" />
-            </button>
-
-            {/* Subtitles Toggle Button - Bottom right */}
-            <button
-              onClick={() => setShowSubtitles(!showSubtitles)}
-              className={`absolute -bottom-2 -right-2 rounded-full p-3 border-2 border-white/20 transition-colors ${
-                showSubtitles 
-                  ? "bg-blue-600 hover:bg-blue-500" 
-                  : "bg-gray-600 hover:bg-gray-500"
-              }`}
-              title={showSubtitles ? "Hide Subtitles" : "Show Subtitles"}
-            >
-              {showSubtitles ? (
-                <Captions className="w-5 h-5 text-white" />
-              ) : (
-                <Type className="w-5 h-5 text-white" />
-              )}
-            </button>
-
-            {/* Waveform - positioned in front of officer's picture at 25% height */}
+            {/* Waveform - smaller and above officer name */}
             {isAiSpeaking && (
-              <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 w-64 animate-fade-in">
-                <Waveform 
-                  isActive={true} 
-                  className="h-16"
-                />
+              <div className="w-24 h-6 -mb-2">
+                <Waveform isActive={isAiSpeaking} intensity={0.8} />
               </div>
             )}
-          </div>
+            
+            {/* Officer Name */}
+            <h1 className="text-2xl font-bold text-center">{selectedPersonaData?.name || "Officer"}</h1>
 
-          {/* Interviewer Name */}
-          <div className="text-center">
-            <h1 className="text-2xl font-semibold">
-              {selectedPersonaData?.name || 'AI Interviewer'}
-            </h1>
-            {/* Personality/Mood */}
-            {selectedPersonaData?.mood && (
-              <p className="text-gray-300 text-sm mt-2">
-                {selectedPersonaData.mood}
-              </p>
-            )}
             {/* Language indicator */}
             {language && (
-              <p className="text-blue-300 text-xs mt-1">
+              <p className="text-blue-300 text-sm mt-1">
                 Speaking in {language.name}
               </p>
             )}
           </div>
 
-          {/* Subtitles - Larger area with smaller font */}
-          <div className="max-w-lg mx-auto h-24 flex items-center justify-center relative px-4">
-            {showSubtitles && currentSubtitle && (
-              <div className="flex items-center gap-2">
-                <p className="text-center text-white/90 bg-black/30 px-4 py-3 rounded-lg backdrop-blur-sm animate-fade-in text-xs leading-relaxed">
-                  {currentSubtitle}
-                </p>
+          {/* User Transcription - above the record button */}
+          {userTranscription && (
+            <div className="w-full max-w-2xl mx-auto mt-8">
+              <div className="bg-gray-800/80 backdrop-blur-sm rounded-lg px-3 py-2 text-center">
+                <p className="text-sm text-gray-300 leading-relaxed">{userTranscription}</p>
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
-        {/* Press to Talk Button - Bottom Middle */}
-        <div className="flex flex-col items-center pb-8 relative">
-          {/* Timer and Recording Indicator - Positioned absolutely to not affect button position */}
+        {/* Press to Talk Button - Bottom */}
+        <div className="flex flex-col items-center pb-8 space-y-6">
+          {/* Timer and Recording Indicator */}
           {isRecording && (
-            <div className="absolute -top-20 left-1/2 transform -translate-x-1/2 flex flex-col items-center gap-2">
+            <div className="flex flex-col items-center gap-2">
               <div className="w-32 h-8 bg-black/30 rounded-lg backdrop-blur-sm overflow-hidden flex items-center justify-center">
                 <Waveform 
                   isActive={true}
@@ -565,36 +558,34 @@ export default function Interview() {
             </div>
           )}
           
-           {/* Press to Talk Button */}
-          <div className="flex justify-center">
-            <button
-              onClick={isMobile ? undefined : handleMouseClick}
-              onTouchStart={handleTouch}
-              onTouchEnd={undefined}
-              onTouchCancel={undefined}
-              onContextMenu={(e) => e.preventDefault()}
-              disabled={isProcessing}
-              className={cn(
-                "flex flex-col items-center gap-3 group select-none touch-none",
-                "transition-all duration-200",
-                isRecording && "scale-110"
-              )}
-            >
-              <div className={cn(
-                "w-20 h-20 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg",
-                isRecording 
-                  ? "bg-red-600 hover:bg-red-500 shadow-red-500/50" 
-                  : isProcessing 
-                    ? "bg-yellow-600 cursor-not-allowed" 
-                    : "bg-blue-600 hover:bg-blue-500 shadow-blue-500/30"
-              )}>
-                <Mic className="w-8 h-8 text-white" />
-              </div>
-              <span className="text-white text-sm font-medium">
-                {isRecording ? "Press to stop" : isProcessing ? "Processing..." : "Press to talk"}
-              </span>
-            </button>
-          </div>
+          {/* Press to Talk Button */}
+          <button
+            onClick={isMobile ? undefined : handleMouseClick}
+            onTouchStart={handleTouch}
+            onTouchEnd={undefined}
+            onTouchCancel={undefined}
+            onContextMenu={(e) => e.preventDefault()}
+            disabled={isProcessing}
+            className={cn(
+              "flex flex-col items-center gap-3 group select-none touch-none",
+              "transition-all duration-200",
+              isRecording && "scale-110"
+            )}
+          >
+            <div className={cn(
+              "w-20 h-20 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg",
+              isRecording 
+                ? "bg-red-600 hover:bg-red-500 shadow-red-500/50" 
+                : isProcessing 
+                  ? "bg-yellow-600 cursor-not-allowed" 
+                  : "bg-blue-600 hover:bg-blue-500 shadow-blue-500/30"
+            )}>
+              <Mic className="w-8 h-8 text-white" />
+            </div>
+            <span className="text-white text-sm font-medium">
+              {isRecording ? "Press to stop" : isProcessing ? "Processing..." : "Press to talk"}
+            </span>
+          </button>
         </div>
       </div>
 
