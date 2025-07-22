@@ -126,16 +126,11 @@ export default function Interview() {
       setIsAiSpeaking(false);
     }
     
-    // Initialize audio context on iOS Safari (required for audio playback)
-    try {
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-      if (audioContext.state === 'suspended') {
-        await audioContext.resume();
-        console.log('Audio context resumed for iOS Safari');
-      }
-    } catch (error) {
-      console.warn('Could not initialize audio context:', error);
-    }
+    // Log AudioContext status instead of trying to initialize it here
+    // It should have been initialized already from the Dashboard's Start Interview button
+    console.log('AudioContext status:', {
+      wasInitialized: window.sessionStorage.getItem('audioContextInitialized') === 'true'
+    });
     
     // Toggle recording state
     if (!isRecording && !pressToTalkRef.current) {

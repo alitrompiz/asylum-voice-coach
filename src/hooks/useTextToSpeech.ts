@@ -10,16 +10,42 @@ interface TTSOptions {
   onError?: (error: Error) => void;
 }
 
-// Simple audio manager for cross-platform compatibility
+// Enhanced audio manager for cross-platform compatibility with improved iOS support
 const createAudioElement = (base64Data: string): HTMLAudioElement => {
   const audio = new Audio(`data:audio/mpeg;base64,${base64Data}`);
   
   // Set properties for better compatibility
   audio.crossOrigin = 'anonymous';
-  audio.preload = 'metadata';
+  audio.preload = 'auto'; // Use 'auto' instead of 'metadata' for better iOS support
+  audio.autoplay = false; // We'll control playback manually
+
+  // iOS-specific optimizations
+  const isiOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   
-  // Force load the audio
-  audio.load();
+  if (isiOS) {
+    // Force iOS to prepare the audio for immediate playback
+    audio.load();
+    
+    // iOS Safari requires at least one manual interaction with the audio element
+    const silentPlayAttempt = audio.play();
+    if (silentPlayAttempt) {
+      silentPlayAttempt.catch(() => {
+        // Silently ignore the expected "play() failed" error
+        // This is expected and helps prime the audio for later playback
+        console.log("iOS silent play attempt (expected to fail, but helps prepare audio)");
+      });
+    }
+    
+    // Set a small volume and then restore to prepare audio pipeline
+    audio.volume = 0.1;
+    setTimeout(() => {
+      audio.volume = 1.0;
+    }, 0);
+  } else {
+    // For non-iOS, just load the audio
+    audio.load();
+  }
   
   return audio;
 };
@@ -35,6 +61,11 @@ export const useTextToSpeech = () => {
   // Detect iOS
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    
+  // Check if AudioContext was initialized from Start Interview button
+  const wasAudioContextInitialized = useRef<boolean>(
+    window.sessionStorage.getItem('audioContextInitialized') === 'true'
+  );
 
   const speak = useCallback(async (text: string, options: TTSOptions = {}) => {
     if (!text.trim()) return;
@@ -69,17 +100,27 @@ export const useTextToSpeech = () => {
       setIsLoading(true);
       options.onStart?.();
 
-      // Initialize AudioContext on iOS if needed
-      if (isIOS) {
+      // Initialize AudioContext on iOS if needed and not already initialized
+      // This should only be needed if the user somehow bypassed the Dashboard initialization
+      if (isIOS && !wasAudioContextInitialized.current) {
+        console.log('Audio context not initialized from Dashboard, attempting to initialize now');
         try {
+          // Try to create and resume AudioContext as a fallback
           const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
           if (audioContext.state === 'suspended') {
             await audioContext.resume();
-            console.log('iOS AudioContext resumed');
+            console.log('iOS AudioContext resumed as fallback');
+            
+            // Create and play a silent audio element to fully unlock audio on iOS
+            const unlockAudio = document.createElement('audio');
+            unlockAudio.autoplay = true;
+            await unlockAudio.play().catch(e => console.log('Silent audio play prevented:', e));
           }
         } catch (error) {
           console.warn('iOS AudioContext warning:', error);
         }
+      } else if (wasAudioContextInitialized.current) {
+        console.log('Using AudioContext initialized from Start Interview button');
       }
 
       // Get the appropriate voice for the selected language
