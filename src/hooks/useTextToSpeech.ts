@@ -212,11 +212,37 @@ export const useTextToSpeech = () => {
         audio.addEventListener('ended', handleEnded);
         audio.addEventListener('error', handleError);
 
+        // Debug audio element properties before playback
+        console.log('Audio element properties before play:', {
+          requestId,
+          volume: audio.volume,
+          muted: audio.muted,
+          readyState: audio.readyState,
+          paused: audio.paused,
+          currentTime: audio.currentTime,
+          duration: audio.duration,
+          src: audio.src.substring(0, 50) + '...',
+          audioContextState: wasAudioContextInitialized.current ? 'initialized' : 'not-initialized'
+        });
+
         // Start playback immediately 
         try {
           console.log('Starting audio playback...');
-          await audio.play();
+          const playPromise = audio.play();
+          console.log('Audio.play() promise created:', !!playPromise);
+          
+          await playPromise;
           console.log('Audio playback started successfully');
+          
+          // Verify audio is actually playing
+          setTimeout(() => {
+            console.log('Audio status after 100ms:', {
+              paused: audio.paused,
+              currentTime: audio.currentTime,
+              volume: audio.volume,
+              muted: audio.muted
+            });
+          }, 100);
           
           // Set states after successful play
           if (currentRequestRef.current === requestId) {
@@ -225,6 +251,13 @@ export const useTextToSpeech = () => {
           }
         } catch (playError) {
           console.error('Audio play() failed:', playError);
+          console.error('Audio element state on error:', {
+            volume: audio.volume,
+            muted: audio.muted,
+            readyState: audio.readyState,
+            paused: audio.paused,
+            networkState: audio.networkState
+          });
           throw new Error(`Audio playback failed: ${playError.message}`);
         }
       }
