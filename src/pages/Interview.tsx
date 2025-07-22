@@ -70,7 +70,8 @@ export default function Interview() {
       isProcessing,
       isTTSPlaying,
       languageCode,
-      lastSpoken: lastSpokenSubtitle.current?.substring(0, 50) + '...'
+      lastSpoken: lastSpokenSubtitle.current?.substring(0, 50) + '...',
+      subtitleLength: currentSubtitle?.length || 0
     });
     
     // Only speak if it's an actual AI response (not processing/transcribing/system messages)
@@ -285,25 +286,39 @@ export default function Interview() {
         {/* Top Controls with Debug Button */}
         <div className="absolute top-6 left-6 right-6 z-20 flex justify-between items-center">
           <div></div>
-          {/* Debug Test Audio Button */}
-          <Button 
-            onClick={async () => {
-              console.log('🧪 Testing iOS audio from interview screen');
-              try {
-                // Test with ElevenLabs TTS directly
-                await speak('Testing audio playback on iOS device');
-                console.log('✅ TTS test completed');
-              } catch (error) {
-                console.error('❌ TTS test failed:', error);
-                alert(`iOS Audio Error: ${error.message}`);
-              }
-            }}
-            variant="outline"
-            size="sm"
-            className="bg-white/10 hover:bg-white/20 text-white border-white/20"
-          >
-            🧪 Test Audio
-          </Button>
+          {/* Debug Buttons */}
+          <div className="flex gap-2">
+            <Button 
+              onClick={() => {
+                console.log('🔄 Manually resetting lastSpokenSubtitle to empty');
+                lastSpokenSubtitle.current = '';
+                alert('TTS cache reset. Officer will speak next message.');
+              }}
+              variant="outline"
+              size="sm"
+              className="bg-purple-600/40 hover:bg-purple-600/60 text-white border-white/20"
+            >
+              🔄 Reset TTS
+            </Button>
+            <Button 
+              onClick={async () => {
+                console.log('🧪 Testing iOS audio from interview screen');
+                try {
+                  // Test with ElevenLabs TTS directly
+                  await speak('Testing audio playback on iOS device');
+                  console.log('✅ TTS test completed');
+                } catch (error) {
+                  console.error('❌ TTS test failed:', error);
+                  alert(`iOS Audio Error: ${error.message}`);
+                }
+              }}
+              variant="outline"
+              size="sm"
+              className="bg-white/10 hover:bg-white/20 text-white border-white/20"
+            >
+              🧪 Test Audio
+            </Button>
+          </div>
         </div>
 
         {/* App Name */}

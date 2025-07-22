@@ -171,8 +171,18 @@ export const useInterviewConversation = () => {
         timestamp: Date.now()
       };
 
+      // Important: Set unique timestamp to ensure new response is processed
+      // This forces TTS to recognize it as a new message
+      console.log('Setting new AI response with timestamp:', Date.now());
+      
       setMessages(prev => [...prev, aiMessage]);
-      setCurrentSubtitle(aiResponse);
+      // Set to empty first to ensure the effect detects a change
+      setCurrentSubtitle('');
+      
+      // Small delay to ensure state update happens before setting the new subtitle
+      setTimeout(() => {
+        setCurrentSubtitle(aiResponse);
+      }, 10);
 
       // Display transcription in toast
       toast({
