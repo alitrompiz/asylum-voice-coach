@@ -287,7 +287,36 @@ export default function Interview() {
         <div className="absolute top-6 left-6 right-6 z-20 flex justify-between items-center">
           <div></div>
           {/* Debug Buttons */}
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
+            <Button 
+              onClick={async () => {
+                console.log('🔊 Initializing AudioContext for iOS');
+                try {
+                  const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+                  if (AudioContext) {
+                    const audioCtx = new AudioContext();
+                    console.log('AudioContext state before:', audioCtx.state);
+                    if (audioCtx.state === 'suspended') {
+                      await audioCtx.resume();
+                      console.log('AudioContext state after resume:', audioCtx.state);
+                      alert('✅ AudioContext activated! Now try TTS.');
+                    } else {
+                      alert('✅ AudioContext already running!');
+                    }
+                  } else {
+                    alert('❌ AudioContext not supported');
+                  }
+                } catch (error) {
+                  console.error('❌ AudioContext init failed:', error);
+                  alert(`❌ Error: ${error.message}`);
+                }
+              }}
+              variant="outline"
+              size="sm"
+              className="bg-blue-600/40 hover:bg-blue-600/60 text-white border-white/20"
+            >
+              🔊 Init Audio
+            </Button>
             <Button 
               onClick={() => {
                 console.log('🔄 Manually resetting lastSpokenSubtitle to empty');

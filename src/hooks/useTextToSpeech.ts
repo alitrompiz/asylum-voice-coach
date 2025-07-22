@@ -117,30 +117,47 @@ export const useTextToSpeech = () => {
             const blob = new Blob([arrayBuffer], { type: 'audio/mpeg' });
             const audioUrl = URL.createObjectURL(blob);
             
+            // Initialize AudioContext FIRST before creating audio element
+            const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+            let audioContext: AudioContext | null = null;
+            
+            if (AudioContext) {
+              audioContext = new AudioContext();
+              console.log('🔊 AudioContext created, state:', audioContext.state);
+              
+              // Resume audio context if suspended (critical for iOS)
+              if (audioContext.state === 'suspended') {
+                await audioContext.resume();
+                console.log('🔊 AudioContext resumed, new state:', audioContext.state);
+              }
+            }
+            
             // Create new audio element with full browser support
             const audio = new Audio();
             audio.src = audioUrl;
             audio.preload = 'auto';
             audio.volume = 1.0;
+            audio.muted = false; // Ensure not muted
             
-            // Force audio context initialization (helps on iOS)
-            const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-            if (AudioContext) {
-              const audioContext = new AudioContext();
-              const source = audioContext.createMediaElementSource(audio);
-              source.connect(audioContext.destination);
-              
-              // Resume audio context if needed
-              if (audioContext.state === 'suspended') {
-                await audioContext.resume();
-                console.log('🔊 AudioContext resumed on iOS');
+            // CRITICAL: Store the audio element IMMEDIATELY
+            audioRef.current = audio;
+            console.log('✅ Audio element stored in ref');
+            
+            // Connect to AudioContext if available
+            if (audioContext) {
+              try {
+                const source = audioContext.createMediaElementSource(audio);
+                source.connect(audioContext.destination);
+                console.log('🔊 Audio connected to AudioContext');
+              } catch (contextError) {
+                console.warn('⚠️ AudioContext connection failed:', contextError);
+                // Continue without AudioContext connection
               }
             }
-            
-            audioRef.current = audio;
 
             // Set up event handlers
             const cleanup = () => {
+              console.log('🧹 Audio cleanup called');
               if (currentRequestRef.current === requestId) {
                 setIsPlaying(false);
                 audioRef.current = null;
@@ -150,27 +167,32 @@ export const useTextToSpeech = () => {
             };
 
             const handleError = (e: any) => {
-              console.error('❌ iOS Audio error:', e);
+              console.error('❌ iOS Audio error:', e, audio.error);
               if (currentRequestRef.current === requestId) {
                 setIsLoading(false);
                 setIsPlaying(false);
                 audioRef.current = null;
                 URL.revokeObjectURL(audioUrl);
-                options.onError?.(new Error(`iOS audio playback failed: ${e.message || 'Unknown error'}`));
+                options.onError?.(new Error(`iOS audio playback failed: ${e.message || audio.error?.message || 'Unknown error'}`));
               }
             };
 
             audio.addEventListener('ended', cleanup);
             audio.addEventListener('error', handleError);
+            audio.addEventListener('loadstart', () => console.log('📥 Audio load started'));
+            audio.addEventListener('canplay', () => console.log('✅ Audio can play'));
+            audio.addEventListener('canplaythrough', () => console.log('✅ Audio can play through'));
             
             // Wait for the audio to be ready with a longer timeout for iOS
+            console.log('⏳ Waiting for audio to be ready...');
             await new Promise<void>((resolve, reject) => {
               const timeout = setTimeout(() => {
-                reject(new Error('Audio load timeout after 8 seconds'));
-              }, 8000);
+                reject(new Error('Audio load timeout after 10 seconds'));
+              }, 10000);
               
               // Both canplaythrough and canplay events to maximize compatibility
               const readyHandler = () => {
+                console.log('✅ Audio ready handler called');
                 clearTimeout(timeout);
                 resolve();
               };
@@ -178,30 +200,23 @@ export const useTextToSpeech = () => {
               audio.addEventListener('canplaythrough', readyHandler, { once: true });
               audio.addEventListener('canplay', readyHandler, { once: true });
               
-              audio.addEventListener('error', () => {
+              audio.addEventListener('error', (errorEvent) => {
+                console.error('❌ Audio load error:', errorEvent, audio.error);
                 clearTimeout(timeout);
                 reject(new Error(`Audio load failed: ${audio.error?.message || 'Unknown error'}`));
               }, { once: true });
               
               // Force load to start
+              console.log('🔄 Starting audio load...');
               audio.load();
             });
 
-            console.log('🍎 Audio ready, attempting playback with user interaction simulation');
+            console.log('🍎 Audio ready, attempting playback');
             
-            // Simulate user interaction to help with iOS autoplay restrictions
-            document.body.addEventListener('touchend', async function playAudioOnce() {
-              document.body.removeEventListener('touchend', playAudioOnce);
-              try {
-                await audio.play();
-              } catch (e) {
-                console.error('Touch event play failed:', e);
-              }
-            }, { once: true });
-            
-            // Try to play anyway
+            // Try to play
             try {
-              await audio.play();
+              const playPromise = audio.play();
+              await playPromise;
               console.log('✅ iOS audio playback started successfully');
               
               if (currentRequestRef.current === requestId) {
@@ -209,8 +224,35 @@ export const useTextToSpeech = () => {
                 setIsPlaying(true);
               }
             } catch (playError) {
-              console.warn('⚠️ iOS play() failed, waiting for user interaction:', playError);
-              // Don't throw here, we'll wait for the touch event
+              console.error('❌ iOS play() failed:', playError);
+              
+              // iOS might require user interaction - set up a one-time touch handler
+              if (playError.name === 'NotAllowedError') {
+                console.log('⚠️ iOS requires user interaction, setting up touch handler');
+                
+                const playOnTouch = async () => {
+                  try {
+                    await audio.play();
+                    console.log('✅ Audio played after touch interaction');
+                    setIsLoading(false);
+                    setIsPlaying(true);
+                  } catch (touchPlayError) {
+                    console.error('❌ Touch play failed:', touchPlayError);
+                    handleError(touchPlayError);
+                  }
+                  document.removeEventListener('touchstart', playOnTouch);
+                  document.removeEventListener('click', playOnTouch);
+                };
+                
+                document.addEventListener('touchstart', playOnTouch, { once: true });
+                document.addEventListener('click', playOnTouch, { once: true });
+                
+                // Set loading to false but don't set error
+                setIsLoading(false);
+                console.log('⏳ Waiting for user interaction to play audio');
+              } else {
+                throw playError;
+              }
             }
           } catch (iosError) {
             console.error('❌ iOS audio setup failed:', iosError);
