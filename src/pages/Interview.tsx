@@ -518,14 +518,15 @@ export default function Interview() {
             )}
             
             {/* Officer Name */}
-            <h1 className="text-2xl font-bold text-center">{selectedPersonaData?.name || "Officer"}</h1>
-
-            {/* Language indicator */}
-            {language && (
-              <p className="text-blue-300 text-sm -mt-2">
-                Speaking in {language.name}
-              </p>
-            )}
+            <div className="text-center">
+              <h1 className="text-2xl font-bold">{selectedPersonaData?.name || "Officer"}</h1>
+              {/* Language indicator */}
+              {language && (
+                <p className="text-blue-300 text-sm -mt-1">
+                  Speaking in {language.name}
+                </p>
+              )}
+            </div>
           </div>
 
           {/* User Transcription - above the record button */}
