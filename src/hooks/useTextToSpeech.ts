@@ -109,19 +109,18 @@ export const useTextToSpeech = () => {
       // Get the appropriate voice for the selected language
       const voice = options.voice || getVoiceForTTS('openai');
 
-      console.log('Calling text-to-speech edge function with:', { 
+      console.log('📞 Calling ElevenLabs TTS edge function with:', { 
         requestId,
         textLength: text.length, 
         voice, 
-        language: languageCode,
-        primaryTTS: language.primaryTTS 
+        language: languageCode
       });
 
-      const { data, error } = await supabase.functions.invoke('text-to-speech', {
+      const { data, error } = await supabase.functions.invoke('eleven-labs-tts', {
         body: {
           text,
           voice,
-          language: languageCode,
+          model: 'eleven_turbo_v2_5', // Fast, multilingual model
         },
       });
 
