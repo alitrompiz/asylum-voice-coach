@@ -478,66 +478,6 @@ export default function Interview() {
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
-              <img 
-                src={selectedPersonaData?.image_url || "/persona-1.png"} 
-                alt={selectedPersonaData?.name || "Officer"} 
-                className="w-48 h-48 rounded-full object-cover border-4 border-white/20 shadow-2xl"
-              />
-              
-              {/* AI Speaking Indicator */}
-              {isAiSpeaking && (
-                <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2">
-                  <div className="bg-green-500 w-4 h-4 rounded-full animate-pulse shadow-lg"></div>
-                </div>
-              )}
-
-              {/* Officer Subtitles - overlaid on the bottom center of the image */}
-              {showSubtitles && currentSubtitle && (
-                <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 w-screen z-10">
-                  <div className="bg-black/60 backdrop-blur-sm rounded-lg px-3 py-2 text-center">
-                    <p className="text-xs text-white leading-relaxed">{currentSubtitle}</p>
-                  </div>
-                </div>
-              )}
-
-              {/* End Session Button - Upper Left */}
-              <button
-                onClick={handleEndSession}
-                className="absolute -top-2 -left-2 bg-red-600 hover:bg-red-500 rounded-full p-2 border-2 border-white/20 transition-colors"
-                title="End Session"
-              >
-                <X className="w-4 h-4 text-white" />
-              </button>
-
-              {/* Subtitles Toggle Button - Lower Left */}
-              <button
-                onClick={() => setShowSubtitles(!showSubtitles)}
-                className={`absolute bottom-2 -left-2 rounded-full p-2 border-2 border-white/20 transition-colors ${
-                  showSubtitles 
-                    ? "bg-blue-600 hover:bg-blue-500" 
-                    : "bg-gray-600 hover:bg-gray-500"
-                }`}
-                title={showSubtitles ? "Hide Subtitles" : "Show Subtitles"}
-              >
-                {showSubtitles ? (
-                  <Captions className="w-4 h-4 text-white" />
-                ) : (
-                  <Type className="w-4 h-4 text-white" />
-                )}
-              </button>
-
-              {/* TTS Toggle Button - Lower Right */}
-              <button
-                onClick={handleTTSToggle}
-                className={`absolute bottom-2 -right-2 rounded-full p-2 border-2 border-white/20 transition-colors ${
-                  isTTSPlaying 
-                    ? "bg-green-600 hover:bg-green-500" 
-                    : "bg-purple-600 hover:bg-purple-500"
-                }`}
-                title={isTTSPlaying ? "Stop Speaking" : "Repeat Message"}
-              >
-                <Volume2 className="w-4 h-4 text-white" />
-              </button>
             </div>
             
             {/* Waveform - smaller and above officer name */}
