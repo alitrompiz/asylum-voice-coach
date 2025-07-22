@@ -30,7 +30,7 @@ export default function Interview() {
   // Audio recording and conversation hooks
   const { isRecording, duration, audioLevel, error: recordingError, startRecording, stopRecording, cancelRecording } = useAudioRecording();
   const { messages, isProcessing, currentSubtitle, processAudioMessage, clearConversation, formatTime, initializeInterview, hasInitialized } = useInterviewConversation();
-  const { speak, stop: stopTTS, isPlaying: isTTSPlaying, isLoading: isTTSLoading } = useTextToSpeech();
+  const { speak, stop: stopTTS, isPlaying: isTTSPlaying, isLoading: isTTSLoading, debugAudio, debugInfo } = useTextToSpeech();
   
   // Ref for managing press-to-talk
   const pressToTalkRef = useRef<boolean>(false);
@@ -304,9 +304,22 @@ export default function Interview() {
               onClick={async () => {
                 console.log('🧪 Testing iOS audio from interview screen');
                 try {
+                  // Force audio context activation
+                  const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+                  if (AudioContext) {
+                    const audioCtx = new AudioContext();
+                    if (audioCtx.state === 'suspended') {
+                      await audioCtx.resume();
+                      console.log('✅ AudioContext resumed');
+                    }
+                  }
+                  
                   // Test with ElevenLabs TTS directly
-                  await speak('Testing audio playback on iOS device');
-                  console.log('✅ TTS test completed');
+                  await speak('Testing audio playback on iOS device', {
+                    onStart: () => console.log('✅ Test TTS started'),
+                    onEnd: () => console.log('✅ Test TTS completed'),
+                    onError: (e) => console.error('❌ Test TTS failed:', e)
+                  });
                 } catch (error) {
                   console.error('❌ TTS test failed:', error);
                   alert(`iOS Audio Error: ${error.message}`);
@@ -318,8 +331,61 @@ export default function Interview() {
             >
               🧪 Test Audio
             </Button>
+            <Button 
+              onClick={async () => {
+                // Force a TTS reset by using the useInterviewConversation hook
+                console.log('🔄 Forcing TTS reload with current message');
+                const currentMessage = currentSubtitle;
+                
+                // First, clear the subtitle
+                clearConversation();
+                
+                // Then set it again with a small delay
+                setTimeout(() => {
+                  // Create a "fake" AI message with the same content
+                  const aiMessage = {
+                    id: `ai_retry_${Date.now()}`,
+                    role: 'assistant',
+                    text: currentMessage,
+                    timestamp: Date.now()
+                  };
+                  
+                  // Call the raw setter from useInterviewConversation hook
+                  console.log('🔄 Resetting with message:', currentMessage.substring(0, 30) + '...');
+                  
+                  // Force the lastSpokenSubtitle to be reset
+                  lastSpokenSubtitle.current = '';
+                  
+                  // Re-initialize the interview (this will trigger the TTS)
+                  initializeInterview();
+                }, 100);
+              }}
+              variant="outline"
+              size="sm"
+              className="bg-green-600/40 hover:bg-green-600/60 text-white border-white/20"
+            >
+              🔁 Restart TTS
+            </Button>
+            <Button 
+              onClick={() => {
+                const debugInfo = debugAudio();
+                alert('Debug info in console and on screen');
+              }}
+              variant="outline"
+              size="sm"
+              className="bg-orange-600/40 hover:bg-orange-600/60 text-white border-white/20"
+            >
+              🔍 Debug Audio
+            </Button>
           </div>
         </div>
+        
+        {/* Debug Info Panel */}
+        {debugInfo && (
+          <div className="absolute top-16 right-6 z-20 max-w-md p-3 bg-black/70 backdrop-blur-sm rounded-lg text-xs font-mono text-white whitespace-pre-wrap">
+            {debugInfo}
+          </div>
+        )}
 
         {/* App Name */}
         <div className="text-center pt-1.5 mb-0.5">
