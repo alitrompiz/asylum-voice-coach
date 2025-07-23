@@ -1,3 +1,4 @@
+
 import { useQuery } from '@tanstack/react-query';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -58,13 +59,13 @@ export const SkillsScroller = () => {
 
   if (isLoading) {
     return (
-      <div className="bg-card rounded-lg p-3 border">
-        <h3 className="text-lg font-semibold mb-2">{t('skills.title')}</h3>
-        <div className="space-y-3">
+      <div>
+        <h3 className="text-lg font-semibold mb-2 text-white">{t('skills.title')}</h3>
+        <div className="space-y-2">
           {[1, 2].map((row) => (
             <div key={row} className="flex gap-2 animate-pulse">
               {[1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="h-8 bg-muted rounded-full px-4" />
+                <div key={i} className="h-8 bg-gray-700 rounded-full px-4" />
               ))}
             </div>
           ))}
@@ -75,14 +76,14 @@ export const SkillsScroller = () => {
 
   if (error || !skills || skills.length === 0) {
     return (
-      <div className="bg-card rounded-lg p-3 border">
-        <h3 className="text-lg font-semibold mb-2">{t('skills.title')}</h3>
+      <div>
+        <h3 className="text-lg font-semibold mb-2 text-white">{t('skills.title')}</h3>
         <div className="flex flex-col items-center justify-center py-6">
-          <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
-            <ChevronRight className="w-8 h-8 text-muted-foreground" />
+          <div className="w-16 h-16 bg-gray-700 rounded-full flex items-center justify-center mb-4">
+            <ChevronRight className="w-8 h-8 text-gray-400" />
           </div>
-          <p className="text-muted-foreground text-center">{t('skills.no_areas')}</p>
-          <p className="text-sm text-muted-foreground mt-1">{t('skills.contact_admin')}</p>
+          <p className="text-gray-400 text-center">{t('skills.no_areas')}</p>
+          <p className="text-sm text-gray-500 mt-1">{t('skills.contact_admin')}</p>
         </div>
       </div>
     );
@@ -94,8 +95,8 @@ export const SkillsScroller = () => {
   const row2Skills = skills.slice(midpoint);
 
   return (
-    <div className="bg-background rounded-lg p-3">
-      <h3 className="text-lg font-semibold mb-3 text-foreground">{t('skills.title')}</h3>
+    <div>
+      <h3 className="text-lg font-semibold mb-2 text-white">{t('skills.title')}</h3>
       <div className="space-y-2">
         {/* Row 1 */}
         <ScrollArea className="w-full">
@@ -109,7 +110,7 @@ export const SkillsScroller = () => {
                   "px-3 py-2 text-xs font-medium whitespace-nowrap rounded-full min-w-fit",
                   skillsSelected.includes(skill.id) 
                     ? "bg-primary text-primary-foreground" 
-                    : "hover:bg-muted border-muted-foreground/30"
+                    : "hover:bg-gray-700 border-gray-600 text-gray-300 bg-gray-800/50"
                 )}
                 onClick={() => handleSkillToggle(skill.id)}
                 onKeyDown={(e) => handleKeyDown(e, skill.id)}
@@ -136,7 +137,7 @@ export const SkillsScroller = () => {
                   "px-3 py-2 text-xs font-medium whitespace-nowrap rounded-full min-w-fit",
                   skillsSelected.includes(skill.id) 
                     ? "bg-primary text-primary-foreground" 
-                    : "hover:bg-muted border-muted-foreground/30"
+                    : "hover:bg-gray-700 border-gray-600 text-gray-300 bg-gray-800/50"
                 )}
                 onClick={() => handleSkillToggle(skill.id)}
                 onKeyDown={(e) => handleKeyDown(e, skill.id)}

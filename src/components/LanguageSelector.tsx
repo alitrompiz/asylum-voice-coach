@@ -1,4 +1,3 @@
-
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { Globe } from 'lucide-react';
@@ -64,34 +63,32 @@ export const LanguageSelector = ({ selectedLanguage, onLanguageChange }: Languag
   const currentLanguageData = SUPPORTED_LANGUAGES.find(l => l.code === languageCode);
 
   return (
-    <div className="bg-card rounded-lg p-3 border">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold">{t('language.title')}</h3>
-        <Select 
-          value={languageCode} 
-          onValueChange={handleLanguageChange}
-          disabled={isUpdating || isLoading}
-        >
-          <SelectTrigger className="w-auto min-w-[140px] [&>span]:line-clamp-none">
-            <SelectValue>
+    <div className="flex items-center justify-between">
+      <h3 className="text-lg font-semibold text-white">{t('language.title')}</h3>
+      <Select 
+        value={languageCode} 
+        onValueChange={handleLanguageChange}
+        disabled={isUpdating || isLoading}
+      >
+        <SelectTrigger className="w-auto min-w-[140px] [&>span]:line-clamp-none bg-gray-800/50 border-gray-600 text-white hover:bg-gray-700">
+          <SelectValue>
+            <div className="flex items-center gap-2">
+              <span className="text-lg">{currentLanguageData?.flag}</span>
+              <span>{currentLanguageData?.name}</span>
+            </div>
+          </SelectValue>
+        </SelectTrigger>
+        <SelectContent className="bg-gray-800 border-gray-700">
+          {SUPPORTED_LANGUAGES.map((language) => (
+            <SelectItem key={language.code} value={language.code} className="text-white hover:bg-gray-700">
               <div className="flex items-center gap-2">
-                <span className="text-lg">{currentLanguageData?.flag}</span>
-                <span>{currentLanguageData?.name}</span>
+                <span className="text-lg">{language.flag}</span>
+                <span>{language.name}</span>
               </div>
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            {SUPPORTED_LANGUAGES.map((language) => (
-              <SelectItem key={language.code} value={language.code}>
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">{language.flag}</span>
-                  <span>{language.name}</span>
-                </div>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </div>
   );
 };

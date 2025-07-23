@@ -48,36 +48,39 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-background p-2 pb-16 md:pb-2">
-      <div className="max-w-6xl mx-auto">
-        <header className="mb-3 flex items-center justify-between">
+    <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 p-2 pb-16 md:pb-2">
+      {/* Dark gradient overlay for visual consistency */}
+      <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 via-transparent to-blue-900/20 pointer-events-none" />
+      
+      <div className="max-w-6xl mx-auto relative z-10">
+        <header className="mb-4 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold mb-1">{t('app.name')}</h1>
-            <p className="text-muted-foreground text-sm">
+            <h1 className="text-2xl md:text-3xl font-bold mb-1 text-white">{t('app.name')}</h1>
+            <p className="text-gray-300 text-sm">
               {t('app.tagline')}
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => navigate('/profile')}>
+            <Button variant="outline" size="sm" onClick={() => navigate('/profile')} className="border-gray-600 bg-gray-800/50 text-white hover:bg-gray-700">
               <User className="w-4 h-4 mr-2" />
               {t('navigation.profile')}
             </Button>
           </div>
         </header>
 
-        <div className="mb-2">
+        <div className="mb-3">
           <UserScoreCard />
         </div>
 
-        <div className="mb-2">
+        <div className="mb-3">
           <LanguageSelector />
         </div>
 
-        <div className="mb-2">
+        <div className="mb-3">
           <PersonaCarousel />
         </div>
 
-        <div className="mb-2">
+        <div className="mb-3">
           <SkillsScroller />
         </div>
       </div>
@@ -87,7 +90,7 @@ export default function Dashboard() {
         <Button 
           size="lg" 
           onClick={handleStartInterview}
-          className="w-full shadow-lg"
+          className="w-full shadow-lg bg-primary hover:bg-primary/90"
           disabled={skillsSelected.length === 0}
         >
           <Play className="w-5 h-5 mr-2" />
@@ -97,7 +100,7 @@ export default function Dashboard() {
           )}
         </Button>
         {skillsSelected.length === 0 && (
-          <p className="text-sm text-muted-foreground text-center mt-1">
+          <p className="text-sm text-gray-400 text-center mt-1">
             {t('interview.select_areas')}
           </p>
         )}
@@ -112,7 +115,7 @@ export default function Dashboard() {
                 variant="outline" 
                 size="icon"
                 onClick={handleAdminPanel}
-                className="w-11 h-11 rounded-full shadow-lg border-2"
+                className="w-11 h-11 rounded-full shadow-lg border-2 border-gray-600 bg-gray-800/50 text-white hover:bg-gray-700"
               >
                 <Shield className="w-4 h-4" />
               </Button>

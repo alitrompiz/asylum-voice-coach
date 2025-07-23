@@ -51,11 +51,6 @@ export const PersonaCarousel = ({ onSelect }: PersonaCarouselProps) => {
     return translated !== key ? translated : mood;
   };
 
-  // Get background color for persona - same color for all
-  const getPersonaBackground = () => {
-    return 'bg-gradient-to-br from-blue-400 to-blue-600';
-  };
-
   const handlePersonaSelect = (personaId: string) => {
     setSelectedPersona(personaId);
     onSelect?.(personaId);
@@ -63,14 +58,14 @@ export const PersonaCarousel = ({ onSelect }: PersonaCarouselProps) => {
 
   if (isLoading) {
     return (
-      <div className="bg-card rounded-lg p-3 border">
-        <h3 className="text-lg font-semibold mb-2">{t('personas.title')}</h3>
+      <div>
+        <h3 className="text-lg font-semibold mb-2 text-white">{t('personas.title')}</h3>
         <div className="flex gap-3">
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="flex flex-col items-center animate-pulse">
-              <div className="w-36 h-36 bg-muted rounded-full mb-2" />
-              <div className="w-16 h-3 bg-muted rounded mb-1" />
-              <div className="w-12 h-3 bg-muted rounded" />
+              <div className="w-36 h-36 bg-gray-700 rounded-full mb-2" />
+              <div className="w-16 h-3 bg-gray-700 rounded mb-1" />
+              <div className="w-12 h-3 bg-gray-700 rounded" />
             </div>
           ))}
         </div>
@@ -80,18 +75,18 @@ export const PersonaCarousel = ({ onSelect }: PersonaCarouselProps) => {
 
   if (error || !personas || personas.length === 0) {
     return (
-      <div className="bg-card rounded-lg p-3 border">
-        <h3 className="text-lg font-semibold mb-2">{t('personas.title')}</h3>
-        <p className="text-muted-foreground">{t('personas.no_officers')}</p>
+      <div>
+        <h3 className="text-lg font-semibold mb-2 text-white">{t('personas.title')}</h3>
+        <p className="text-gray-400">{t('personas.no_officers')}</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-background rounded-lg p-4">
-      <h3 className="text-xl font-bold text-foreground mb-4">{t('personas.title')}</h3>
-      <ScrollArea className="w-full p-2">
-        <div className="flex gap-6 py-4 snap-x snap-mandatory overflow-x-auto">
+    <div>
+      <h3 className="text-xl font-bold text-white mb-3">{t('personas.title')}</h3>
+      <ScrollArea className="w-full p-1">
+        <div className="flex gap-6 py-2 snap-x snap-mandatory overflow-x-auto">
           {personas.map((persona) => (
             <div
               key={persona.id}
@@ -99,8 +94,8 @@ export const PersonaCarousel = ({ onSelect }: PersonaCarouselProps) => {
               onClick={() => handlePersonaSelect(persona.id)}
               data-testid={`persona-${persona.id}`}
             >
-              {/* Officer's photo with colored background */}
-              <div className="relative mb-3">
+              {/* Officer's photo */}
+              <div className="relative mb-2">
                 <div
                   className={cn(
                     "w-32 h-32 sm:w-36 sm:h-36 rounded-full flex items-center justify-center overflow-hidden",
@@ -119,8 +114,8 @@ export const PersonaCarousel = ({ onSelect }: PersonaCarouselProps) => {
               
               {/* Officer's info */}
               <div className="text-center">
-                <h4 className="font-bold text-foreground text-base mb-1">{persona.name}</h4>
-                <p className="text-sm text-muted-foreground">
+                <h4 className="font-bold text-white text-base mb-1">{persona.name}</h4>
+                <p className="text-sm text-gray-300">
                   {translateMood(persona.mood)}
                 </p>
               </div>
