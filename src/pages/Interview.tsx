@@ -377,7 +377,7 @@ export default function Interview() {
               <img 
                 src={selectedPersonaData?.image_url || "/persona-1.png"} 
                 alt={selectedPersonaData?.name || "Officer"} 
-                className="w-48 h-48 rounded-full object-cover border-4 border-white/20 shadow-2xl"
+                className="w-80 h-80 rounded-lg object-cover border-4 border-white/20 shadow-2xl"
               />
               
               {/* AI Speaking Indicator */}
@@ -412,13 +412,13 @@ export default function Interview() {
                 </div>
               )}
 
-              {/* End Session Button - Upper Left */}
+              {/* Exit Interview Button - Bottom Left */}
               <button
                 onClick={handleEndSession}
-                className="absolute -top-2 -left-2 bg-red-600 hover:bg-red-500 rounded-full p-2 border-2 border-white/20 transition-colors"
-                title="End Session"
+                className="absolute bottom-4 left-4 bg-red-600 hover:bg-red-500 rounded-full p-3 border-2 border-white/20 transition-colors"
+                title="Exit Interview"
               >
-                <X className="w-4 h-4 text-white" />
+                <X className="w-6 h-6 text-white" />
               </button>
 
               {/* Debug Dropdown Button - Upper Right */}
@@ -511,10 +511,10 @@ export default function Interview() {
                 </DropdownMenu>
               </div>
 
-              {/* Subtitles Toggle Button - Lower Left */}
+              {/* Show/Hide Subtitles Button - Bottom Right */}
               <button
                 onClick={() => setShowSubtitles(!showSubtitles)}
-                className={`absolute bottom-2 -left-2 rounded-full p-2 border-2 border-white/20 transition-colors ${
+                className={`absolute bottom-4 right-4 rounded-full p-3 border-2 border-white/20 transition-colors ${
                   showSubtitles 
                     ? "bg-blue-600 hover:bg-blue-500" 
                     : "bg-gray-600 hover:bg-gray-500"
@@ -522,9 +522,9 @@ export default function Interview() {
                 title={showSubtitles ? "Hide Subtitles" : "Show Subtitles"}
               >
                 {showSubtitles ? (
-                  <Captions className="w-4 h-4 text-white" />
+                  <Captions className="w-6 h-6 text-white" />
                 ) : (
-                  <Type className="w-4 h-4 text-white" />
+                  <Type className="w-6 h-6 text-white" />
                 )}
               </button>
 
