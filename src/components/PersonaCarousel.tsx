@@ -111,7 +111,7 @@ export const PersonaCarousel = ({ onSelect }: PersonaCarouselProps) => {
                   <img
                     src={persona.image_url}
                     alt={persona.alt_text}
-                    className="w-28 h-28 sm:w-32 sm:h-32 object-cover rounded-full"
+                    className="w-32 h-32 sm:w-36 sm:h-36 object-cover rounded-full"
                     loading="lazy"
                   />
                 </div>
