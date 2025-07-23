@@ -52,7 +52,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("Processing auth email for:", user.email, "Action:", email_data.email_action_type);
 
-    // Create confirmation URL
+    // Create confirmation URL that goes to our app's verification page
     const confirmUrl = `${email_data.site_url}/auth/verify?token=${email_data.token_hash}&type=${email_data.email_action_type}&redirect_to=${encodeURIComponent(email_data.redirect_to)}`;
 
     // Prepare email content based on action type
