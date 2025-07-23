@@ -383,7 +383,7 @@ export default function Interview() {
           <div className="flex flex-col items-center relative">{/* removed space-y-6 */}
             {/* Officer Image */}
             <div className="relative">
-              <img src={selectedPersonaData?.image_url || "/persona-1.png"} alt={selectedPersonaData?.name || "Officer"} className="w-80 h-80 rounded-lg object-cover border-4 border-white/20 shadow-2xl" />
+              <img src={selectedPersonaData?.image_url || "/persona-1.png"} alt={selectedPersonaData?.name || "Officer"} className={cn("w-80 h-80 rounded-lg object-cover border-4 shadow-2xl transition-all duration-300", isAiSpeaking ? "border-green-400/80 shadow-green-400/20" : "border-white/20")} />
               
               {/* AI Speaking Indicator */}
               {isAiSpeaking && <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2">
@@ -508,12 +508,6 @@ export default function Interview() {
               </button>
 
 
-              {/* Waveform - smaller size, positioned between subtitles and TTS button */}
-              {isAiSpeaking && <div className="absolute bottom-12 left-1/2 transform -translate-x-1/2">
-                  <div className="w-16 h-4">
-                    <Waveform isActive={isAiSpeaking} intensity={0.8} />
-                  </div>
-                </div>}
             </div>
             
           </div>
