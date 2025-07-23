@@ -11,6 +11,7 @@ import { useSkillsStore } from '@/stores/personaStore';
 import { useAdminAccess } from '@/hooks/useAdminAccess';
 import { useTranslation } from 'react-i18next';
 import { useEffect } from 'react';
+import { ensureAudioContextReady } from '@/utils/audioContext';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -28,32 +29,17 @@ export default function Dashboard() {
     console.log('Admin access status:', { isAdmin, loading, error });
   }, [isAdmin, loading, error]);
 
-  // Handle Start Interview button click and initialize AudioContext for iOS
-  const handleStartInterview = () => {
-    // Initialize AudioContext on iOS to unlock audio playback
+  // Handle Start Interview button click and initialize AudioContext for mobile browsers
+  const handleStartInterview = async () => {
     try {
-      // Create and resume AudioContext on button tap (iOS requires user gesture)
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-      if (audioContext.state === 'suspended') {
-        audioContext.resume().then(() => {
-          console.log('AudioContext initialized and resumed from Start Interview button');
-        }).catch(err => {
-          console.warn('AudioContext resume error:', err);
-        });
-      }
-      
-      // Create and play a silent audio element to fully unlock audio on iOS
-      const unlockAudio = new Audio();
-      unlockAudio.autoplay = true;
-      unlockAudio.play().catch(e => console.log('Silent audio play prevented:', e));
-      
-      // Store audioContext in sessionStorage so it can be accessed in Interview component
-      window.sessionStorage.setItem('audioContextInitialized', 'true');
+      // Initialize global AudioContext with user gesture
+      await ensureAudioContextReady();
+      console.log('✅ AudioContext initialized from Start Interview button');
     } catch (error) {
-      console.warn('Could not initialize AudioContext:', error);
+      console.warn('⚠️ Could not initialize AudioContext:', error);
     }
     
-    // Navigate to interview - do this immediately rather than waiting for audio context
+    // Navigate to interview
     navigate('/interview');
   };
 

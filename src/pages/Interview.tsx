@@ -16,6 +16,7 @@ import { useLanguagePreference } from '@/hooks/useLanguagePreference';
 import { Waveform } from '@/components/Waveform';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { ensureAudioContextReady } from '@/utils/audioContext';
 
 export default function Interview() {
   const [isAiSpeaking, setIsAiSpeaking] = useState(false);
@@ -24,6 +25,7 @@ export default function Interview() {
   const [showFeedback, setShowFeedback] = useState(false);
   const [showDebugPanel, setShowDebugPanel] = useState(false);
   const [userTranscription, setUserTranscription] = useState('');
+  const [audioBlocked, setAudioBlocked] = useState(false);
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   
@@ -105,6 +107,13 @@ export default function Interview() {
       });
       lastSpokenSubtitle.current = currentSubtitle;
 
+      // Ensure AudioContext is ready before TTS
+      ensureAudioContextReady().then(() => {
+        console.log('🔊 AudioContext ready for TTS');
+      }).catch(err => {
+        console.warn('⚠️ AudioContext preparation failed:', err);
+      });
+
       // Map OpenAI voice to ElevenLabs voice for compatibility
       const mapToElevenLabsVoice = (openaiVoice: string) => {
         const voiceMap: Record<string, string> = {
@@ -134,7 +143,14 @@ export default function Interview() {
         onError: (error) => {
           console.error('❌ TTS ERROR:', error);
           setIsAiSpeaking(false);
-          alert(`TTS Error: ${error.message}`);
+          
+          // Check if audio is blocked and show appropriate feedback
+          if (error.message.includes('Audio blocked') || error.message.includes('user interaction')) {
+            setAudioBlocked(true);
+            console.log('⚠️ Audio blocked - user interaction required');
+          } else {
+            alert(`TTS Error: ${error.message}`);
+          }
         }
       });
     } else if (currentSubtitle === lastSpokenSubtitle.current) {
@@ -168,11 +184,8 @@ export default function Interview() {
       setIsAiSpeaking(false);
     }
     
-    // Log AudioContext status instead of trying to initialize it here
-    // It should have been initialized already from the Dashboard's Start Interview button
-    console.log('AudioContext status:', {
-      wasInitialized: window.sessionStorage.getItem('audioContextInitialized') === 'true'
-    });
+    // Ensure AudioContext is ready before any audio operations
+    await ensureAudioContextReady();
     
     // Toggle recording state
     if (!isRecording && !pressToTalkRef.current) {
@@ -220,6 +233,9 @@ export default function Interview() {
       stopTTS();
       setIsAiSpeaking(false);
     }
+    
+    // Ensure AudioContext is ready before any audio operations
+    await ensureAudioContextReady();
     
     // Toggle recording state
     if (!isRecording && !pressToTalkRef.current) {
@@ -376,6 +392,22 @@ export default function Interview() {
                 <div className="absolute top-[40%] left-1/2 transform -translate-x-1/2 w-screen z-10">
                   <div className="bg-black/60 backdrop-blur-sm rounded-lg px-3 py-2 text-center">
                     <p className="text-xs text-white leading-relaxed">{currentSubtitle}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Audio Blocked Indicator */}
+              {audioBlocked && (
+                <div className="absolute top-[50%] left-1/2 transform -translate-x-1/2 w-screen z-20">
+                  <div 
+                    className="bg-orange-600/90 backdrop-blur-sm rounded-lg px-4 py-3 text-center cursor-pointer hover:bg-orange-500/90 transition-colors mx-6"
+                    onClick={async () => {
+                      await ensureAudioContextReady();
+                      setAudioBlocked(false);
+                    }}
+                  >
+                    <p className="text-sm text-white font-medium">🔊 Tap to enable audio</p>
+                    <p className="text-xs text-white/80 mt-1">Audio requires user interaction on mobile browsers</p>
                   </div>
                 </div>
               )}
