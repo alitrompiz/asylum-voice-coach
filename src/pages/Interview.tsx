@@ -125,27 +125,9 @@ export default function Interview() {
         console.warn('⚠️ AudioContext preparation failed:', err);
       });
 
-      // Map OpenAI voice to ElevenLabs voice for compatibility
-      const mapToElevenLabsVoice = (openaiVoice: string) => {
-        const voiceMap: Record<string, string> = {
-          'alloy': '9BWtsMINqrJLrRacOk9x',
-          // Aria
-          'echo': 'EXAVITQu4vr4xnSDxMaL',
-          // Sarah  
-          'fable': 'pFZP5JQG7iQjIQuC4Bku',
-          // Lily
-          'onyx': 'CwhRBWXzGAHq8TQ4Fs17',
-          // Roger
-          'nova': 'cgSgspJ2msm6clMCkdW9',
-          // Jessica
-          'shimmer': 'XB0fDUnXU5powFXDhCwa' // Charlotte
-        };
-        return voiceMap[openaiVoice] || '9BWtsMINqrJLrRacOk9x'; // Default to Aria
-      };
-      const elevenLabsVoice = mapToElevenLabsVoice(selectedPersonaData.tts_voice);
-      console.log('🔄 Voice mapping:', selectedPersonaData.tts_voice, '->', elevenLabsVoice);
+      // Use OpenAI voice directly (no mapping needed)
       speak(currentSubtitle, {
-        voice: elevenLabsVoice,
+        voice: selectedPersonaData.tts_voice,
         onStart: () => {
           console.log('✅ TTS STARTED - Audio should be playing now');
           setIsAiSpeaking(true);
@@ -299,25 +281,9 @@ export default function Interview() {
       stopTTS();
       setIsAiSpeaking(false);
     } else if (currentSubtitle && !currentSubtitle.includes("Processing your message") && !currentSubtitle.includes("Transcribing your message") && selectedPersonaData?.tts_voice) {
-      // Map OpenAI voice to ElevenLabs voice for compatibility  
-      const mapToElevenLabsVoice = (openaiVoice: string) => {
-        const voiceMap: Record<string, string> = {
-          'alloy': '9BWtsMINqrJLrRacOk9x',
-          // Aria
-          'echo': 'EXAVITQu4vr4xnSDxMaL',
-          // Sarah  
-          'fable': 'pFZP5JQG7iQjIQuC4Bku',
-          // Lily
-          'onyx': 'CwhRBWXzGAHq8TQ4Fs17',
-          // Roger
-          'nova': 'cgSgspJ2msm6clMCkdW9',
-          // Jessica
-          'shimmer': 'XB0fDUnXU5powFXDhCwa' // Charlotte
-        };
-        return voiceMap[openaiVoice] || '9BWtsMINqrJLrRacOk9x';
-      };
+      // Use OpenAI voice directly (no mapping needed)
       speak(currentSubtitle, {
-        voice: mapToElevenLabsVoice(selectedPersonaData.tts_voice),
+        voice: selectedPersonaData.tts_voice,
         onStart: () => {
           setIsAiSpeaking(true);
         },

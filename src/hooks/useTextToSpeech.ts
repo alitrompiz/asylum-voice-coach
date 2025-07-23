@@ -1,3 +1,4 @@
+
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguagePreference } from './useLanguagePreference';
@@ -110,20 +111,20 @@ export const useTextToSpeech = () => {
       setIsLoading(true);
       options.onStart?.();
 
-      const voice = options.voice || getVoiceForTTS('elevenlabs');
+      const voice = options.voice || getVoiceForTTS('openai');
 
-      console.log('📞 Calling ElevenLabs TTS function:', { 
+      console.log('📞 Calling OpenAI TTS function:', { 
         requestId,
         textLength: text.length, 
         voice, 
         languageCode
       });
 
-      const { data, error } = await supabase.functions.invoke('eleven-labs-tts-v2', {
+      const { data, error } = await supabase.functions.invoke('text-to-speech', {
         body: {
           text,
           voice,
-          model: 'eleven_turbo_v2_5',
+          language: languageCode,
         },
       });
       
@@ -140,7 +141,7 @@ export const useTextToSpeech = () => {
       }
 
       if (error) {
-        console.error('❌ ElevenLabs TTS error:', error);
+        console.error('❌ OpenAI TTS error:', error);
         throw new Error(error.message || 'TTS failed');
       }
 
