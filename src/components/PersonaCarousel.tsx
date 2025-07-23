@@ -83,36 +83,46 @@ export const PersonaCarousel = ({ onSelect }: PersonaCarouselProps) => {
 
   return (
     <div className="bg-card rounded-lg p-3 border">
-      <h3 className="text-lg font-semibold mb-2">{t('personas.title')}</h3>
+      <h3 className="text-lg font-semibold mb-3">{t('personas.title')}</h3>
       <ScrollArea className="w-full">
-        <div className="flex gap-3 pb-4 snap-x snap-mandatory overflow-x-auto">
+        <div className="flex gap-4 pb-4 snap-x snap-mandatory overflow-x-auto">
           {personas.map((persona) => (
             <div
               key={persona.id}
-              className="flex flex-col items-center min-w-[150px] cursor-pointer snap-center relative pt-4 px-2 pb-2"
+              className="flex flex-col items-center min-w-[160px] cursor-pointer snap-center px-2"
               onClick={() => handlePersonaSelect(persona.id)}
               data-testid={`persona-${persona.id}`}
             >
+              {/* Officer's name above photo */}
+              <div className="mb-2 text-center">
+                <p className="font-semibold text-sm">{persona.name}</p>
+              </div>
+              
+              {/* Officer's photo - compact for mobile */}
               <div
                 className={cn(
-                  "relative mb-2 rounded-full overflow-hidden transition-all duration-200 shadow-lg",
+                  "relative mb-3 rounded-full overflow-hidden transition-all duration-200 shadow-lg",
                   selectedPersona === persona.id
-                    ? "ring-4 ring-primary ring-offset-4 scale-105 shadow-xl"
+                    ? "ring-3 ring-primary ring-offset-2 scale-105 shadow-xl"
                     : "hover:scale-105 hover:shadow-xl"
                 )}
               >
                 <img
                   src={persona.image_url}
                   alt={persona.alt_text}
-                  className="w-36 h-36 object-cover rounded-full"
+                  className="w-24 h-24 md:w-32 md:h-32 object-cover rounded-full"
                   loading="lazy"
                 />
               </div>
               
-              {/* Overlay pill with name and mood - positioned outside image container */}
-              <div className="absolute bottom-0 left-0 right-0 h-11 bg-muted/90 backdrop-blur-sm rounded-full border border-border/50 flex flex-col items-center justify-center z-10">
-                <p className="font-medium text-xs leading-tight">{persona.name}</p>
-                <p className="text-xs text-muted-foreground leading-tight">{translateMood(persona.mood)}</p>
+              {/* Personality and language below photo */}
+              <div className="text-center space-y-1">
+                <p className="text-xs text-muted-foreground leading-tight">
+                  {translateMood(persona.mood)}
+                </p>
+                <p className="text-xs text-muted-foreground leading-tight">
+                  {persona.tts_voice ? t('personas.languages.english') : t('personas.languages.english')}
+                </p>
               </div>
             </div>
           ))}
