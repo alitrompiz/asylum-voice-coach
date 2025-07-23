@@ -94,22 +94,22 @@ export const SkillsScroller = () => {
   const row2Skills = skills.slice(midpoint);
 
   return (
-    <div className="bg-card rounded-lg p-3 border">
-      <h3 className="text-lg font-semibold mb-2">{t('skills.title')}</h3>
-      <div className="space-y-0">
+    <div className="bg-background rounded-lg p-3">
+      <h3 className="text-lg font-semibold mb-3 text-foreground">{t('skills.title')}</h3>
+      <div className="space-y-2">
         {/* Row 1 */}
-        <ScrollArea className="w-full h-[68px]">
-          <div className="flex gap-2 py-2 snap-x snap-mandatory overflow-x-auto min-h-[52px]">
+        <ScrollArea className="w-full">
+          <div className="flex gap-2 py-1 snap-x snap-mandatory overflow-x-auto">
             {row1Skills.map((skill) => (
               <Badge
                 key={skill.id}
                 variant={skillsSelected.includes(skill.id) ? "default" : "outline"}
                 className={cn(
                   "cursor-pointer snap-center transition-all duration-200 hover:scale-105 focus:ring-2 focus:ring-primary focus:ring-offset-2",
-                  "px-3 py-1 text-sm font-medium whitespace-nowrap",
+                  "px-3 py-2 text-xs font-medium whitespace-nowrap rounded-full min-w-fit",
                   skillsSelected.includes(skill.id) 
                     ? "bg-primary text-primary-foreground" 
-                    : "hover:bg-muted"
+                    : "hover:bg-muted border-muted-foreground/30"
                 )}
                 onClick={() => handleSkillToggle(skill.id)}
                 onKeyDown={(e) => handleKeyDown(e, skill.id)}
@@ -125,18 +125,18 @@ export const SkillsScroller = () => {
         </ScrollArea>
 
         {/* Row 2 */}
-        <ScrollArea className="w-full h-[68px]">
-          <div className="flex gap-2 py-2 snap-x snap-mandatory overflow-x-auto min-h-[52px]">
+        <ScrollArea className="w-full">
+          <div className="flex gap-2 py-1 snap-x snap-mandatory overflow-x-auto">
             {row2Skills.map((skill) => (
               <Badge
                 key={skill.id}
                 variant={skillsSelected.includes(skill.id) ? "default" : "outline"}
                 className={cn(
                   "cursor-pointer snap-center transition-all duration-200 hover:scale-105 focus:ring-2 focus:ring-primary focus:ring-offset-2",
-                  "px-3 py-1 text-sm font-medium whitespace-nowrap",
+                  "px-3 py-2 text-xs font-medium whitespace-nowrap rounded-full min-w-fit",
                   skillsSelected.includes(skill.id) 
                     ? "bg-primary text-primary-foreground" 
-                    : "hover:bg-muted"
+                    : "hover:bg-muted border-muted-foreground/30"
                 )}
                 onClick={() => handleSkillToggle(skill.id)}
                 onKeyDown={(e) => handleKeyDown(e, skill.id)}
@@ -151,7 +151,6 @@ export const SkillsScroller = () => {
           </div>
         </ScrollArea>
       </div>
-      
     </div>
   );
 };
