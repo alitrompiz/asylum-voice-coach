@@ -179,6 +179,9 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Send email via SendGrid
+    console.log("Attempting to send email via SendGrid...");
+    console.log("SendGrid API Key exists:", !!SENDGRID_API_KEY);
+    
     const sendGridResponse = await fetch("https://api.sendgrid.com/v3/mail/send", {
       method: "POST",
       headers: {
@@ -205,9 +208,12 @@ const handler = async (req: Request): Promise<Response> => {
       }),
     });
 
+    console.log("SendGrid response status:", sendGridResponse.status);
+    
     if (!sendGridResponse.ok) {
       const error = await sendGridResponse.text();
-      console.error("SendGrid error:", error);
+      console.error("SendGrid error response:", error);
+      console.error("SendGrid error status:", sendGridResponse.status);
       throw new Error(`SendGrid error: ${sendGridResponse.status} ${error}`);
     }
 
