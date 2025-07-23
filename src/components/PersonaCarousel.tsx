@@ -86,7 +86,7 @@ export const PersonaCarousel = ({ onSelect }: PersonaCarouselProps) => {
     <div>
       <h3 className="text-xl font-bold text-white mb-3">{t('personas.title')}</h3>
       <ScrollArea className="w-full p-1">
-        <div className="flex gap-6 py-2 snap-x snap-mandatory overflow-x-auto">
+        <div className="flex gap-6 pt-2 pb-0 snap-x snap-mandatory overflow-x-auto">
           {personas.map((persona) => (
             <div
               key={persona.id}
