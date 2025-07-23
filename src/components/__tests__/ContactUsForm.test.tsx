@@ -51,6 +51,7 @@ describe('ContactUsForm', () => {
       signOut: vi.fn(),
       signUp: vi.fn(),
       signIn: vi.fn(),
+      signInWithOAuth: vi.fn(),
       resetPassword: vi.fn(),
     });
     mockUseToast.mockReturnValue({

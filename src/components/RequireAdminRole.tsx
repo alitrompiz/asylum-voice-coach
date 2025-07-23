@@ -15,7 +15,7 @@ export const RequireAdminRole = ({ children }: RequireAdminRoleProps) => {
 
   // If no user, redirect to login
   if (!user) {
-    return <Navigate to="/auth/login" replace />;
+    return <Navigate to="/auth" replace />;
   }
 
   // Show loading state while checking admin role

@@ -49,10 +49,10 @@ const Index = () => {
           </p>
           <div className="flex gap-4 justify-center">
             <Button size="lg" asChild>
-              <Link to="/auth/register">Get Started</Link>
+              <Link to="/auth">Get Started</Link>
             </Button>
             <Button size="lg" variant="outline" asChild>
-              <Link to="/auth/login">Sign In</Link>
+              <Link to="/auth">Sign In</Link>
             </Button>
           </div>
         </div>
@@ -126,7 +126,7 @@ const Index = () => {
             Join thousands of asylum seekers who have improved their confidence with AsylumPrep
           </p>
           <Button size="lg" asChild>
-            <Link to="/auth/register">Start Free Trial</Link>
+            <Link to="/auth">Start Free Trial</Link>
           </Button>
         </div>
       </section>

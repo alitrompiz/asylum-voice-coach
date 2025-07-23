@@ -15,8 +15,7 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 
 // Auth pages
-import Login from "./pages/auth/Login";
-import Register from "./pages/auth/Register";
+import Auth from "./pages/auth/Auth";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import ResetPassword from "./pages/auth/ResetPassword";
 import Verify from "./pages/auth/Verify";
@@ -53,9 +52,10 @@ const App = () => (
             <Route path="/" element={<Index />} />
             
             {/* Auth routes */}
-            <Route path="/auth/login" element={<Login />} />
-            <Route path="/auth/register" element={<Register />} />
-            <Route path="/auth/signup" element={<Register />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/auth/login" element={<Auth />} />
+            <Route path="/auth/signup" element={<Auth />} />
+            <Route path="/auth/register" element={<Auth />} />
             <Route path="/auth/forgot-password" element={<ForgotPassword />} />
             <Route path="/auth/reset-password" element={<ResetPassword />} />
             <Route path="/auth/verify" element={<Verify />} />
