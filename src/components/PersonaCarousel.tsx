@@ -105,7 +105,8 @@ export const PersonaCarousel = ({ onSelect }: PersonaCarouselProps) => {
                   className={cn(
                     "w-32 h-32 sm:w-36 sm:h-36 rounded-full flex items-center justify-center overflow-hidden",
                     getPersonaBackground(),
-                    "transition-all duration-200"
+                    "transition-all duration-200",
+                    selectedPersona === persona.id && "ring-4 ring-green-500 ring-offset-2"
                   )}
                 >
                   <img
