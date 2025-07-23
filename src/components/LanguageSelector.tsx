@@ -63,7 +63,7 @@ export const LanguageSelector = ({ selectedLanguage, onLanguageChange }: Languag
   const currentLanguageData = SUPPORTED_LANGUAGES.find(l => l.code === languageCode);
 
   return (
-    <div className="flex items-center justify-between">
+    <div className="flex items-center gap-4">
       <h3 className="text-lg font-semibold text-white">{t('language.title')}</h3>
       <Select 
         value={languageCode} 
