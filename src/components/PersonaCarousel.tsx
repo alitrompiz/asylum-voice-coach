@@ -90,7 +90,7 @@ export const PersonaCarousel = ({ onSelect }: PersonaCarouselProps) => {
           {personas.map((persona) => (
             <div
               key={persona.id}
-              className="flex flex-col items-center min-w-[160px] cursor-pointer snap-center"
+              className="flex flex-col items-center min-w-[160px] cursor-pointer snap-center pb-0"
               onClick={() => handlePersonaSelect(persona.id)}
               data-testid={`persona-${persona.id}`}
             >
