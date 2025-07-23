@@ -387,9 +387,9 @@ export default function Interview() {
                 </div>
               )}
 
-              {/* Officer Subtitles - overlaid around 40% height of the image */}
+              {/* Officer Subtitles - positioned at 60% down from top of photo */}
               {showSubtitles && currentSubtitle && (
-                <div className="absolute top-[40%] left-1/2 transform -translate-x-1/2 w-screen z-10">
+                <div className="absolute top-[60%] left-1/2 transform -translate-x-1/2 w-screen z-10">
                   <div className="bg-black/60 backdrop-blur-sm rounded-lg px-3 py-2 text-center">
                     <p className="text-xs text-white leading-relaxed">{currentSubtitle}</p>
                   </div>
@@ -412,17 +412,17 @@ export default function Interview() {
                 </div>
               )}
 
-              {/* Exit Interview Button - Bottom Left */}
+              {/* Exit Interview Button - Top Left Corner of Photo */}
               <button
                 onClick={handleEndSession}
-                className="absolute bottom-4 left-4 bg-red-600 hover:bg-red-500 rounded-full p-3 border-2 border-white/20 transition-colors"
+                className="absolute top-2 left-2 bg-red-600 hover:bg-red-500 rounded-full p-2 border-2 border-white/20 transition-colors"
                 title="Exit Interview"
               >
-                <X className="w-6 h-6 text-white" />
+                <X className="w-5 h-5 text-white" />
               </button>
 
               {/* Debug Dropdown Button - Upper Right */}
-              <div className="absolute -top-2 -right-2 z-20">
+              <div className="absolute -top-2 -right-2 z-20">{/* keeping debug unchanged */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="sm" className="bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-full p-2">
@@ -511,10 +511,10 @@ export default function Interview() {
                 </DropdownMenu>
               </div>
 
-              {/* Show/Hide Subtitles Button - Bottom Right */}
+              {/* Show/Hide Subtitles Button - Top Right Corner of Photo */}
               <button
                 onClick={() => setShowSubtitles(!showSubtitles)}
-                className={`absolute bottom-4 right-4 rounded-full p-3 border-2 border-white/20 transition-colors ${
+                className={`absolute top-2 right-2 rounded-full p-2 border-2 border-white/20 transition-colors ${
                   showSubtitles 
                     ? "bg-blue-600 hover:bg-blue-500" 
                     : "bg-gray-600 hover:bg-gray-500"
@@ -522,9 +522,9 @@ export default function Interview() {
                 title={showSubtitles ? "Hide Subtitles" : "Show Subtitles"}
               >
                 {showSubtitles ? (
-                  <Captions className="w-6 h-6 text-white" />
+                  <Captions className="w-5 h-5 text-white" />
                 ) : (
-                  <Type className="w-6 h-6 text-white" />
+                  <Type className="w-5 h-5 text-white" />
                 )}
               </button>
 
