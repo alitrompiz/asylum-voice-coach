@@ -365,13 +365,25 @@ export default function Interview() {
         )}
 
         {/* App Name */}
-        <div className="text-center pt-1.5 mb-0.5">
-          <h1 className="text-white text-base font-medium">Asylum Prep</h1>
+        <div className="text-center pt-1.5 mb-2">
+          <h1 className="text-white text-base font-medium mb-2">Asylum Prep</h1>
+          
+          {/* Officer Info - moved to top */}
+          <div className="text-center space-y-1">
+            <h2 className="text-white text-lg font-semibold">{selectedPersonaData?.name || "Officer"}</h2>
+            <p className="text-white/70 text-sm">{selectedPersonaData?.mood || "Professional"}</p>
+            {language && (
+              <p className="text-blue-300 text-xs">
+                Speaking in {language.name}
+              </p>
+            )}
+          </div>
         </div>
+        
         {/* Main Content */}
-        <div className="flex-1 flex flex-col items-center justify-center relative">
-          {/* Officer Image and Info */}
-          <div className="flex flex-col items-center space-y-6 relative">
+        <div className="flex-1 flex flex-col items-center relative pt-2">
+          {/* Officer Image - moved directly under the info */}
+          <div className="flex flex-col items-center relative">{/* removed space-y-6 */}
             {/* Officer Image */}
             <div className="relative">
               <img 
@@ -539,17 +551,6 @@ export default function Interview() {
               )}
             </div>
             
-            
-            {/* Officer Name */}
-            <div className="text-center">
-              <h1 className="text-2xl font-bold">{selectedPersonaData?.name || "Officer"}</h1>
-              {/* Language indicator */}
-              {language && (
-                <p className="text-blue-300 text-sm -mt-1">
-                  Speaking in {language.name}
-                </p>
-              )}
-            </div>
           </div>
 
           {/* User Transcription - above the record button */}
