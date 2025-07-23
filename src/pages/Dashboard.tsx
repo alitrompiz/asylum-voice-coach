@@ -87,7 +87,7 @@ export default function Dashboard() {
           <PersonaCarousel />
         </div>
 
-        <div className="mb-3">
+        <div className="mb-3 -mt-2">
           <SkillsScroller />
         </div>
       </div>
