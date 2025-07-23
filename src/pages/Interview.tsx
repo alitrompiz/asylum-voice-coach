@@ -562,77 +562,79 @@ export default function Interview() {
           )}
         </div>
 
-        {/* Press to Talk Button - Bottom */}
-        <div className="flex flex-col items-center pb-8 space-y-6">
-          {/* Timer and Recording Indicator */}
-          {isRecording && (
-            <div className="flex flex-col items-center gap-2">
-              <div className="w-32 h-8 bg-black/30 rounded-lg backdrop-blur-sm overflow-hidden flex items-center justify-center">
-                <Waveform 
-                  isActive={true}
-                  intensity={audioLevel}
-                  className="h-full scale-y-75"
-                />
+        {/* Press to Talk Button - Bottom - Fixed to always be visible */}
+        <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-background/95 to-transparent backdrop-blur-sm">
+          <div className="flex flex-col items-center pb-safe-or-6 pt-4 space-y-6">
+            {/* Timer and Recording Indicator */}
+            {isRecording && (
+              <div className="flex flex-col items-center gap-2">
+                <div className="w-32 h-8 bg-black/30 rounded-lg backdrop-blur-sm overflow-hidden flex items-center justify-center">
+                  <Waveform 
+                    isActive={true}
+                    intensity={audioLevel}
+                    className="h-full scale-y-75"
+                  />
+                </div>
+                <div className="bg-black/50 px-4 py-2 rounded-lg backdrop-blur-sm">
+                  <span className="text-white text-lg font-mono">
+                    {formatTime(duration)}
+                  </span>
+                </div>
               </div>
-              <div className="bg-black/50 px-4 py-2 rounded-lg backdrop-blur-sm">
-                <span className="text-white text-lg font-mono">
-                  {formatTime(duration)}
+            )}
+            
+            {/* Button Row */}
+            <div className="flex items-center justify-center gap-8">
+              {/* Press to Talk Button */}
+              <button
+                onClick={handleMouseClick}
+                onTouchStart={isMobile ? handleTouch : undefined}
+                onTouchEnd={isMobile ? handleTouch : undefined}
+                onTouchCancel={isMobile ? handleTouch : undefined}
+                onContextMenu={(e) => e.preventDefault()}
+                disabled={isProcessing}
+                className={cn(
+                  "flex flex-col items-center gap-2 group select-none",
+                  "transition-all duration-200",
+                  isRecording && "scale-110"
+                )}
+              >
+                <div className={cn(
+                  "w-16 h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg",
+                  isRecording 
+                    ? "bg-red-600 hover:bg-red-500 shadow-red-500/50" 
+                    : isProcessing 
+                      ? "bg-yellow-600 cursor-not-allowed" 
+                      : "bg-blue-600 hover:bg-blue-500 shadow-blue-500/30"
+                )}>
+                  <Mic className="w-6 h-6 md:w-8 md:h-8 text-white" />
+                </div>
+                <span className="text-white text-xs md:text-sm font-medium text-center leading-tight min-h-[2.5rem] flex items-center">
+                  {isRecording ? "Press to stop" : isProcessing ? "Processing..." : "Press to talk"}
                 </span>
-              </div>
-            </div>
-          )}
-          
-          {/* Button Row */}
-          <div className="flex items-center justify-center gap-8">
-            {/* Press to Talk Button */}
-            <button
-              onClick={handleMouseClick}
-              onTouchStart={isMobile ? handleTouch : undefined}
-              onTouchEnd={isMobile ? handleTouch : undefined}
-              onTouchCancel={isMobile ? handleTouch : undefined}
-              onContextMenu={(e) => e.preventDefault()}
-              disabled={isProcessing}
-              className={cn(
-                "flex flex-col items-center gap-3 group select-none",
-                "transition-all duration-200",
-                isRecording && "scale-110"
-              )}
-            >
-              <div className={cn(
-                "w-20 h-20 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg",
-                isRecording 
-                  ? "bg-red-600 hover:bg-red-500 shadow-red-500/50" 
-                  : isProcessing 
-                    ? "bg-yellow-600 cursor-not-allowed" 
-                    : "bg-blue-600 hover:bg-blue-500 shadow-blue-500/30"
-              )}>
-                <Mic className="w-8 h-8 text-white" />
-              </div>
-              <span className="text-white text-sm font-medium">
-                {isRecording ? "Press to stop" : isProcessing ? "Processing..." : "Press to talk"}
-              </span>
-            </button>
+              </button>
 
-            {/* Play Response Button */}
-            <button
-              onClick={handleTTSToggle}
-              className={cn(
-                "flex flex-col items-center gap-3 group select-none",
-                "transition-all duration-200"
-              )}
-            >
-              <div className={cn(
-                "w-20 h-20 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg",
-                isTTSPlaying 
-                  ? "bg-green-600 hover:bg-green-500 shadow-green-500/50" 
-                  : "bg-purple-600 hover:bg-purple-500 shadow-purple-500/30"
-              )}>
-                <Play className="w-8 h-8 text-white" />
-              </div>
-              <span className="text-white text-sm font-medium">
-                Play Response
-              </span>
-            </button>
+              {/* Play Response Button */}
+              <button
+                onClick={handleTTSToggle}
+                className={cn(
+                  "flex flex-col items-center gap-2 group select-none",
+                  "transition-all duration-200"
+                )}
+              >
+                <div className={cn(
+                  "w-16 h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg",
+                  isTTSPlaying 
+                    ? "bg-green-600 hover:bg-green-500 shadow-green-500/50" 
+                    : "bg-purple-600 hover:bg-purple-500 shadow-purple-500/30"
+                )}>
+                  <Play className="w-6 h-6 md:w-8 md:h-8 text-white" />
+                </div>
+                <span className="text-white text-xs md:text-sm font-medium text-center leading-tight min-h-[2.5rem] flex items-center">
+                  Play Response
+                </span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
