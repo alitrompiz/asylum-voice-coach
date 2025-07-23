@@ -564,7 +564,7 @@ export default function Interview() {
         </div>
 
         {/* Press to Talk Button - Bottom - Fixed to always be visible */}
-        <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm">
+        <div className="fixed bottom-0 left-0 right-0">
           <div className="flex flex-col items-center pb-safe-or-6 pt-4 space-y-6">
             {/* Timer and Recording Indicator */}
             {isRecording && (
