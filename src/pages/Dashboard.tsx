@@ -70,11 +70,11 @@ export default function Dashboard() {
         </div>
 
         <div className="mb-2">
-          <PersonaCarousel />
+          <LanguageSelector />
         </div>
 
         <div className="mb-2">
-          <LanguageSelector />
+          <PersonaCarousel />
         </div>
 
         <div className="mb-2">
