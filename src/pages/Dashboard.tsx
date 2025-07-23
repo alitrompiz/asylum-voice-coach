@@ -1,4 +1,3 @@
-
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { User, Play, Shield } from 'lucide-react';
@@ -12,12 +11,19 @@ import { useAdminAccess } from '@/hooks/useAdminAccess';
 import { useTranslation } from 'react-i18next';
 import { useEffect } from 'react';
 import { ensureAudioContextReady } from '@/utils/audioContext';
-
 export default function Dashboard() {
   const navigate = useNavigate();
-  const { t } = useTranslation();
-  const { skillsSelected } = useSkillsStore();
-  const { isAdmin, loading, error } = useAdminAccess();
+  const {
+    t
+  } = useTranslation();
+  const {
+    skillsSelected
+  } = useSkillsStore();
+  const {
+    isAdmin,
+    loading,
+    error
+  } = useAdminAccess();
 
   // Clean up old localStorage admin code on component mount
   useEffect(() => {
@@ -26,7 +32,11 @@ export default function Dashboard() {
 
   // Debug logging to help identify the issue
   useEffect(() => {
-    console.log('Admin access status:', { isAdmin, loading, error });
+    console.log('Admin access status:', {
+      isAdmin,
+      loading,
+      error
+    });
   }, [isAdmin, loading, error]);
 
   // Handle Start Interview button click and initialize AudioContext for mobile browsers
@@ -38,17 +48,14 @@ export default function Dashboard() {
     } catch (error) {
       console.warn('⚠️ Could not initialize AudioContext:', error);
     }
-    
+
     // Navigate to interview
     navigate('/interview');
   };
-
   const handleAdminPanel = () => {
     navigate('/admin');
   };
-
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 p-2 pb-16 md:pb-2">
+  return <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 p-2 pb-16 md:pb-2">
       {/* Dark gradient overlay for visual consistency */}
       <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 via-transparent to-blue-900/20 pointer-events-none" />
       
@@ -87,36 +94,23 @@ export default function Dashboard() {
 
       {/* Fixed Start Interview Button */}
       <div className="fixed bottom-2 left-2 right-2 md:relative md:bottom-auto md:left-auto md:right-auto md:max-w-6xl md:mx-auto">
-        <Button 
-          size="lg" 
-          onClick={handleStartInterview}
-          className="w-full shadow-lg bg-primary hover:bg-primary/90"
-          disabled={skillsSelected.length === 0}
-        >
+        <Button size="lg" onClick={handleStartInterview} className="w-full shadow-lg bg-primary hover:bg-primary/90" disabled={skillsSelected.length === 0}>
           <Play className="w-5 h-5 mr-2" />
           {t('interview.start')}
-          {skillsSelected.length > 0 && (
-            <span className="ml-2 text-xs">({t('interview.areas_count', { count: skillsSelected.length })})</span>
-          )}
+          {skillsSelected.length > 0 && <span className="ml-2 text-xs">({t('interview.areas_count', {
+            count: skillsSelected.length
+          })})</span>}
         </Button>
-        {skillsSelected.length === 0 && (
-          <p className="text-sm text-gray-400 text-center mt-1">
+        {skillsSelected.length === 0 && <p className="text-sm text-gray-400 text-center mt-1">
             {t('interview.select_areas')}
-          </p>
-        )}
+          </p>}
       </div>
 
       {/* Admin Panel Button - Fixed position bottom right */}
-      {!loading && isAdmin && (
-        <div className="fixed bottom-14 right-2 md:bottom-2 md:right-2 z-50">
+      {!loading && isAdmin && <div className="fixed bottom-14 right-2 md:bottom-2 md:right-2 z-50">
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button 
-                variant="outline" 
-                size="icon"
-                onClick={handleAdminPanel}
-                className="w-11 h-11 rounded-full shadow-lg border-2 border-gray-600 bg-gray-800/50 text-white hover:bg-gray-700"
-              >
+              <Button variant="outline" size="icon" onClick={handleAdminPanel} className="w-11 h-11 rounded-full shadow-lg border-2 border-gray-600 bg-gray-800/50 text-white hover:bg-gray-700">
                 <Shield className="w-4 h-4" />
               </Button>
             </TooltipTrigger>
@@ -124,16 +118,9 @@ export default function Dashboard() {
               <p>{t('navigation.admin_panel')}</p>
             </TooltipContent>
           </Tooltip>
-        </div>
-      )}
+        </div>}
 
       {/* Debug info for development */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="fixed top-4 right-4 bg-black/80 text-white p-2 rounded text-xs">
-          Admin: {loading ? 'Loading...' : isAdmin ? 'Yes' : 'No'}
-          {error && <div className="text-red-400">Error: {error}</div>}
-        </div>
-      )}
-    </div>
-  );
+      {process.env.NODE_ENV === 'development'}
+    </div>;
 }
