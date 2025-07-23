@@ -82,26 +82,32 @@ export const PersonaCarousel = ({ onSelect }: PersonaCarouselProps) => {
   }
 
   return (
-    <div className="bg-card rounded-lg p-3 border">
-      <h3 className="text-lg font-semibold mb-3">{t('personas.title')}</h3>
-      <ScrollArea className="w-full">
-        <div className="flex gap-4 pb-4 snap-x snap-mandatory overflow-x-auto">
+    <div className="bg-card rounded-lg p-3 border h-[30vh] overflow-hidden">
+      <h3 className="text-lg font-semibold mb-2">{t('personas.title')}</h3>
+      <ScrollArea className="w-full h-full">
+        <div className="flex gap-4 pb-4 snap-x snap-mandatory overflow-x-auto h-full">
           {personas.map((persona) => (
             <div
               key={persona.id}
-              className="flex flex-col items-center min-w-[160px] cursor-pointer snap-center px-2"
+              className="flex flex-col items-center min-w-[140px] cursor-pointer snap-center px-2 h-full justify-center"
               onClick={() => handlePersonaSelect(persona.id)}
               data-testid={`persona-${persona.id}`}
             >
-              {/* Officer's name above photo */}
-              <div className="mb-2 text-center">
+              {/* Officer's info above photo */}
+              <div className="text-center space-y-1 mb-3">
                 <p className="font-semibold text-sm">{persona.name}</p>
+                <p className="text-xs text-muted-foreground leading-tight">
+                  {translateMood(persona.mood)}
+                </p>
+                <p className="text-xs text-muted-foreground leading-tight">
+                  {persona.tts_voice ? t('personas.languages.english') : t('personas.languages.english')}
+                </p>
               </div>
               
-              {/* Officer's photo - compact for mobile */}
+              {/* Officer's photo */}
               <div
                 className={cn(
-                  "relative mb-3 rounded-full overflow-hidden transition-all duration-200 shadow-lg",
+                  "relative rounded-full overflow-hidden transition-all duration-200 shadow-lg",
                   selectedPersona === persona.id
                     ? "ring-3 ring-primary ring-offset-2 scale-105 shadow-xl"
                     : "hover:scale-105 hover:shadow-xl"
@@ -110,19 +116,9 @@ export const PersonaCarousel = ({ onSelect }: PersonaCarouselProps) => {
                 <img
                   src={persona.image_url}
                   alt={persona.alt_text}
-                  className="w-24 h-24 md:w-32 md:h-32 object-cover rounded-full"
+                  className="w-20 h-20 md:w-24 md:h-24 object-cover rounded-full"
                   loading="lazy"
                 />
-              </div>
-              
-              {/* Personality and language below photo */}
-              <div className="text-center space-y-1">
-                <p className="text-xs text-muted-foreground leading-tight">
-                  {translateMood(persona.mood)}
-                </p>
-                <p className="text-xs text-muted-foreground leading-tight">
-                  {persona.tts_voice ? t('personas.languages.english') : t('personas.languages.english')}
-                </p>
               </div>
             </div>
           ))}
