@@ -564,7 +564,7 @@ export default function Interview() {
         </div>
 
         {/* Press to Talk Button - Bottom - Fixed to always be visible */}
-        <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-background/95 to-transparent backdrop-blur-sm">
+        <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm">
           <div className="flex flex-col items-center pb-safe-or-6 pt-4 space-y-6">
             {/* Timer and Recording Indicator */}
             {isRecording && (
@@ -586,7 +586,28 @@ export default function Interview() {
             
             {/* Button Row */}
             <div className="flex items-center justify-center gap-8">
-              {/* Press to Talk Button */}
+              {/* Play Response Button - moved to left */}
+              <button
+                onClick={handleTTSToggle}
+                className={cn(
+                  "flex flex-col items-center gap-2 group select-none",
+                  "transition-all duration-200"
+                )}
+              >
+                <div className={cn(
+                  "w-16 h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg",
+                  isTTSPlaying 
+                    ? "bg-green-600 hover:bg-green-500 shadow-green-500/50" 
+                    : "bg-purple-600 hover:bg-purple-500 shadow-purple-500/30"
+                )}>
+                  <Play className="w-6 h-6 md:w-8 md:h-8 text-white" />
+                </div>
+                <span className="text-white text-xs md:text-sm font-medium text-center leading-tight min-h-[2.5rem] flex items-center">
+                  Play Response
+                </span>
+              </button>
+
+              {/* Press to Talk Button - moved to right */}
               <button
                 onClick={handleMouseClick}
                 onTouchStart={isMobile ? handleTouch : undefined}
@@ -612,27 +633,6 @@ export default function Interview() {
                 </div>
                 <span className="text-white text-xs md:text-sm font-medium text-center leading-tight min-h-[2.5rem] flex items-center">
                   {isRecording ? "Press to stop" : isProcessing ? "Processing..." : "Press to talk"}
-                </span>
-              </button>
-
-              {/* Play Response Button */}
-              <button
-                onClick={handleTTSToggle}
-                className={cn(
-                  "flex flex-col items-center gap-2 group select-none",
-                  "transition-all duration-200"
-                )}
-              >
-                <div className={cn(
-                  "w-16 h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg",
-                  isTTSPlaying 
-                    ? "bg-green-600 hover:bg-green-500 shadow-green-500/50" 
-                    : "bg-purple-600 hover:bg-purple-500 shadow-purple-500/30"
-                )}>
-                  <Play className="w-6 h-6 md:w-8 md:h-8 text-white" />
-                </div>
-                <span className="text-white text-xs md:text-sm font-medium text-center leading-tight min-h-[2.5rem] flex items-center">
-                  Play Response
                 </span>
               </button>
             </div>
