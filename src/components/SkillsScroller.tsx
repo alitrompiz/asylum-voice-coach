@@ -62,9 +62,9 @@ export const SkillsScroller = () => {
       <div>
         <h3 className="text-lg font-semibold mb-2 text-white">{t('skills.title')}</h3>
         <div className="space-y-2">
-          {[1, 2].map((row) => (
+          {[1, 2, 3].map((row) => (
             <div key={row} className="flex gap-2 animate-pulse">
-              {[1, 2, 3, 4, 5].map((i) => (
+              {[1, 2, 3, 4].map((i) => (
                 <div key={i} className="h-8 bg-gray-700 rounded-full px-4" />
               ))}
             </div>
@@ -89,18 +89,20 @@ export const SkillsScroller = () => {
     );
   }
 
-  // Split skills into two rows for better distribution
-  const midpoint = Math.ceil(skills.length / 2);
-  const row1Skills = skills.slice(0, midpoint);
-  const row2Skills = skills.slice(midpoint);
+  // Split skills into three rows for better distribution
+  const thirdPoint = Math.ceil(skills.length / 3);
+  const twoThirdPoint = Math.ceil((skills.length * 2) / 3);
+  const row1Skills = skills.slice(0, thirdPoint);
+  const row2Skills = skills.slice(thirdPoint, twoThirdPoint);
+  const row3Skills = skills.slice(twoThirdPoint);
 
   return (
     <div>
       <h3 className="text-lg font-semibold mb-2 text-white">{t('skills.title')}</h3>
       <div className="space-y-2">
         {/* Row 1 */}
-        <ScrollArea className="w-full">
-          <div className="flex gap-2 py-1 snap-x snap-mandatory overflow-x-auto">
+        <ScrollArea className="w-full [&>div>div]:!overflow-visible">
+          <div className="flex gap-2 py-1 snap-x snap-mandatory overflow-x-auto scrollbar-hide">
             {row1Skills.map((skill) => (
               <Badge
                 key={skill.id}
@@ -126,9 +128,36 @@ export const SkillsScroller = () => {
         </ScrollArea>
 
         {/* Row 2 */}
-        <ScrollArea className="w-full">
-          <div className="flex gap-2 py-1 snap-x snap-mandatory overflow-x-auto">
+        <ScrollArea className="w-full [&>div>div]:!overflow-visible">
+          <div className="flex gap-2 py-1 snap-x snap-mandatory overflow-x-auto scrollbar-hide">
             {row2Skills.map((skill) => (
+              <Badge
+                key={skill.id}
+                variant={skillsSelected.includes(skill.id) ? "default" : "outline"}
+                className={cn(
+                  "cursor-pointer snap-center transition-all duration-200 hover:scale-105 focus:ring-2 focus:ring-primary focus:ring-offset-2",
+                  "px-3 py-2 text-xs font-medium whitespace-nowrap rounded-full min-w-fit",
+                  skillsSelected.includes(skill.id) 
+                    ? "bg-primary text-primary-foreground" 
+                    : "hover:bg-gray-700 border-gray-600 text-gray-300 bg-gray-800/50"
+                )}
+                onClick={() => handleSkillToggle(skill.id)}
+                onKeyDown={(e) => handleKeyDown(e, skill.id)}
+                tabIndex={0}
+                role="button"
+                aria-pressed={skillsSelected.includes(skill.id)}
+                data-testid={`skill-chip-${skill.id}`}
+              >
+                {translateSkillName(skill.name)}
+              </Badge>
+            ))}
+          </div>
+        </ScrollArea>
+
+        {/* Row 3 */}
+        <ScrollArea className="w-full [&>div>div]:!overflow-visible">
+          <div className="flex gap-2 py-1 snap-x snap-mandatory overflow-x-auto scrollbar-hide">
+            {row3Skills.map((skill) => (
               <Badge
                 key={skill.id}
                 variant={skillsSelected.includes(skill.id) ? "default" : "outline"}
