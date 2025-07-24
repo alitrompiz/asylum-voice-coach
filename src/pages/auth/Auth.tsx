@@ -170,8 +170,8 @@ export default function Auth() {
             {/* Social Login Buttons */}
             <SocialLoginButtons 
               onGoogleClick={() => handleSocialLogin('google')}
-              onAppleClick={() => handleSocialLogin('apple')}
               isLoading={isLoading}
+              showApple={false}
             />
 
             <div className="relative">
