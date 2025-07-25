@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { SessionFeedbackModal } from '@/components/SessionFeedbackModal';
 
 // Default phrases for session endings
 const GOOD_PHRASES = [
@@ -45,6 +46,7 @@ export function SessionEndDialog({
   sessionData 
 }: SessionEndDialogProps) {
   const [isProcessingFeedback, setIsProcessingFeedback] = useState(false);
+  const [showSessionFeedback, setShowSessionFeedback] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -71,7 +73,7 @@ export function SessionEndDialog({
       // Simulate processing time for UX
       setTimeout(() => {
         onOpenChange(false);
-        navigate('/dashboard');
+        setShowSessionFeedback(true);
       }, 2000);
       
     } catch (error) {
@@ -91,51 +93,64 @@ export function SessionEndDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] bg-gradient-to-br from-gray-900 to-gray-800 border-gray-700">
-        <div className="text-center space-y-6 py-6">
-          {/* Session End Phrase */}
-          <div className="space-y-2">
-            <h2 className="text-2xl font-bold text-white">
-              {selectedPhrase}
-            </h2>
-            <p className="text-gray-300 text-sm">
-              Session Duration: {Math.floor(sessionDuration / 60)}m {sessionDuration % 60}s
-            </p>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="space-y-3">
-            {/* Primary Button: Get Feedback */}
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-[500px] bg-gradient-to-br from-gray-900 to-gray-800 border-gray-700">
+          <div className="text-center space-y-6 py-6">
+            {/* Session End Phrase */}
             <div className="space-y-2">
-              <Button 
-                onClick={handleGetFeedback}
-                disabled={isProcessingFeedback}
-                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium py-3 text-lg"
-              >
-                {isProcessingFeedback ? (
-                  "Processing..."
-                ) : (
-                  "Get my session feedback 💪🏼✨"
-                )}
-              </Button>
-              <p className="text-xs text-gray-400">
-                We'll analyze your performance and provide personalized insights
+              <h2 className="text-2xl font-bold text-white">
+                {selectedPhrase}
+              </h2>
+              <p className="text-gray-300 text-sm">
+                Session Duration: {Math.floor(sessionDuration / 60)}m {sessionDuration % 60}s
               </p>
             </div>
 
-            {/* Secondary Button: Exit Without Feedback */}
-            <Button 
-              variant="outline"
-              onClick={handleExitWithoutFeedback}
-              disabled={isProcessingFeedback}
-              className="w-full border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white"
-            >
-              Exit without feedback
-            </Button>
+            {/* Action Buttons */}
+            <div className="space-y-3">
+              {/* Primary Button: Get Feedback */}
+              <div className="space-y-2">
+                <Button 
+                  onClick={handleGetFeedback}
+                  disabled={isProcessingFeedback}
+                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium py-3 text-lg"
+                >
+                  {isProcessingFeedback ? (
+                    "Processing..."
+                  ) : (
+                    "Get my session feedback 💪🏼✨"
+                  )}
+                </Button>
+                <p className="text-xs text-gray-400">
+                  We'll analyze your performance and provide personalized insights
+                </p>
+              </div>
+
+              {/* Secondary Button: Exit Without Feedback */}
+              <Button 
+                variant="outline"
+                onClick={handleExitWithoutFeedback}
+                disabled={isProcessingFeedback}
+                className="w-full border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white"
+              >
+                Exit without feedback
+              </Button>
+            </div>
           </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+
+      {/* Session Feedback Modal */}
+      <SessionFeedbackModal 
+        open={showSessionFeedback}
+        onOpenChange={(open) => {
+          setShowSessionFeedback(open);
+          if (!open) {
+            navigate('/dashboard');
+          }
+        }}
+      />
+    </>
   );
 }

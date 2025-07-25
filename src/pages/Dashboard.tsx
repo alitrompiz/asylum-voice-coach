@@ -9,10 +9,12 @@ import { SkillsScroller } from '@/components/SkillsScroller';
 import { useSkillsStore } from '@/stores/personaStore';
 import { useAdminAccess } from '@/hooks/useAdminAccess';
 import { useTranslation } from 'react-i18next';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { ensureAudioContextReady } from '@/utils/audioContext';
+import { GeneralFeedbackModal } from '@/components/GeneralFeedbackModal';
 export default function Dashboard() {
   const navigate = useNavigate();
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const {
     t
   } = useTranslation();
@@ -68,6 +70,14 @@ export default function Dashboard() {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => setShowFeedbackModal(true)}
+              className="text-gray-300 hover:text-white hover:bg-gray-700/50 text-xs"
+            >
+              Help us improve this project 🙏🏼
+            </Button>
             <Button variant="outline" size="sm" onClick={() => navigate('/profile')} className="border-gray-600 bg-gray-800/50 text-white hover:bg-gray-700">
               <User className="w-4 h-4 mr-2" />
               {t('navigation.profile')}
@@ -122,5 +132,11 @@ export default function Dashboard() {
 
       {/* Debug info for development */}
       {process.env.NODE_ENV === 'development'}
+
+      {/* General Feedback Modal */}
+      <GeneralFeedbackModal 
+        open={showFeedbackModal}
+        onOpenChange={setShowFeedbackModal}
+      />
     </div>;
 }
