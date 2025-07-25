@@ -196,7 +196,7 @@ const handler = async (req: Request): Promise<Response> => {
           },
         ],
         from: {
-          email: "onboarding@resend.dev",
+          email: "no-reply@asylumprep.com",
           name: "AsylumPrep"
         },
         content: [
