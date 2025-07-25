@@ -17,6 +17,7 @@ import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { ensureAudioContextReady } from '@/utils/audioContext';
 import { SessionEndDialog } from '@/components/SessionEndDialog';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function Interview() {
   const [isAiSpeaking, setIsAiSpeaking] = useState(false);
@@ -282,12 +283,50 @@ export default function Interview() {
   };
 
   const handleFeedbackRequest = async () => {
-    // Generate feedback based on conversation transcript
+    // Store the interview session first
     const transcript = messages.map(m => `${m.role}: ${m.text}`).join('\n');
     
-    // For now, show the old feedback dialog with mock data
-    // TODO: Implement actual feedback generation with transcript
-    setShowFeedback(true);
+    try {
+      // Save interview session to database
+      const { data: sessionData, error: sessionError } = await supabase
+        .from('interview_sessions')
+        .insert({
+          user_id: (await supabase.auth.getUser()).data.user?.id,
+          full_transcript: transcript,
+          session_duration_seconds: getSessionDuration(),
+          persona_id: selectedPersona,
+          skills_selected: [], // TODO: Get from interview state
+          language: languageCode
+        })
+        .select()
+        .single();
+
+      if (sessionError) {
+        console.error('Error saving session:', sessionError);
+        throw sessionError;
+      }
+
+      // Generate feedback using the edge function
+      const { data: feedbackData, error: feedbackError } = await supabase.functions.invoke('generate_feedback', {
+        body: {
+          transcript: transcript,
+          sessionId: sessionData.id,
+          personaDesc: (selectedPersonaData as any)?.ai_instructions || 'Default persona description',
+          skillsSelected: [], // TODO: Get from interview state
+          onboarding: {} // TODO: Get from user profile
+        }
+      });
+
+      if (feedbackError) {
+        console.error('Error generating feedback:', feedbackError);
+        // Don't throw here - we still want to show the session end flow
+      }
+
+      console.log('Session and feedback saved successfully');
+    } catch (error) {
+      console.error('Error in feedback request:', error);
+      // Don't throw - continue with the flow
+    }
   };
 
   const getSessionDuration = () => {

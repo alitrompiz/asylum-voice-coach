@@ -12,7 +12,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { User, FileText, LogOut, Save, Plus, Trash2, Upload, CheckCircle } from 'lucide-react';
+import { User, FileText, LogOut, Save, Plus, Trash2, Upload, CheckCircle, MessageSquare } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { StoryUploader } from '@/components/StoryUploader';
@@ -36,8 +36,11 @@ export default function Profile() {
   const [profile, setProfile] = useState<any>(null);
   const [stories, setStories] = useState<any[]>([]);
   const [activeStory, setActiveStory] = useState<any>(null);
+  const [feedback, setFeedback] = useState<any[]>([]);
+  const [selectedFeedback, setSelectedFeedback] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [storyDialogOpen, setStoryDialogOpen] = useState(false);
+  const [feedbackDialogOpen, setFeedbackDialogOpen] = useState(false);
   const [storyMode, setStoryMode] = useState<'upload' | 'text'>('upload');
   const [selectedStory, setSelectedStory] = useState<any>(null);
   const [storyViewDialogOpen, setStoryViewDialogOpen] = useState(false);
@@ -55,6 +58,7 @@ export default function Profile() {
     if (user) {
       fetchProfile();
       fetchStories();
+      fetchFeedback();
     }
   }, [user]);
 
@@ -99,6 +103,28 @@ export default function Profile() {
       setActiveStory(storiesData.find(story => story.is_active));
     } catch (err: any) {
       console.error('Error fetching stories:', err);
+      setError(err.message);
+    }
+  };
+
+  const fetchFeedback = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('feedback')
+        .select(`
+          *,
+          interview_sessions!inner(
+            session_duration_seconds,
+            created_at
+          )
+        `)
+        .eq('user_id', user?.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setFeedback(data || []);
+    } catch (err: any) {
+      console.error('Error fetching feedback:', err);
       setError(err.message);
     }
   };
@@ -185,6 +211,11 @@ export default function Profile() {
   const openStoryViewer = (story: any) => {
     setSelectedStory(story);
     setStoryViewDialogOpen(true);
+  };
+
+  const openFeedbackViewer = (feedbackItem: any) => {
+    setSelectedFeedback(feedbackItem);
+    setFeedbackDialogOpen(true);
   };
 
   return (
@@ -508,6 +539,141 @@ export default function Profile() {
                 <div className="whitespace-pre-wrap text-sm leading-relaxed">
                   {selectedStory?.story_text}
                 </div>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Past Feedback Section */}
+        {feedback.length > 0 && (
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle>Past Feedback</CardTitle>
+              <CardDescription>
+                Your interview feedback history, newest first
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {feedback.map((item) => (
+                  <div 
+                    key={item.id} 
+                    className="border rounded-lg p-4 cursor-pointer hover:bg-muted/50 transition-colors"
+                    onClick={() => openFeedbackViewer(item)}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <MessageSquare className="w-4 h-4 text-blue-500" />
+                        <h4 className="font-medium">Session Feedback</h4>
+                        {item.score && (
+                          <Badge variant="outline">{item.score}/100</Badge>
+                        )}
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(item.created_at).toLocaleDateString()}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(item.created_at).toLocaleTimeString()}
+                        </p>
+                        {item.interview_sessions && (
+                          <p className="text-xs text-muted-foreground">
+                            Duration: {Math.floor(item.interview_sessions.session_duration_seconds / 60)}m {item.interview_sessions.session_duration_seconds % 60}s
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      {item.improvements?.length > 0 
+                        ? `${item.improvements.length} improvement${item.improvements.length === 1 ? '' : 's'} suggested`
+                        : 'Click to view feedback details'
+                      }
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Feedback Viewer Dialog */}
+        <Dialog open={feedbackDialogOpen} onOpenChange={setFeedbackDialogOpen}>
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <MessageSquare className="w-5 h-5" />
+                Session Feedback
+                {selectedFeedback?.score && (
+                  <Badge variant="outline">{selectedFeedback.score}/100</Badge>
+                )}
+              </DialogTitle>
+              <DialogDescription>
+                {selectedFeedback ? (
+                  <>
+                    {new Date(selectedFeedback.created_at).toLocaleDateString()} at {new Date(selectedFeedback.created_at).toLocaleTimeString()}
+                    {selectedFeedback.interview_sessions && (
+                      <span> • Duration: {Math.floor(selectedFeedback.interview_sessions.session_duration_seconds / 60)}m {selectedFeedback.interview_sessions.session_duration_seconds % 60}s</span>
+                    )}
+                  </>
+                ) : ''}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex-1 overflow-auto">
+              <div className="space-y-6">
+                {/* Strengths */}
+                {selectedFeedback?.strengths && selectedFeedback.strengths.length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-semibold text-green-600 mb-3">Strengths</h3>
+                    <ul className="space-y-2">
+                      {selectedFeedback.strengths.map((strength: string, index: number) => (
+                        <li key={index} className="flex items-start gap-2">
+                          <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                          <span className="text-sm">{strength}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Improvements */}
+                {selectedFeedback?.improvements && selectedFeedback.improvements.length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-semibold text-blue-600 mb-3">Areas for Improvement</h3>
+                    <ul className="space-y-2">
+                      {selectedFeedback.improvements.map((improvement: string, index: number) => (
+                        <li key={index} className="flex items-start gap-2">
+                          <div className="w-4 h-4 rounded-full bg-blue-500 text-white text-xs flex items-center justify-center mt-0.5 flex-shrink-0">
+                            {index + 1}
+                          </div>
+                          <span className="text-sm">{improvement}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Overall Score */}
+                {selectedFeedback?.score && (
+                  <div>
+                    <h3 className="text-lg font-semibold mb-3">Overall Score</h3>
+                    <div className="flex items-center gap-4">
+                      <div className="w-24 h-24 rounded-full border-4 border-primary flex items-center justify-center">
+                        <span className="text-2xl font-bold">{selectedFeedback.score}</span>
+                      </div>
+                      <div className="flex-1">
+                        <div className="w-full bg-gray-200 rounded-full h-3">
+                          <div 
+                            className="bg-primary h-3 rounded-full transition-all duration-300" 
+                            style={{ width: `${selectedFeedback.score}%` }}
+                          />
+                        </div>
+                        <p className="text-sm text-muted-foreground mt-2">
+                          Score out of 100
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </DialogContent>

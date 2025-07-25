@@ -4,6 +4,7 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { SessionFeedbackModal } from '@/components/SessionFeedbackModal';
+import { supabase } from '@/integrations/supabase/client';
 
 // Default phrases for session endings
 const GOOD_PHRASES = [
