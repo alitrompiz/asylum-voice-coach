@@ -1,30 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { SessionFeedbackModal } from '@/components/SessionFeedbackModal';
 import { supabase } from '@/integrations/supabase/client';
-
-// Default phrases for session endings
-const GOOD_PHRASES = [
-  "Great work! You completed a full practice session.",
-  "Excellent! You made it through the entire session.",
-  "Well done! You stayed focused throughout the session.",
-  "Fantastic! You completed the full interview practice.",
-  "Outstanding! You engaged with the full session."
-];
-
-const CUT_SHORT_PHRASES = [
-  "Session ended early. Every practice counts!",
-  "Short session, but still valuable practice time.",
-  "Brief session completed. Progress is progress!",
-  "Quick practice session finished.",
-  "Short but focused practice time completed."
-];
-
-// Default threshold: 2 minutes (120 seconds)
-const DEFAULT_SESSION_THRESHOLD = 120;
 
 interface SessionEndDialogProps {
   open: boolean;
@@ -39,6 +19,13 @@ interface SessionEndDialogProps {
   };
 }
 
+interface SessionPhrase {
+  id: string;
+  phrase_text: string;
+  phrase_type: 'good' | 'cut_short';
+}
+
+
 export function SessionEndDialog({ 
   open, 
   onOpenChange, 
@@ -48,15 +35,74 @@ export function SessionEndDialog({
 }: SessionEndDialogProps) {
   const [isProcessingFeedback, setIsProcessingFeedback] = useState(false);
   const [showSessionFeedback, setShowSessionFeedback] = useState(false);
+  const [goodPhrases, setGoodPhrases] = useState<SessionPhrase[]>([]);
+  const [cutShortPhrases, setCutShortPhrases] = useState<SessionPhrase[]>([]);
+  const [sessionThreshold, setSessionThreshold] = useState(120); // Default: 2 minutes
+  const [selectedPhrase, setSelectedPhrase] = useState<string>('');
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Determine if session was cut short based on threshold
-  const isSessionCutShort = sessionDuration < DEFAULT_SESSION_THRESHOLD;
-  
-  // Select random phrase from appropriate list
-  const phrases = isSessionCutShort ? CUT_SHORT_PHRASES : GOOD_PHRASES;
-  const selectedPhrase = phrases[Math.floor(Math.random() * phrases.length)];
+  // Fetch phrases and settings when dialog opens
+  useEffect(() => {
+    if (open) {
+      fetchPhrasesAndSettings();
+    }
+  }, [open]);
+
+  const fetchPhrasesAndSettings = async () => {
+    try {
+      // Fetch phrases
+      const { data: phrasesData, error: phrasesError } = await supabase
+        .from('session_phrases')
+        .select('*')
+        .eq('is_active', true);
+
+      if (phrasesError) throw phrasesError;
+
+      const good = (phrasesData?.filter(p => p.phrase_type === 'good') || []) as SessionPhrase[];
+      const cutShort = (phrasesData?.filter(p => p.phrase_type === 'cut_short') || []) as SessionPhrase[];
+      
+      setGoodPhrases(good);
+      setCutShortPhrases(cutShort);
+
+      // Fetch session threshold setting
+      const { data: settingsData, error: settingsError } = await supabase
+        .from('session_settings')
+        .select('setting_value')
+        .eq('setting_key', 'session_cutshort_threshold_seconds')
+        .single();
+
+      if (settingsError) {
+        console.warn('Could not fetch session threshold, using default:', settingsError);
+      } else if (settingsData) {
+        setSessionThreshold(settingsData.setting_value);
+      }
+
+      // Select a random phrase based on session duration
+      const isSessionCutShort = sessionDuration < (settingsData?.setting_value || 120);
+      const phrasesToUse = isSessionCutShort ? cutShort : good;
+      
+      if (phrasesToUse.length > 0) {
+        const randomPhrase = phrasesToUse[Math.floor(Math.random() * phrasesToUse.length)];
+        setSelectedPhrase(randomPhrase.phrase_text);
+      } else {
+        // Fallback to default phrases if none in database
+        const fallbackPhrases = isSessionCutShort 
+          ? ["Session ended early. Every practice counts!"]
+          : ["Great work! You completed a full practice session."];
+        setSelectedPhrase(fallbackPhrases[0]);
+      }
+
+    } catch (error: any) {
+      console.error('Error fetching phrases and settings:', error);
+      // Use fallback phrase
+      const isSessionCutShort = sessionDuration < sessionThreshold;
+      const fallbackPhrase = isSessionCutShort 
+        ? "Session ended early. Every practice counts!"
+        : "Great work! You completed a full practice session.";
+      setSelectedPhrase(fallbackPhrase);
+    }
+  };
 
   const handleGetFeedback = async () => {
     setIsProcessingFeedback(true);

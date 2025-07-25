@@ -37,6 +37,8 @@ import PersonasManagement from "./pages/admin/PersonasManagement";
 import PromptsManagement from "./pages/admin/PromptsManagement";
 import RoleManagement from "./pages/admin/RoleManagement";
 import UsageAnalytics from "./pages/admin/UsageAnalytics";
+import PhrasesManagement from "./pages/admin/PhrasesManagement";
+import SessionLimitsManagement from "./pages/admin/SessionLimitsManagement";
 
 const queryClient = new QueryClient();
 
@@ -77,6 +79,8 @@ const App = () => (
               <Route path="prompts" element={<PromptsManagement />} />
               <Route path="roles" element={<RoleManagement />} />
               <Route path="usage" element={<UsageAnalytics />} />
+              <Route path="phrases" element={<PhrasesManagement />} />
+              <Route path="session-limits" element={<SessionLimitsManagement />} />
             </Route>
             
             {/* 404 catch-all route */}

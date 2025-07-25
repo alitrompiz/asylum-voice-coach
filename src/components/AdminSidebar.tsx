@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import { Users, Brain, UserCheck, MessageSquare, BarChart3, Shield, ArrowLeft } from 'lucide-react';
+import { Users, Brain, UserCheck, MessageSquare, BarChart3, Shield, ArrowLeft, MessageCircle, Settings } from 'lucide-react';
 import {
   Sidebar,
   SidebarContent,
@@ -43,6 +43,16 @@ const adminItems = [
     title: 'Usage',
     url: '/admin/usage',
     icon: BarChart3,
+  },
+  {
+    title: 'Phrases',
+    url: '/admin/phrases',
+    icon: MessageCircle,
+  },
+  {
+    title: 'Session Limits',
+    url: '/admin/session-limits',
+    icon: Settings,
   },
 ];
 
