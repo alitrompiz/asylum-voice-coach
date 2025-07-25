@@ -108,20 +108,14 @@ export function SessionEndDialog({
     setIsProcessingFeedback(true);
     
     try {
-      // Show processing toast
-      toast({
-        title: "Processing...",
-        description: "Generating your session feedback",
-      });
-
       // Start feedback generation in background
       await onFeedbackRequest();
       
-      // Simulate processing time for UX
+      // Show feedback modal after short delay
       setTimeout(() => {
-        onOpenChange(false);
         setShowSessionFeedback(true);
-      }, 2000);
+        setIsProcessingFeedback(false);
+      }, 1000);
       
     } catch (error) {
       console.error('Error generating feedback:', error);
@@ -142,14 +136,17 @@ export function SessionEndDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-[500px] bg-gradient-to-br from-gray-900 to-gray-800 border-gray-700">
+        <DialogContent 
+          className="sm:max-w-[500px] bg-gradient-to-br from-gray-900 to-gray-800 border-gray-700"
+          data-testid="session-end-dialog"
+        >
           <div className="text-center space-y-6 py-6">
             {/* Session End Phrase */}
             <div className="space-y-2">
               <h2 className="text-2xl font-bold text-white">
                 {selectedPhrase}
               </h2>
-              <p className="text-gray-300 text-sm">
+              <p className="text-gray-300 text-sm" data-testid="session-duration">
                 Session Duration: {Math.floor(sessionDuration / 60)}m {sessionDuration % 60}s
               </p>
             </div>

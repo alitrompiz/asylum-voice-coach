@@ -17,6 +17,7 @@ import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { ensureAudioContextReady } from '@/utils/audioContext';
 import { SessionEndDialog } from '@/components/SessionEndDialog';
+import { GeneratingFeedbackModal } from '@/components/GeneratingFeedbackModal';
 import { supabase } from '@/integrations/supabase/client';
 
 export default function Interview() {
@@ -26,6 +27,8 @@ export default function Interview() {
   const [showFeedback, setShowFeedback] = useState(false);
   const [showSessionEnd, setShowSessionEnd] = useState(false);
   const [sessionStartTime, setSessionStartTime] = useState<number | null>(null);
+  const [firstTTSStartTime, setFirstTTSStartTime] = useState<number | null>(null);
+  const [showGeneratingFeedback, setShowGeneratingFeedback] = useState(false);
   const [showDebugPanel, setShowDebugPanel] = useState(false);
   const [userTranscription, setUserTranscription] = useState('');
   const [audioBlocked, setAudioBlocked] = useState(false);
@@ -65,7 +68,8 @@ export default function Interview() {
     isPlaying: isTTSPlaying,
     isLoading: isTTSLoading,
     debugAudio,
-    debugInfo
+    debugInfo,
+    currentRequestRef
   } = useTextToSpeech();
 
   // Ref for managing press-to-talk
@@ -135,6 +139,11 @@ export default function Interview() {
         voice: selectedPersonaData.tts_voice,
         onStart: () => {
           console.log('✅ TTS STARTED - Audio should be playing now');
+          // Track first TTS start for accurate session timing
+          if (!firstTTSStartTime) {
+            setFirstTTSStartTime(Date.now());
+            console.log('🕐 First TTS started - session timer begins');
+          }
           setIsAiSpeaking(true);
         },
         onEnd: () => {
@@ -276,8 +285,35 @@ export default function Interview() {
     }
   };
   const handleEndSession = () => {
-    setIsAiSpeaking(false);
+    console.log('🚪 Exit button pressed - stopping all audio immediately');
+    
+    // Stop TTS immediately and abort any ongoing requests
     stopTTS();
+    
+    // Abort any ongoing TTS requests by setting currentRequestRef to null
+    if (currentRequestRef && currentRequestRef.current) {
+      console.log('🛑 Aborting TTS request:', currentRequestRef.current);
+      currentRequestRef.current = null;
+    }
+    
+    // Stop any audio element that might be playing
+    const audioElement = document.getElementById('tts-audio') as HTMLAudioElement;
+    if (audioElement) {
+      audioElement.pause();
+      audioElement.currentTime = 0;
+      console.log('🔇 Audio element stopped');
+    }
+    
+    // Stop any AudioContext
+    if (window.audioContext && window.audioContext.state === 'running') {
+      window.audioContext.suspend().then(() => {
+        console.log('🔇 AudioContext suspended');
+      }).catch(err => {
+        console.warn('⚠️ Failed to suspend AudioContext:', err);
+      });
+    }
+    
+    setIsAiSpeaking(false);
     clearConversation();
     setShowSessionEnd(true);
   };
@@ -330,8 +366,9 @@ export default function Interview() {
   };
 
   const getSessionDuration = () => {
-    if (!sessionStartTime) return 0;
-    return Math.floor((Date.now() - sessionStartTime) / 1000);
+    // Use first TTS start time for accurate session duration instead of component initialization
+    if (!firstTTSStartTime) return 0;
+    return Math.floor((Date.now() - firstTTSStartTime) / 1000);
   };
   const handleTTSToggle = () => {
     if (isTTSPlaying) {
@@ -406,7 +443,12 @@ export default function Interview() {
           <div className="flex flex-col items-center relative">{/* removed space-y-6 */}
             {/* Officer Image */}
             <div className="relative">
-              <img src={selectedPersonaData?.image_url || "/persona-1.png"} alt={selectedPersonaData?.name || "Officer"} className={cn("w-80 h-80 rounded-lg object-cover border-4 shadow-2xl transition-all duration-300", isAiSpeaking ? "border-green-400/80 shadow-green-400/20" : "border-white/20")} />
+              <img 
+                src={selectedPersonaData?.image_url || "/persona-1.png"} 
+                alt={selectedPersonaData?.name || "Officer"} 
+                className={cn("w-80 h-80 rounded-lg object-cover border-4 shadow-2xl transition-all duration-300", isAiSpeaking ? "border-green-400/80 shadow-green-400/20" : "border-white/20")}
+                data-testid="officer-image"
+              />
               
               {/* AI Speaking Indicator */}
               {isAiSpeaking && <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2">
@@ -432,7 +474,12 @@ export default function Interview() {
                 </div>}
 
               {/* Exit Interview Button - Top Left Corner of Photo */}
-              <button onClick={handleEndSession} className="absolute top-2 left-2 bg-red-600 hover:bg-red-500 rounded-full p-2 border-2 border-white/20 transition-colors" title="Exit Interview">
+              <button 
+                onClick={handleEndSession} 
+                className="absolute top-2 left-2 bg-red-600 hover:bg-red-500 rounded-full p-2 border-2 border-white/20 transition-colors" 
+                title="Exit Interview"
+                data-testid="exit-button"
+              >
                 <X className="w-5 h-5 text-white" />
               </button>
 
@@ -587,12 +634,26 @@ export default function Interview() {
         open={showSessionEnd}
         onOpenChange={setShowSessionEnd}
         sessionDuration={getSessionDuration()}
-        onFeedbackRequest={handleFeedbackRequest}
+        onFeedbackRequest={() => {
+          setShowSessionEnd(false);
+          setShowGeneratingFeedback(true);
+          return handleFeedbackRequest();
+        }}
         sessionData={{
           transcript: messages.map(m => `${m.role}: ${m.text}`).join('\n'),
           personaId: selectedPersona,
           skills: [], // TODO: Get from interview state
           sessionId: undefined // TODO: Get from interview state
+        }}
+      />
+
+      {/* Generating Feedback Modal */}
+      <GeneratingFeedbackModal 
+        open={showGeneratingFeedback}
+        onOpenChange={setShowGeneratingFeedback}
+        onComplete={() => {
+          setShowGeneratingFeedback(false);
+          setShowFeedback(true);
         }}
       />
 

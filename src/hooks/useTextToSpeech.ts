@@ -332,5 +332,6 @@ export const useTextToSpeech = () => {
     debugAudio,
     debugInfo,
     currentLanguage: language,
+    currentRequestRef,
   };
 };
