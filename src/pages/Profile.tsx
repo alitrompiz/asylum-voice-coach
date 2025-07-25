@@ -12,7 +12,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { User, FileText, LogOut, Save, Plus, Trash2, Upload, CheckCircle, MessageSquare } from 'lucide-react';
+import { User, FileText, LogOut, Save, Plus, Trash2, Upload, CheckCircle, MessageSquare, Clock, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { StoryUploader } from '@/components/StoryUploader';
@@ -44,6 +44,8 @@ export default function Profile() {
   const [storyMode, setStoryMode] = useState<'upload' | 'text'>('upload');
   const [selectedStory, setSelectedStory] = useState<any>(null);
   const [storyViewDialogOpen, setStoryViewDialogOpen] = useState(false);
+  const [selectedSessionFeedback, setSelectedSessionFeedback] = useState<any>(null);
+  const [sessionFeedbackDialogOpen, setSessionFeedbackDialogOpen] = useState(false);
 
   const {
     register,
@@ -109,20 +111,18 @@ export default function Profile() {
 
   const fetchFeedback = async () => {
     try {
-      const { data, error } = await supabase
-        .from('feedback')
+      // Get both sessions with feedback and sessions without feedback
+      const { data: sessionsData, error: sessionsError } = await supabase
+        .from('interview_sessions')
         .select(`
           *,
-          interview_sessions!inner(
-            session_duration_seconds,
-            created_at
-          )
+          feedback(*)
         `)
         .eq('user_id', user?.id)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setFeedback(data || []);
+      if (sessionsError) throw sessionsError;
+      setFeedback(sessionsData || []);
     } catch (err: any) {
       console.error('Error fetching feedback:', err);
       setError(err.message);
@@ -216,6 +216,13 @@ export default function Profile() {
   const openFeedbackViewer = (feedbackItem: any) => {
     setSelectedFeedback(feedbackItem);
     setFeedbackDialogOpen(true);
+  };
+
+  const openSessionFeedbackViewer = (session: any) => {
+    if (session.feedback && session.feedback.length > 0) {
+      setSelectedSessionFeedback(session.feedback[0]);
+      setSessionFeedbackDialogOpen(true);
+    }
   };
 
   return (
@@ -544,76 +551,109 @@ export default function Profile() {
           </DialogContent>
         </Dialog>
 
-        {/* Past Feedback Section */}
+        {/* Feedback Received Section */}
         {feedback.length > 0 && (
           <Card className="mt-6">
             <CardHeader>
-              <CardTitle>Past Feedback</CardTitle>
+              <CardTitle>
+                <MessageSquare className="w-5 h-5 mr-2 inline" />
+                Feedback Received
+              </CardTitle>
               <CardDescription>
-                Your interview feedback history, newest first
+                Your interview sessions, newest first. Click "View Feedback" to see AI analysis when available.
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {feedback.map((item) => (
-                  <div 
-                    key={item.id} 
-                    className="border rounded-lg p-4 cursor-pointer hover:bg-muted/50 transition-colors"
-                    onClick={() => openFeedbackViewer(item)}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <MessageSquare className="w-4 h-4 text-blue-500" />
-                        <h4 className="font-medium">Session Feedback</h4>
-                        {item.score && (
-                          <Badge variant="outline">{item.score}/100</Badge>
-                        )}
+                {feedback.map((session) => {
+                  const hasFeedback = session.feedback && session.feedback.length > 0;
+                  const feedbackData = hasFeedback ? session.feedback[0] : null;
+                  const sessionDate = new Date(session.created_at);
+                  const durationMinutes = Math.floor((session.session_duration_seconds || 0) / 60);
+                  const durationSeconds = (session.session_duration_seconds || 0) % 60;
+                  
+                  return (
+                    <div 
+                      key={session.id} 
+                      className="border rounded-lg p-4"
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-2">
+                            <Calendar className="w-4 h-4 text-muted-foreground" />
+                            <span className="font-medium">
+                              {sessionDate.toLocaleDateString()}
+                            </span>
+                            <span className="text-sm text-muted-foreground">
+                              at {sessionDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Clock className="w-4 h-4 text-muted-foreground" />
+                            <span className="text-sm text-muted-foreground">
+                              {durationMinutes}m {durationSeconds}s
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {hasFeedback ? (
+                            <Badge variant="default" className="bg-green-100 text-green-800 hover:bg-green-200">
+                              Feedback Available
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary" className="bg-gray-100 text-gray-600">
+                              No Feedback
+                            </Badge>
+                          )}
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <p className="text-xs text-muted-foreground">
-                          {new Date(item.created_at).toLocaleDateString()}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {new Date(item.created_at).toLocaleTimeString()}
-                        </p>
-                        {item.interview_sessions && (
-                          <p className="text-xs text-muted-foreground">
-                            Duration: {Math.floor(item.interview_sessions.session_duration_seconds / 60)}m {item.interview_sessions.session_duration_seconds % 60}s
-                          </p>
-                        )}
+                      
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          {hasFeedback && feedbackData?.score && (
+                            <span className="text-sm text-muted-foreground">
+                              Score: {feedbackData.score}/100
+                            </span>
+                          )}
+                          {hasFeedback && feedbackData?.improvements && (
+                            <span className="text-sm text-muted-foreground">
+                              • {feedbackData.improvements.length} improvement{feedbackData.improvements.length === 1 ? '' : 's'} suggested
+                            </span>
+                          )}
+                        </div>
+                        <Button
+                          variant={hasFeedback ? "default" : "secondary"}
+                          size="sm"
+                          disabled={!hasFeedback}
+                          onClick={() => hasFeedback && openSessionFeedbackViewer(session)}
+                          className={!hasFeedback ? "opacity-50 cursor-not-allowed" : ""}
+                        >
+                          View Feedback
+                        </Button>
                       </div>
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                      {item.improvements?.length > 0 
-                        ? `${item.improvements.length} improvement${item.improvements.length === 1 ? '' : 's'} suggested`
-                        : 'Click to view feedback details'
-                      }
-                    </p>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </CardContent>
           </Card>
         )}
 
-        {/* Feedback Viewer Dialog */}
-        <Dialog open={feedbackDialogOpen} onOpenChange={setFeedbackDialogOpen}>
+        {/* Session Feedback Viewer Dialog */}
+        <Dialog open={sessionFeedbackDialogOpen} onOpenChange={setSessionFeedbackDialogOpen}>
           <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <MessageSquare className="w-5 h-5" />
                 Session Feedback
-                {selectedFeedback?.score && (
-                  <Badge variant="outline">{selectedFeedback.score}/100</Badge>
+                {selectedSessionFeedback?.score && (
+                  <Badge variant="outline">{selectedSessionFeedback.score}/100</Badge>
                 )}
               </DialogTitle>
               <DialogDescription>
-                {selectedFeedback ? (
+                {selectedSessionFeedback ? (
                   <>
-                    {new Date(selectedFeedback.created_at).toLocaleDateString()} at {new Date(selectedFeedback.created_at).toLocaleTimeString()}
-                    {selectedFeedback.interview_sessions && (
-                      <span> • Duration: {Math.floor(selectedFeedback.interview_sessions.session_duration_seconds / 60)}m {selectedFeedback.interview_sessions.session_duration_seconds % 60}s</span>
-                    )}
+                    {new Date(selectedSessionFeedback.created_at).toLocaleDateString()} at {new Date(selectedSessionFeedback.created_at).toLocaleTimeString()}
                   </>
                 ) : ''}
               </DialogDescription>
@@ -621,11 +661,11 @@ export default function Profile() {
             <div className="flex-1 overflow-auto">
               <div className="space-y-6">
                 {/* Strengths */}
-                {selectedFeedback?.strengths && selectedFeedback.strengths.length > 0 && (
+                {selectedSessionFeedback?.strengths && selectedSessionFeedback.strengths.length > 0 && (
                   <div>
                     <h3 className="text-lg font-semibold text-green-600 mb-3">Strengths</h3>
                     <ul className="space-y-2">
-                      {selectedFeedback.strengths.map((strength: string, index: number) => (
+                      {selectedSessionFeedback.strengths.map((strength: string, index: number) => (
                         <li key={index} className="flex items-start gap-2">
                           <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
                           <span className="text-sm">{strength}</span>
@@ -636,11 +676,11 @@ export default function Profile() {
                 )}
 
                 {/* Improvements */}
-                {selectedFeedback?.improvements && selectedFeedback.improvements.length > 0 && (
+                {selectedSessionFeedback?.improvements && selectedSessionFeedback.improvements.length > 0 && (
                   <div>
                     <h3 className="text-lg font-semibold text-blue-600 mb-3">Areas for Improvement</h3>
                     <ul className="space-y-2">
-                      {selectedFeedback.improvements.map((improvement: string, index: number) => (
+                      {selectedSessionFeedback.improvements.map((improvement: string, index: number) => (
                         <li key={index} className="flex items-start gap-2">
                           <div className="w-4 h-4 rounded-full bg-blue-500 text-white text-xs flex items-center justify-center mt-0.5 flex-shrink-0">
                             {index + 1}
@@ -653,18 +693,18 @@ export default function Profile() {
                 )}
 
                 {/* Overall Score */}
-                {selectedFeedback?.score && (
+                {selectedSessionFeedback?.score && (
                   <div>
                     <h3 className="text-lg font-semibold mb-3">Overall Score</h3>
                     <div className="flex items-center gap-4">
                       <div className="w-24 h-24 rounded-full border-4 border-primary flex items-center justify-center">
-                        <span className="text-2xl font-bold">{selectedFeedback.score}</span>
+                        <span className="text-2xl font-bold">{selectedSessionFeedback.score}</span>
                       </div>
                       <div className="flex-1">
-                        <div className="w-full bg-gray-200 rounded-full h-3">
+                        <div className="w-full bg-muted rounded-full h-3">
                           <div 
                             className="bg-primary h-3 rounded-full transition-all duration-300" 
-                            style={{ width: `${selectedFeedback.score}%` }}
+                            style={{ width: `${selectedSessionFeedback.score}%` }}
                           />
                         </div>
                         <p className="text-sm text-muted-foreground mt-2">
