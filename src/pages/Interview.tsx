@@ -16,12 +16,15 @@ import { Waveform } from '@/components/Waveform';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { ensureAudioContextReady } from '@/utils/audioContext';
+import { SessionEndDialog } from '@/components/SessionEndDialog';
 
 export default function Interview() {
   const [isAiSpeaking, setIsAiSpeaking] = useState(false);
   const [showSubtitles, setShowSubtitles] = useState(true);
   const [isPaused, setIsPaused] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
+  const [showSessionEnd, setShowSessionEnd] = useState(false);
+  const [sessionStartTime, setSessionStartTime] = useState<number | null>(null);
   const [showDebugPanel, setShowDebugPanel] = useState(false);
   const [userTranscription, setUserTranscription] = useState('');
   const [audioBlocked, setAudioBlocked] = useState(false);
@@ -87,6 +90,7 @@ export default function Interview() {
   useEffect(() => {
     if (selectedPersonaData && !hasInitialized && !languageLoading) {
       console.log('Initializing interview with language:', languageCode);
+      setSessionStartTime(Date.now());
       initializeInterview();
     }
   }, [selectedPersonaData, hasInitialized, languageLoading, languageCode, initializeInterview]);
@@ -274,7 +278,21 @@ export default function Interview() {
     setIsAiSpeaking(false);
     stopTTS();
     clearConversation();
+    setShowSessionEnd(true);
+  };
+
+  const handleFeedbackRequest = async () => {
+    // Generate feedback based on conversation transcript
+    const transcript = messages.map(m => `${m.role}: ${m.text}`).join('\n');
+    
+    // For now, show the old feedback dialog with mock data
+    // TODO: Implement actual feedback generation with transcript
     setShowFeedback(true);
+  };
+
+  const getSessionDuration = () => {
+    if (!sessionStartTime) return 0;
+    return Math.floor((Date.now() - sessionStartTime) / 1000);
   };
   const handleTTSToggle = () => {
     if (isTTSPlaying) {
@@ -524,6 +542,20 @@ export default function Interview() {
           </div>
         </div>
       </div>
+
+      {/* Session End Dialog */}
+      <SessionEndDialog 
+        open={showSessionEnd}
+        onOpenChange={setShowSessionEnd}
+        sessionDuration={getSessionDuration()}
+        onFeedbackRequest={handleFeedbackRequest}
+        sessionData={{
+          transcript: messages.map(m => `${m.role}: ${m.text}`).join('\n'),
+          personaId: selectedPersona,
+          skills: [], // TODO: Get from interview state
+          sessionId: undefined // TODO: Get from interview state
+        }}
+      />
 
       {/* Feedback Dialog */}
       <Dialog open={showFeedback} onOpenChange={setShowFeedback}>
