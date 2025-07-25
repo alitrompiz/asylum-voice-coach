@@ -1,11 +1,12 @@
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { User, Play, Shield } from 'lucide-react';
+import { Play, Shield } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { UserScoreCard } from '@/components/UserScoreCard';
 import { PersonaCarousel } from '@/components/PersonaCarousel';
 import { LanguageSelector } from '@/components/LanguageSelector';
 import { SkillsScroller } from '@/components/SkillsScroller';
+import { HamburgerMenu } from '@/components/HamburgerMenu';
 import { useSkillsStore } from '@/stores/personaStore';
 import { useAdminAccess } from '@/hooks/useAdminAccess';
 import { useTranslation } from 'react-i18next';
@@ -69,20 +70,7 @@ export default function Dashboard() {
               {t('app.tagline')}
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => setShowFeedbackModal(true)}
-              className="text-gray-300 hover:text-white hover:bg-gray-700/50 text-xs"
-            >
-              Help us improve this project 🙏🏼
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => navigate('/profile')} className="border-gray-600 bg-gray-800/50 text-white hover:bg-gray-700">
-              <User className="w-4 h-4 mr-2" />
-              {t('navigation.profile')}
-            </Button>
-          </div>
+          <HamburgerMenu onHelpClick={() => setShowFeedbackModal(true)} />
         </header>
 
         <div className="mb-3">

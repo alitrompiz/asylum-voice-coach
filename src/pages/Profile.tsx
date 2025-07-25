@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -31,6 +31,8 @@ type ProfileFormData = z.infer<typeof profileSchema>;
 
 export default function Profile() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const feedbackSectionRef = useRef<HTMLDivElement>(null);
   const { user, signOut } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [profile, setProfile] = useState<any>(null);
@@ -63,6 +65,18 @@ export default function Profile() {
       fetchFeedback();
     }
   }, [user]);
+
+  // Handle scrolling to feedback section when navigating from hamburger menu
+  useEffect(() => {
+    if (location.state?.scrollToFeedback && feedbackSectionRef.current) {
+      setTimeout(() => {
+        feedbackSectionRef.current?.scrollIntoView({ 
+          behavior: 'smooth',
+          block: 'start'
+        });
+      }, 100);
+    }
+  }, [location.state]);
 
   const fetchProfile = async () => {
     try {
@@ -553,7 +567,7 @@ export default function Profile() {
 
         {/* Feedback Received Section */}
         {feedback.length > 0 && (
-          <Card className="mt-6">
+          <Card className="mt-6" ref={feedbackSectionRef}>
             <CardHeader>
               <CardTitle>
                 <MessageSquare className="w-5 h-5 mr-2 inline" />
