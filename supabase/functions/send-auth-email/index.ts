@@ -1,9 +1,12 @@
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Webhook } from "https://esm.sh/standardwebhooks@1.0.0";
+import { Resend } from "npm:resend@2.0.0";
 
-const SENDGRID_API_KEY = Deno.env.get("SENDGRID_API_KEY");
+const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 const WEBHOOK_SECRET = Deno.env.get("AUTH_WEBHOOK_SECRET");
+
+const resend = new Resend(RESEND_API_KEY);
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -178,46 +181,23 @@ const handler = async (req: Request): Promise<Response> => {
       `;
     }
 
-    // Send email via SendGrid
-    console.log("Attempting to send email via SendGrid...");
-    console.log("SendGrid API Key exists:", !!SENDGRID_API_KEY);
+    // Send email via Resend
+    console.log("Attempting to send email via Resend...");
+    console.log("Resend API Key exists:", !!RESEND_API_KEY);
     
-    const sendGridResponse = await fetch("https://api.sendgrid.com/v3/mail/send", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${SENDGRID_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        personalizations: [
-          {
-            to: [{ email: user.email }],
-            subject: subject,
-          },
-        ],
-        from: {
-          email: "no-reply@asylumprep.com",
-          name: "AsylumPrep"
-        },
-        content: [
-          {
-            type: "text/html",
-            value: htmlContent,
-          },
-        ],
-      }),
+    const emailResponse = await resend.emails.send({
+      from: "AsylumPrep <onboarding@resend.dev>",
+      to: [user.email],
+      subject: subject,
+      html: htmlContent,
     });
 
-    console.log("SendGrid response status:", sendGridResponse.status);
-    
-    if (!sendGridResponse.ok) {
-      const error = await sendGridResponse.text();
-      console.error("SendGrid error response:", error);
-      console.error("SendGrid error status:", sendGridResponse.status);
-      throw new Error(`SendGrid error: ${sendGridResponse.status} ${error}`);
+    if (emailResponse.error) {
+      console.error("Resend error:", emailResponse.error);
+      throw new Error(`Resend error: ${emailResponse.error.message}`);
     }
 
-    console.log("Email sent successfully via SendGrid to:", user.email);
+    console.log("Email sent successfully via Resend to:", user.email, "ID:", emailResponse.data?.id);
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
