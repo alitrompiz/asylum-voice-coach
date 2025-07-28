@@ -75,12 +75,10 @@ export default function Dashboard() {
           <HamburgerMenu onHelpClick={() => setShowFeedbackModal(true)} />
         </header>
 
-        {/* New Dashboard Cards - 65/35 layout */}
-        <div className="grid grid-cols-[1fr_auto] gap-3 mb-4">
+        {/* New Dashboard Cards - Asylum story (65%) left, Free Trial (35%) right */}
+        <div className="grid grid-cols-[65%_35%] gap-3 mb-4">
+          <StoryCard />
           <SubscriptionCard />
-          <div className="w-[35%]">
-            <StoryCard />
-          </div>
         </div>
 
         {/* Language Picker - Moved below cards */}
