@@ -205,6 +205,10 @@ export const StoryModal = ({
       return;
     }
 
+    if (isDebugEnabled('DEBUG_STORY')) {
+      console.log('[DEBUG_STORY] Modal save story, invalidating queryKey:', getStoryQueryKey(user.id));
+    }
+
     setIsSaving(true);
     try {
       if (mode === 'edit') {

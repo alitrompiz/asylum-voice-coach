@@ -458,10 +458,9 @@ export default function Profile() {
           </CardContent>
         </Card>
 
-        {/* Asylum Story Section - Separate Card */}
+        {/* Asylum Story Section - Now uses React Query internally */}
         <div className="mt-6">
           <AsylumStorySection 
-            activeStory={activeStory}
             onStoryChange={fetchStories}
           />
         </div>
