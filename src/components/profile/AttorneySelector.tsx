@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -7,24 +7,70 @@ import { useDebounce } from '@/hooks/useDebounce';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
-import { Check, ChevronsUpDown } from 'lucide-react';
+import { Check, ChevronsUpDown, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+// Error boundary component for attorney selector
+const AttorneyErrorBoundary = ({ onRetry }: { onRetry: () => void }) => {
+  return (
+    <div className="p-4 border border-destructive/20 rounded-md bg-destructive/5">
+      <div className="flex items-center gap-2 text-sm text-destructive">
+        <AlertTriangle className="h-4 w-4" />
+        <span>Error loading attorneys</span>
+      </div>
+      <Button 
+        variant="outline" 
+        size="sm" 
+        onClick={onRetry}
+        className="mt-2 h-7 text-xs"
+      >
+        Try again
+      </Button>
+    </div>
+  );
+};
 
 export const AttorneySelector = () => {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
+  const [hasError, setHasError] = useState(false);
+  
   const { 
     attorneys, 
     selectedAttorney, 
     searchTerm, 
     setSearchTerm, 
     selectAttorney, 
-    isSelecting 
+    isSelecting,
+    loading 
   } = useAttorneys();
 
+  // Debug logging when enabled
+  const debugEnabled = process.env.NODE_ENV === 'development';
+  
+  // Safe attorney list with proper defaults
+  const safeAttorneys = useMemo(() => {
+    const result = Array.isArray(attorneys) ? attorneys : [];
+    
+    if (debugEnabled) {
+      console.log('[DEBUG_ATTORNEY] Input value:', searchValue);
+      console.log('[DEBUG_ATTORNEY] Result count:', result.length);
+      console.log('[DEBUG_ATTORNEY] Item sample:', result[0] || 'none');
+      console.log('[DEBUG_ATTORNEY] Is array undefined?', attorneys === undefined);
+    }
+    
+    return result;
+  }, [attorneys, searchValue, debugEnabled]);
+
   const debouncedSearch = useDebounce((value: string) => {
-    setSearchTerm(value);
+    try {
+      setSearchTerm(value);
+      setHasError(false);
+    } catch (error) {
+      console.error('Attorney search error:', error);
+      setHasError(true);
+    }
   }, 300);
 
   const handleSearchChange = (value: string) => {
@@ -33,12 +79,33 @@ export const AttorneySelector = () => {
   };
 
   const handleSelect = (attorneyId: string) => {
-    const attorney = attorneys?.find(a => a.id === attorneyId);
-    if (attorney) {
-      selectAttorney(attorneyId);
-      setOpen(false);
+    try {
+      const attorney = safeAttorneys.find(a => a?.id === attorneyId);
+      if (attorney && attorney.display_name && attorney.firm_name) {
+        selectAttorney(attorneyId);
+        setOpen(false);
+        setHasError(false);
+      }
+    } catch (error) {
+      console.error('Attorney selection error:', error);
+      setHasError(true);
     }
   };
+
+  const handleRetry = () => {
+    setHasError(false);
+    setSearchValue('');
+    setSearchTerm('');
+  };
+
+  if (hasError) {
+    return (
+      <div className="space-y-2">
+        <Label htmlFor="attorney">{t('profile.attorney_label')}</Label>
+        <AttorneyErrorBoundary onRetry={handleRetry} />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-2">
@@ -50,11 +117,11 @@ export const AttorneySelector = () => {
             role="combobox"
             aria-expanded={open}
             className="w-full justify-between"
-            disabled={isSelecting}
+            disabled={isSelecting || loading}
           >
             {selectedAttorney ? 
               `${selectedAttorney.display_name} - ${selectedAttorney.firm_name}` : 
-              t('profile.attorney_placeholder')
+              loading ? 'Loading attorneys...' : t('profile.attorney_placeholder')
             }
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
@@ -66,10 +133,17 @@ export const AttorneySelector = () => {
               value={searchValue}
               onValueChange={handleSearchChange}
             />
-            <CommandEmpty>No attorney found.</CommandEmpty>
+            <CommandEmpty>
+              {loading ? 'Loading attorneys...' : 'No attorney found.'}
+            </CommandEmpty>
             <CommandGroup>
-              {attorneys && attorneys.length > 0 ? (
-                attorneys.map((attorney) => (
+              {safeAttorneys.map((attorney) => {
+                // Extra safety check for each attorney item
+                if (!attorney || !attorney.id || !attorney.display_name || !attorney.firm_name) {
+                  return null;
+                }
+                
+                return (
                   <CommandItem
                     key={attorney.id}
                     value={attorney.id}
@@ -86,8 +160,8 @@ export const AttorneySelector = () => {
                       <div className="text-sm text-muted-foreground">{attorney.firm_name}</div>
                     </div>
                   </CommandItem>
-                ))
-              ) : null}
+                );
+              })}
             </CommandGroup>
           </Command>
         </PopoverContent>
