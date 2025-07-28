@@ -76,9 +76,11 @@ export default function Dashboard() {
         </header>
 
         {/* New Dashboard Cards - 65/35 layout */}
-        <div className="grid grid-cols-[65%_35%] gap-3 mb-4">
+        <div className="grid grid-cols-[1fr_auto] gap-3 mb-4">
           <SubscriptionCard />
-          <StoryCard />
+          <div className="w-[35%]">
+            <StoryCard />
+          </div>
         </div>
 
         {/* Language Picker - Moved below cards */}
