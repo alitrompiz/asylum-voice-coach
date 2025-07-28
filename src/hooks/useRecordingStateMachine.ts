@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { useAudioRecording, AudioRecordingResult } from './useAudioRecording';
 import { audioCues } from '@/utils/audioCues';
 import { toast } from '@/hooks/use-toast';
@@ -26,6 +26,11 @@ export const useRecordingStateMachine = (): UseRecordingStateMachineReturn => {
   const [userTranscript, setUserTranscript] = useState('');
   const [processingError, setProcessingError] = useState<string | null>(null);
   const lastTapTime = useRef<number>(0);
+
+  // Debug logging for state changes
+  useEffect(() => {
+    console.log('🎤 Recording state changed to:', state);
+  }, [state]);
   
   const {
     isRecording,
