@@ -14,7 +14,7 @@ export interface ConversationMessage {
   audioUrl?: string;
 }
 
-export const useInterviewConversation = () => {
+export const useInterviewConversation = (setUserTranscript?: (transcript: string) => void) => {
   const [messages, setMessages] = useState<ConversationMessage[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentSubtitle, setCurrentSubtitle] = useState('');
@@ -133,12 +133,14 @@ export const useInterviewConversation = () => {
   const processAudioMessage = async (recording: AudioRecordingResult) => {
     setIsProcessing(true);
     setCurrentSubtitle('Transcribing your message...');
+    setUserTranscript?.('Transcribing your message...');
 
     try {
       // Step 1: Transcribe audio
       const transcription = await transcribeAudio(recording.base64Audio);
       
       if (!transcription.trim()) {
+        setUserTranscript?.('No speech detected');
         toast({
           title: "No speech detected",
           description: "Please try speaking more clearly.",
@@ -146,6 +148,9 @@ export const useInterviewConversation = () => {
         });
         return;
       }
+
+      // Update recording state machine with successful transcription
+      setUserTranscript?.(transcription);
 
       // Step 2: Add user message to conversation
       const userMessage: ConversationMessage = {
@@ -193,6 +198,8 @@ export const useInterviewConversation = () => {
 
     } catch (error) {
       console.error('Error processing audio message:', error);
+      // Notify recording state machine of error
+      setUserTranscript?.('transcription failed');
       toast({
         title: "Processing failed",
         description: error instanceof Error ? error.message : "Failed to process your message",

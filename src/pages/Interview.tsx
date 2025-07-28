@@ -61,7 +61,7 @@ export default function Interview() {
     formatTime,
     initializeInterview,
     hasInitialized
-  } = useInterviewConversation();
+  } = useInterviewConversation(recordingMachine.setUserTranscript);
 
   // Extract values from state machines for compatibility
   const isRecording = recordingMachine.state === 'recording';
