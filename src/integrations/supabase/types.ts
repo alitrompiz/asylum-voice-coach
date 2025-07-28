@@ -41,6 +41,39 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_entitlement_grants: {
+        Row: {
+          created_at: string
+          end_at_utc: string
+          granted_by_admin_id: string
+          id: string
+          reason: string | null
+          start_at_utc: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          end_at_utc: string
+          granted_by_admin_id: string
+          id?: string
+          reason?: string | null
+          start_at_utc?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          end_at_utc?: string
+          granted_by_admin_id?: string
+          id?: string
+          reason?: string | null
+          start_at_utc?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       admin_settings: {
         Row: {
           created_at: string
@@ -847,6 +880,18 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      get_user_entitlement_status: {
+        Args: { target_user_id: string }
+        Returns: string
+      }
+      grant_full_prep_access: {
+        Args: {
+          target_user_id: string
+          weeks_to_grant?: number
+          grant_reason?: string
+        }
+        Returns: undefined
+      }
       has_any_admin: {
         Args: Record<PropertyKey, never>
         Returns: boolean
@@ -866,9 +911,17 @@ export type Database = {
         Args: { _user_id: string }
         Returns: undefined
       }
+      revoke_full_prep_access: {
+        Args: { target_user_id: string; revoke_reason?: string }
+        Returns: undefined
+      }
       set_active_story: {
         Args: { story_id: string; user_id_param: string }
         Returns: undefined
+      }
+      user_has_active_entitlement: {
+        Args: { target_user_id: string }
+        Returns: boolean
       }
       validate_prompt_template: {
         Args: { content: string; required_vars: string[] }
