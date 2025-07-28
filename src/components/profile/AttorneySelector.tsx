@@ -68,24 +68,26 @@ export const AttorneySelector = () => {
             />
             <CommandEmpty>No attorney found.</CommandEmpty>
             <CommandGroup>
-              {attorneys?.map((attorney) => (
-                <CommandItem
-                  key={attorney.id}
-                  value={attorney.id}
-                  onSelect={() => handleSelect(attorney.id)}
-                >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      selectedAttorney?.id === attorney.id ? "opacity-100" : "opacity-0"
-                    )}
-                  />
-                  <div>
-                    <div className="font-medium">{attorney.display_name}</div>
-                    <div className="text-sm text-muted-foreground">{attorney.firm_name}</div>
-                  </div>
-                </CommandItem>
-              ))}
+              {attorneys && attorneys.length > 0 ? (
+                attorneys.map((attorney) => (
+                  <CommandItem
+                    key={attorney.id}
+                    value={attorney.id}
+                    onSelect={() => handleSelect(attorney.id)}
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        selectedAttorney?.id === attorney.id ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    <div>
+                      <div className="font-medium">{attorney.display_name}</div>
+                      <div className="text-sm text-muted-foreground">{attorney.firm_name}</div>
+                    </div>
+                  </CommandItem>
+                ))
+              ) : null}
             </CommandGroup>
           </Command>
         </PopoverContent>
