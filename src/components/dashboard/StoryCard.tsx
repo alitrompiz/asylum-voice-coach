@@ -1,18 +1,18 @@
+import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
-import { useEffect } from 'react';
+import { StoryModal } from '@/components/story/StoryModal';
 import { isDev, isDebugEnabled } from '@/lib/env';
 
 export const StoryCard = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [showStoryModal, setShowStoryModal] = useState(false);
 
   const { data: activeStory, isLoading, error } = useQuery({
     queryKey: ['active-story', user?.id],
@@ -72,10 +72,7 @@ export const StoryCard = () => {
   }, [queryClient]);
 
   const handleStoryAction = () => {
-    // Deep-link to appropriate tab: Text if text exists, otherwise PDF tab
-    const hasText = activeStory?.story_text?.trim()?.length > 0;
-    const targetTab = hasText ? 'text' : 'pdf';
-    navigate(`/profile#asylum-story?tab=${targetTab}`);
+    setShowStoryModal(true);
   };
 
   if (isLoading) {
@@ -108,22 +105,34 @@ export const StoryCard = () => {
   }
 
   return (
-    <Card className="h-20 bg-dashboard-blue border border-focus-border">
-      <CardContent className="p-3 h-full flex flex-col justify-between">
-        <div className="text-sm font-medium text-focus-text text-center">
-          {hasStory ? t('dashboard.asylum_story_ready') : t('dashboard.add_story_text')}
-        </div>
-        
-        <Button 
-          onClick={handleStoryAction}
-          size="sm"
-          variant="outline"
-          className="w-full h-6 text-xs"
-          aria-label={hasStory ? 'Edit asylum story' : 'Add asylum story'}
-        >
-          {hasStory ? t('dashboard.edit') : t('dashboard.add_story')}
-        </Button>
-      </CardContent>
-    </Card>
+    <>
+      <Card className="h-20 bg-dashboard-blue border border-focus-border">
+        <CardContent className="p-3 h-full flex flex-col justify-between">
+          <div className="text-sm font-medium text-focus-text text-center">
+            {hasStory ? t('dashboard.asylum_story_ready') : t('dashboard.add_story_text')}
+          </div>
+          
+          <Button 
+            onClick={handleStoryAction}
+            size="sm"
+            variant="outline"
+            className="w-full h-6 text-xs"
+            aria-label={hasStory ? 'Edit asylum story' : 'Add asylum story'}
+          >
+            {hasStory ? t('dashboard.edit') : t('dashboard.add_story')}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Shared Story Modal - opens with PDF (recommended) for empty, text for existing */}
+      <StoryModal
+        isOpen={showStoryModal}
+        onOpenChange={setShowStoryModal}
+        defaultTab={hasText ? 'text' : 'pdf'}
+        mode={hasStory ? 'edit' : 'create'}
+        source="dashboard"
+        existingText={activeStory?.story_text || ''}
+      />
+    </>
   );
 };
