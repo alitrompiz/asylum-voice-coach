@@ -123,18 +123,20 @@ export const useUserActions = () => {
       // Get current balance
       const { data: currentBalance, error: fetchError } = await supabase
         .from('minutes_balance')
-        .select('balance_minutes')
+        .select('session_seconds_used, session_seconds_limit')
         .eq('user_id', userId)
         .single();
 
       if (fetchError) throw fetchError;
 
-      const newBalance = currentBalance.balance_minutes + minutesChange;
+      const currentSeconds = currentBalance.session_seconds_used || 0;
+      const minutesToSeconds = minutesChange * 60;
+      const newSeconds = Math.max(0, currentSeconds + minutesToSeconds);
 
-      // Update minutes balance
+      // Update session seconds
       const { error: updateError } = await supabase
         .from('minutes_balance')
-        .update({ balance_minutes: newBalance })
+        .update({ session_seconds_used: newSeconds })
         .eq('user_id', userId);
 
       if (updateError) throw updateError;
@@ -147,8 +149,8 @@ export const useUserActions = () => {
         action_type: actionType,
         action_details: {
           minutes_change: minutesChange,
-          previous_balance: currentBalance.balance_minutes,
-          new_balance: newBalance,
+          previous_balance: Math.floor(currentSeconds / 60),
+          new_balance: Math.floor(newSeconds / 60),
           reason,
         },
       });

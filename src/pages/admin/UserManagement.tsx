@@ -47,13 +47,13 @@ export default function UserManagement() {
         (data || []).map(async (user) => {
           const { data: balance } = await supabase
             .from('minutes_balance')
-            .select('balance_minutes')
+            .select('session_seconds_used, session_seconds_limit')
             .eq('user_id', user.user_id)
             .single();
           
           return {
             ...user,
-            balance_minutes: balance?.balance_minutes || 0
+            balance_minutes: Math.floor((balance?.session_seconds_limit || 600) - (balance?.session_seconds_used || 0)) / 60
           };
         })
       );
@@ -92,9 +92,19 @@ export default function UserManagement() {
 
   const grantMinutesMutation = useMutation({
     mutationFn: async ({ userId, minutes }: { userId: string; minutes: number }) => {
+      // Convert minutes to seconds and update the used seconds (grant = reduce used)
+      const secondsToGrant = minutes * 60;
+      const { data: current } = await supabase
+        .from('minutes_balance')
+        .select('session_seconds_used')
+        .eq('user_id', userId)
+        .single();
+      
+      const newUsedSeconds = Math.max(0, (current?.session_seconds_used || 0) - secondsToGrant);
+      
       const { error } = await supabase
         .from('minutes_balance')
-        .update({ balance_minutes: minutes })
+        .update({ session_seconds_used: newUsedSeconds })
         .eq('user_id', userId);
       
       if (error) throw error;

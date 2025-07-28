@@ -37,9 +37,19 @@ export const useMinutesStore = create<MinutesState>((set, get) => ({
 
     set({ loading: true, error: null });
     try {
+      // Convert minutes to seconds used reduction
+      const secondsToGrant = minutes * 60;
+      const { data: current } = await supabase
+        .from('minutes_balance')
+        .select('session_seconds_used')
+        .eq('user_id', user.id)
+        .single();
+      
+      const newUsedSeconds = Math.max(0, (current?.session_seconds_used || 0) - secondsToGrant);
+      
       const { error } = await supabase
         .from('minutes_balance')
-        .update({ balance_minutes: minutes })
+        .update({ session_seconds_used: newUsedSeconds })
         .eq('user_id', user.id);
 
       if (error) throw error;
@@ -59,12 +69,13 @@ export const useMinutesStore = create<MinutesState>((set, get) => ({
     try {
       const { data, error } = await supabase
         .from('minutes_balance')
-        .select('balance_minutes')
+        .select('session_seconds_used, session_seconds_limit')
         .eq('user_id', user.id)
         .single();
 
       if (error) throw error;
-      set({ currentMinutes: data.balance_minutes || 0 });
+      const remainingSeconds = (data?.session_seconds_limit || 600) - (data?.session_seconds_used || 0);
+      set({ currentMinutes: Math.max(0, Math.floor(remainingSeconds / 60)) });
     } catch (error: any) {
       set({ error: error.message });
     } finally {

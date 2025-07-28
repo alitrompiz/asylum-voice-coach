@@ -41,6 +41,107 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_settings: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          setting_key: string
+          setting_value: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          setting_key: string
+          setting_value: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          setting_key?: string
+          setting_value?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      attorneys: {
+        Row: {
+          coupon_code: string | null
+          created_at: string
+          display_name: string
+          firm_name: string
+          id: string
+          notes: string | null
+          ref_is_active: boolean
+          updated_at: string
+        }
+        Insert: {
+          coupon_code?: string | null
+          created_at?: string
+          display_name: string
+          firm_name: string
+          id?: string
+          notes?: string | null
+          ref_is_active?: boolean
+          updated_at?: string
+        }
+        Update: {
+          coupon_code?: string | null
+          created_at?: string
+          display_name?: string
+          firm_name?: string
+          id?: string
+          notes?: string | null
+          ref_is_active?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      conversion_events: {
+        Row: {
+          amount: number | null
+          attorney_id: string | null
+          coupon_code: string | null
+          created_at: string
+          event_type: string
+          id: string
+          stripe_subscription_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          amount?: number | null
+          attorney_id?: string | null
+          coupon_code?: string | null
+          created_at?: string
+          event_type: string
+          id?: string
+          stripe_subscription_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number | null
+          attorney_id?: string | null
+          coupon_code?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          stripe_subscription_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversion_events_attorney_id_fkey"
+            columns: ["attorney_id"]
+            isOneToOne: false
+            referencedRelation: "attorneys"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       feedback: {
         Row: {
           created_at: string
@@ -138,23 +239,26 @@ export type Database = {
       }
       minutes_balance: {
         Row: {
-          balance_minutes: number
           created_at: string | null
           id: string
+          session_seconds_limit: number | null
+          session_seconds_used: number
           updated_at: string | null
           user_id: string
         }
         Insert: {
-          balance_minutes?: number
           created_at?: string | null
           id?: string
+          session_seconds_limit?: number | null
+          session_seconds_used?: number
           updated_at?: string | null
           user_id: string
         }
         Update: {
-          balance_minutes?: number
           created_at?: string | null
           id?: string
+          session_seconds_limit?: number | null
+          session_seconds_used?: number
           updated_at?: string | null
           user_id?: string
         }
@@ -213,6 +317,7 @@ export type Database = {
           mood: string
           name: string
           position: number
+          tier_access: string[] | null
           tts_voice: string | null
           updated_at: string
         }
@@ -226,6 +331,7 @@ export type Database = {
           mood: string
           name: string
           position?: number
+          tier_access?: string[] | null
           tts_voice?: string | null
           updated_at?: string
         }
@@ -239,6 +345,7 @@ export type Database = {
           mood?: string
           name?: string
           position?: number
+          tier_access?: string[] | null
           tts_voice?: string | null
           updated_at?: string
         }
@@ -498,6 +605,7 @@ export type Database = {
           is_active: boolean
           name: string
           sort_order: number
+          tier_access: string[] | null
           updated_at: string
         }
         Insert: {
@@ -508,6 +616,7 @@ export type Database = {
           is_active?: boolean
           name: string
           sort_order?: number
+          tier_access?: string[] | null
           updated_at?: string
         }
         Update: {
@@ -518,6 +627,7 @@ export type Database = {
           is_active?: boolean
           name?: string
           sort_order?: number
+          tier_access?: string[] | null
           updated_at?: string
         }
         Relationships: []
@@ -593,6 +703,59 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      subscribers: {
+        Row: {
+          attorney_id: string | null
+          coupon_code: string | null
+          created_at: string
+          email: string
+          grace_period_end: string | null
+          id: string
+          stripe_customer_id: string | null
+          subscribed: boolean
+          subscription_end: string | null
+          subscription_tier: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          attorney_id?: string | null
+          coupon_code?: string | null
+          created_at?: string
+          email: string
+          grace_period_end?: string | null
+          id?: string
+          stripe_customer_id?: string | null
+          subscribed?: boolean
+          subscription_end?: string | null
+          subscription_tier?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          attorney_id?: string | null
+          coupon_code?: string | null
+          created_at?: string
+          email?: string
+          grace_period_end?: string | null
+          id?: string
+          stripe_customer_id?: string | null
+          subscribed?: boolean
+          subscription_end?: string | null
+          subscription_tier?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscribers_attorney_id_fkey"
+            columns: ["attorney_id"]
+            isOneToOne: false
+            referencedRelation: "attorneys"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       transcripts: {
         Row: {
