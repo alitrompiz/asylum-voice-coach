@@ -23,6 +23,8 @@
     "title": "Elige áreas de enfoque",
     "no_areas": "No hay áreas de enfoque actualmente activas.",
     "contact_admin": "Contacta a tu administrador para agregar áreas.",
+    "upgrade_nudge": "Actualiza a Full Prep para desbloquear todas las habilidades",
+    "unlock_with_full_prep": "Desbloquéalo con Full Prep",
     "names": {
       "describe_past_harm": "Describir daño pasado",
       "explain_violent_events": "Explicar eventos violentos",
@@ -55,6 +57,9 @@
   "personas": {
     "title": "Selecciona un oficial",
     "no_officers": "No hay oficiales disponibles en este momento.",
+    "upgrade_nudge": "Actualiza a Full Prep para desbloquear todos",
+    "unlock_with_full_prep": "Desbloquéalo con Full Prep",
+    "unlock_tooltip": "Desbloquéalo con Full Prep",
     "moods": {
       "analytical": "Analítico",
       "easygoing": "Relajado",

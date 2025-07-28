@@ -5,8 +5,10 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
 import { useSkillsStore } from '@/stores/personaStore';
 import { cn } from '@/lib/utils';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Lock } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useEntitlementStatus } from '@/hooks/useEntitlementStatus';
+import { useToast } from '@/hooks/use-toast';
 
 interface Skill {
   id: string;
@@ -14,6 +16,7 @@ interface Skill {
   group_name: string;
   is_active: boolean;
   sort_order: number;
+  tier_access: string[] | null;
 }
 
 const useSkills = () => {
@@ -34,8 +37,10 @@ const useSkills = () => {
 
 export const SkillsScroller = () => {
   const { t } = useTranslation();
+  const { toast } = useToast();
   const { data: skills, isLoading, error } = useSkills();
   const { skillsSelected, toggleSkill } = useSkillsStore();
+  const { entitlementStatus, isLoading: entitlementLoading } = useEntitlementStatus();
 
   // Function to translate skill names
   const translateSkillName = (skillName: string) => {
@@ -46,7 +51,25 @@ export const SkillsScroller = () => {
     return translated !== key ? translated : skillName;
   };
 
+  // Helper function to check if skill is accessible
+  const isSkillAccessible = (skill: Skill) => {
+    if (!skill.tier_access || skill.tier_access.length === 0) return true;
+    if (entitlementStatus === 'full_prep') return true;
+    return skill.tier_access.includes('free');
+  };
+
   const handleSkillToggle = (skillId: string) => {
+    const skill = skills?.find(s => s.id === skillId);
+    if (!skill) return;
+    
+    if (!isSkillAccessible(skill)) {
+      toast({
+        title: t('skills.unlock_with_full_prep', 'Unlock this with Full Prep'),
+        variant: 'default',
+      });
+      return;
+    }
+    
     toggleSkill(skillId);
   };
 
@@ -57,7 +80,7 @@ export const SkillsScroller = () => {
     }
   };
 
-  if (isLoading) {
+  if (isLoading || entitlementLoading) {
     return (
       <div>
         <h3 className="text-lg font-semibold mb-2 text-white">{t('skills.title')}</h3>
@@ -89,6 +112,20 @@ export const SkillsScroller = () => {
     );
   }
 
+  // Debug logging for gating
+  if (process.env.NODE_ENV === 'development' && skills) {
+    const enabledCount = skills.filter(s => isSkillAccessible(s)).length;
+    const disabledCount = skills.length - enabledCount;
+    console.log('[GATING DEBUG] Skills:', {
+      entitlementStatus,
+      total: skills.length,
+      enabled: enabledCount,
+      disabled: disabledCount,
+      enabledNames: skills.filter(s => isSkillAccessible(s)).map(s => s.name),
+      disabledNames: skills.filter(s => !isSkillAccessible(s)).map(s => s.name)
+    });
+  }
+
   // Split skills into three rows for better distribution
   const thirdPoint = Math.ceil(skills.length / 3);
   const twoThirdPoint = Math.ceil((skills.length * 2) / 3);
@@ -100,89 +137,118 @@ export const SkillsScroller = () => {
     <div>
       <div className="flex items-center justify-between mb-2">
         <h3 className="text-lg font-semibold text-white">{t('skills.title')}</h3>
-        <div className="text-xs text-gray-400">
-          Upgrade to Full Prep to unlock all
-        </div>
+        {entitlementStatus === 'free_trial' && (
+          <div className="text-xs text-gray-400">
+            {t('skills.upgrade_nudge', 'Upgrade to Full Prep to unlock all')}
+          </div>
+        )}
       </div>
       <div className="space-y-2">
         {/* Row 1 */}
         <ScrollArea className="w-full [&>div>div]:!overflow-visible">
           <div className="flex gap-2 py-1 snap-x snap-mandatory overflow-x-auto scrollbar-hide">
-            {row1Skills.map((skill) => (
-              <Badge
-                key={skill.id}
-                variant={skillsSelected.includes(skill.id) ? "default" : "outline"}
-                className={cn(
-                  "cursor-pointer snap-center transition-all duration-200 hover:scale-105 focus:ring-2 focus:ring-primary focus:ring-offset-2",
-                  "px-3 py-2 text-xs font-medium whitespace-nowrap rounded-full min-w-fit",
-                  skillsSelected.includes(skill.id) 
-                    ? "bg-primary text-primary-foreground" 
-                    : "hover:bg-gray-700 border-gray-600 text-gray-300 bg-gray-800/50"
-                )}
-                onClick={() => handleSkillToggle(skill.id)}
-                onKeyDown={(e) => handleKeyDown(e, skill.id)}
-                tabIndex={0}
-                role="button"
-                aria-pressed={skillsSelected.includes(skill.id)}
-                data-testid={`skill-chip-${skill.id}`}
-              >
-                {translateSkillName(skill.name)}
-              </Badge>
-            ))}
+            {row1Skills.map((skill) => {
+              const isAccessible = isSkillAccessible(skill);
+              const isLocked = !isAccessible;
+              
+              return (
+                <Badge
+                  key={skill.id}
+                  variant={skillsSelected.includes(skill.id) ? "default" : "outline"}
+                  className={cn(
+                    "snap-center transition-all duration-200 focus:ring-2 focus:ring-primary focus:ring-offset-2",
+                    "px-3 py-2 text-xs font-medium whitespace-nowrap rounded-full min-w-fit flex items-center gap-1",
+                    isAccessible ? "cursor-pointer hover:scale-105" : "cursor-not-allowed opacity-60",
+                    skillsSelected.includes(skill.id) 
+                      ? "bg-primary text-primary-foreground" 
+                      : isAccessible 
+                        ? "hover:bg-gray-700 border-gray-600 text-gray-300 bg-gray-800/50"
+                        : "border-gray-700 text-gray-500 bg-gray-900/50"
+                  )}
+                  onClick={() => handleSkillToggle(skill.id)}
+                  onKeyDown={(e) => handleKeyDown(e, skill.id)}
+                  tabIndex={0}
+                  role="button"
+                  aria-pressed={skillsSelected.includes(skill.id)}
+                  data-testid={`skill-chip-${skill.id}`}
+                >
+                  {isLocked && <Lock className="w-3 h-3" />}
+                  {translateSkillName(skill.name)}
+                </Badge>
+              );
+            })}
           </div>
         </ScrollArea>
 
         {/* Row 2 */}
         <ScrollArea className="w-full [&>div>div]:!overflow-visible">
           <div className="flex gap-2 py-1 snap-x snap-mandatory overflow-x-auto scrollbar-hide">
-            {row2Skills.map((skill) => (
-              <Badge
-                key={skill.id}
-                variant={skillsSelected.includes(skill.id) ? "default" : "outline"}
-                className={cn(
-                  "cursor-pointer snap-center transition-all duration-200 hover:scale-105 focus:ring-2 focus:ring-primary focus:ring-offset-2",
-                  "px-3 py-2 text-xs font-medium whitespace-nowrap rounded-full min-w-fit",
-                  skillsSelected.includes(skill.id) 
-                    ? "bg-primary text-primary-foreground" 
-                    : "hover:bg-gray-700 border-gray-600 text-gray-300 bg-gray-800/50"
-                )}
-                onClick={() => handleSkillToggle(skill.id)}
-                onKeyDown={(e) => handleKeyDown(e, skill.id)}
-                tabIndex={0}
-                role="button"
-                aria-pressed={skillsSelected.includes(skill.id)}
-                data-testid={`skill-chip-${skill.id}`}
-              >
-                {translateSkillName(skill.name)}
-              </Badge>
-            ))}
+            {row2Skills.map((skill) => {
+              const isAccessible = isSkillAccessible(skill);
+              const isLocked = !isAccessible;
+              
+              return (
+                <Badge
+                  key={skill.id}
+                  variant={skillsSelected.includes(skill.id) ? "default" : "outline"}
+                  className={cn(
+                    "snap-center transition-all duration-200 focus:ring-2 focus:ring-primary focus:ring-offset-2",
+                    "px-3 py-2 text-xs font-medium whitespace-nowrap rounded-full min-w-fit flex items-center gap-1",
+                    isAccessible ? "cursor-pointer hover:scale-105" : "cursor-not-allowed opacity-60",
+                    skillsSelected.includes(skill.id) 
+                      ? "bg-primary text-primary-foreground" 
+                      : isAccessible 
+                        ? "hover:bg-gray-700 border-gray-600 text-gray-300 bg-gray-800/50"
+                        : "border-gray-700 text-gray-500 bg-gray-900/50"
+                  )}
+                  onClick={() => handleSkillToggle(skill.id)}
+                  onKeyDown={(e) => handleKeyDown(e, skill.id)}
+                  tabIndex={0}
+                  role="button"
+                  aria-pressed={skillsSelected.includes(skill.id)}
+                  data-testid={`skill-chip-${skill.id}`}
+                >
+                  {isLocked && <Lock className="w-3 h-3" />}
+                  {translateSkillName(skill.name)}
+                </Badge>
+              );
+            })}
           </div>
         </ScrollArea>
 
         {/* Row 3 */}
         <ScrollArea className="w-full [&>div>div]:!overflow-visible">
           <div className="flex gap-2 py-1 snap-x snap-mandatory overflow-x-auto scrollbar-hide">
-            {row3Skills.map((skill) => (
-              <Badge
-                key={skill.id}
-                variant={skillsSelected.includes(skill.id) ? "default" : "outline"}
-                className={cn(
-                  "cursor-pointer snap-center transition-all duration-200 hover:scale-105 focus:ring-2 focus:ring-primary focus:ring-offset-2",
-                  "px-3 py-2 text-xs font-medium whitespace-nowrap rounded-full min-w-fit",
-                  skillsSelected.includes(skill.id) 
-                    ? "bg-primary text-primary-foreground" 
-                    : "hover:bg-gray-700 border-gray-600 text-gray-300 bg-gray-800/50"
-                )}
-                onClick={() => handleSkillToggle(skill.id)}
-                onKeyDown={(e) => handleKeyDown(e, skill.id)}
-                tabIndex={0}
-                role="button"
-                aria-pressed={skillsSelected.includes(skill.id)}
-                data-testid={`skill-chip-${skill.id}`}
-              >
-                {translateSkillName(skill.name)}
-              </Badge>
-            ))}
+            {row3Skills.map((skill) => {
+              const isAccessible = isSkillAccessible(skill);
+              const isLocked = !isAccessible;
+              
+              return (
+                <Badge
+                  key={skill.id}
+                  variant={skillsSelected.includes(skill.id) ? "default" : "outline"}
+                  className={cn(
+                    "snap-center transition-all duration-200 focus:ring-2 focus:ring-primary focus:ring-offset-2",
+                    "px-3 py-2 text-xs font-medium whitespace-nowrap rounded-full min-w-fit flex items-center gap-1",
+                    isAccessible ? "cursor-pointer hover:scale-105" : "cursor-not-allowed opacity-60",
+                    skillsSelected.includes(skill.id) 
+                      ? "bg-primary text-primary-foreground" 
+                      : isAccessible 
+                        ? "hover:bg-gray-700 border-gray-600 text-gray-300 bg-gray-800/50"
+                        : "border-gray-700 text-gray-500 bg-gray-900/50"
+                  )}
+                  onClick={() => handleSkillToggle(skill.id)}
+                  onKeyDown={(e) => handleKeyDown(e, skill.id)}
+                  tabIndex={0}
+                  role="button"
+                  aria-pressed={skillsSelected.includes(skill.id)}
+                  data-testid={`skill-chip-${skill.id}`}
+                >
+                  {isLocked && <Lock className="w-3 h-3" />}
+                  {translateSkillName(skill.name)}
+                </Badge>
+              );
+            })}
           </div>
         </ScrollArea>
       </div>
