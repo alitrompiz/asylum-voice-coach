@@ -214,33 +214,20 @@ export const StoryModal = ({
       // Cancel any in-flight queries to prevent race conditions
       await queryClient.cancelQueries({ queryKey: getStoryQueryKey(user.id) });
       
-      if (mode === 'edit') {
-        // Update existing active story
-        const { error } = await supabase
-          .from('stories')
-          .update({ 
-            story_text: textToSave,
-            source_type: 'text',
-            updated_at: new Date().toISOString()
-          })
-          .eq('user_id', user.id)
-          .eq('is_active', true);
+      // Always update existing active story or create if none exists
+      const { error } = await supabase
+        .from('stories')
+        .upsert({
+          user_id: user.id,
+          title: `Story ${new Date().toLocaleDateString()}`,
+          story_text: textToSave,
+          source_type: 'text',
+          is_active: true
+        }, {
+          onConflict: 'user_id,is_active'
+        });
 
-        if (error) throw error;
-      } else {
-        // Create new story
-        const { error } = await supabase
-          .from('stories')
-          .insert({
-            user_id: user.id,
-            title: `Story ${new Date().toLocaleDateString()}`,
-            story_text: textToSave,
-            source_type: 'text',
-            is_active: true
-          });
-
-        if (error) throw error;
-      }
+      if (error) throw error;
 
       toast({
         title: t('story.story_saved'),
