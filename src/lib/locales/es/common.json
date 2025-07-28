@@ -149,6 +149,19 @@
     "delete_story_confirm": "¿Eliminar tu historia de asilo?",
     "delete": "Eliminar",
     "cancel": "Cancelar",
-    "story_deleted": "Historia eliminada exitosamente"
+    "story_deleted": "Historia eliminada exitosamente",
+    "text_tab": "Texto",
+    "pdf_tab": "PDF",
+    "text_helper": "Pega o escribe tu historia. Puedes editarla cuando quieras.",
+    "text_placeholder": "Pega tu historia de asilo aquí...",
+    "asylum_story_text_label": "Texto de historia de asilo",
+    "characters": "caracteres",
+    "text_required": "Por favor ingresa texto antes de guardar",
+    "text_too_long": "El texto es muy largo. Máximo {{max}} caracteres permitidos.",
+    "text_too_long_inline": "Muy largo",
+    "story_saved": "Historia guardada exitosamente",
+    "save": "Guardar",
+    "delete_text_confirm": "¿Eliminar texto de historia?",
+    "delete_text_description": "Esto borrará el texto de tu historia. Esta acción no se puede deshacer."
   }
 }

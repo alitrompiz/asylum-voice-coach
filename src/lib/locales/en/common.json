@@ -149,7 +149,20 @@
     "delete_story_confirm": "Delete your asylum story?",
     "delete": "Delete",
     "cancel": "Cancel",
-    "story_deleted": "Story deleted successfully"
+    "story_deleted": "Story deleted successfully",
+    "text_tab": "Text",
+    "pdf_tab": "PDF",
+    "text_helper": "Paste or type your story. You can edit this anytime.",
+    "text_placeholder": "Paste your asylum story here...",
+    "asylum_story_text_label": "Asylum story text",
+    "characters": "characters",
+    "text_required": "Please enter some text before saving",
+    "text_too_long": "Text is too long. Maximum {{max}} characters allowed.",
+    "text_too_long_inline": "Too long",
+    "story_saved": "Story saved successfully",
+    "save": "Save",
+    "delete_text_confirm": "Delete story text?",
+    "delete_text_description": "This will clear your story text. This action cannot be undone."
   },
   "countries": {
     "afghanistan": "Afghanistan",

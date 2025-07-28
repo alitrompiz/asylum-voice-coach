@@ -20,7 +20,7 @@ export const StoryCard = () => {
       
       const { data, error } = await supabase
         .from('stories')
-        .select('id, title, story_text')
+        .select('id, title, story_text, file_path')
         .eq('user_id', user.id)
         .eq('is_active', true)
         .maybeSingle();
@@ -32,19 +32,23 @@ export const StoryCard = () => {
     staleTime: 0, // Always refetch to ensure fresh data
   });
 
-  // Correct hasStory computation - normalize empty as no story
-  const hasStory = typeof activeStory?.story_text === 'string' && activeStory.story_text.trim().length > 0;
+  // Compute story state: text first, then PDF
+  const hasText = typeof activeStory?.story_text === 'string' && activeStory.story_text.trim().length > 0;
+  const hasPdf = !!activeStory?.file_path;
+  const hasStory = hasText || hasPdf;
 
   // Debug logging when enabled
   useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[DEBUG_PROFILE] Dashboard StoryCard:', { 
+    if (process.env.NODE_ENV === 'development' && process.env.DEBUG_STORY === 'on') {
+      console.log('[DEBUG_STORY] Dashboard StoryCard:', { 
+        hasText,
+        hasPdf,
         hasStory, 
-        length: activeStory?.story_text?.length,
-        activeStory: !!activeStory 
+        textLength: activeStory?.story_text?.length,
+        filePath: activeStory?.file_path
       });
     }
-  }, [hasStory, activeStory]);
+  }, [hasText, hasPdf, hasStory, activeStory]);
 
   // Listen for story changes from other components and invalidate cache
   useEffect(() => {
@@ -67,7 +71,10 @@ export const StoryCard = () => {
   }, [queryClient]);
 
   const handleStoryAction = () => {
-    navigate('/profile#asylum-story');
+    // Deep-link to appropriate tab: Text if text exists, otherwise PDF tab
+    const hasText = activeStory?.story_text?.trim()?.length > 0;
+    const targetTab = hasText ? 'text' : 'pdf';
+    navigate(`/profile#asylum-story?tab=${targetTab}`);
   };
 
   if (isLoading) {
