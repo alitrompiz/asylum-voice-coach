@@ -433,7 +433,44 @@ export default function OnboardingWizard() {
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
               {renderStep()}
               
-              <div className="flex justify-between pt-6">
+              {/* Mobile: Stack buttons vertically, Skip last */}
+              <div className="sm:hidden space-y-3 pt-6">
+                {currentStep < totalSteps && (
+                  <Button
+                    type="button"
+                    onClick={nextStep}
+                    disabled={loading}
+                    className="w-full"
+                  >
+                    {t('onboarding.next')}
+                    <ChevronRight className="ml-2 h-4 w-4" />
+                  </Button>
+                )}
+                {currentStep > 1 && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={prevStep}
+                    disabled={loading}
+                    className="w-full"
+                  >
+                    <ChevronLeft className="mr-2 h-4 w-4" />
+                    {t('onboarding.back')}
+                  </Button>
+                )}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={skipOnboarding}
+                  disabled={loading}
+                  className="w-full"
+                >
+                  {t('onboarding.skip')}
+                </Button>
+              </div>
+
+              {/* Desktop: Horizontal layout */}
+              <div className="hidden sm:flex justify-between pt-6">
                 <div className="flex gap-2">
                   {currentStep > 1 && (
                     <Button

@@ -12,8 +12,12 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { User, FileText, LogOut, Save, Plus, Trash2, Upload, CheckCircle, MessageSquare, Clock, Calendar } from 'lucide-react';
+import { User, FileText, LogOut, Save, Plus, Trash2, Upload, CheckCircle, MessageSquare, Clock, Calendar, CalendarIcon } from 'lucide-react';
 import { toast } from 'sonner';
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { StoryUploader } from '@/components/StoryUploader';
 
@@ -22,8 +26,8 @@ const profileSchema = z.object({
   preferred_name: z.string().optional(),
   country_of_feared_persecution: z.string().optional(),
   asylum_office_filed: z.string().optional(),
-  date_filed: z.string().optional().transform(val => val === '' ? null : val),
-  interview_date: z.string().optional().transform(val => val === '' ? null : val),
+  date_filed: z.date().optional(),
+  interview_date: z.date().optional(),
   language_preference: z.string().optional(),
 });
 
@@ -53,6 +57,7 @@ export default function Profile() {
     register,
     handleSubmit,
     setValue,
+    watch,
     formState: { errors },
   } = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
@@ -95,7 +100,12 @@ export default function Profile() {
         // Set form values
         Object.keys(data).forEach((key) => {
           if (key !== 'id' && key !== 'user_id' && key !== 'created_at' && key !== 'updated_at') {
-            setValue(key as keyof ProfileFormData, data[key] || '');
+            if (key === 'date_filed' || key === 'interview_date') {
+              // Convert date string to Date object for date fields
+              setValue(key as keyof ProfileFormData, data[key] ? new Date(data[key]) : undefined);
+            } else {
+              setValue(key as keyof ProfileFormData, data[key] || '');
+            }
           }
         });
       }
@@ -153,6 +163,8 @@ export default function Profile() {
         .upsert({
           user_id: user?.id,
           ...data,
+          date_filed: data.date_filed?.toISOString().split('T')[0],
+          interview_date: data.interview_date?.toISOString().split('T')[0],
           updated_at: new Date().toISOString(),
         });
 
@@ -250,11 +262,23 @@ export default function Profile() {
                 Manage your personal information and asylum stories
               </p>
             </div>
-            <div className="flex items-center gap-2 sm:gap-4">
-              <Button variant="outline" onClick={() => navigate('/dashboard')} size="sm" className="flex-1 sm:flex-none">
+            {/* Mobile: Stack buttons vertically */}
+            <div className="sm:hidden space-y-2">
+              <Button variant="outline" onClick={() => navigate('/dashboard')} size="sm" className="w-full">
                 Back to Dashboard
               </Button>
-              <Button variant="destructive" onClick={handleLogout} size="sm" className="flex-1 sm:flex-none">
+              <Button variant="destructive" onClick={handleLogout} size="sm" className="w-full">
+                <LogOut className="w-4 h-4 mr-2" />
+                Logout
+              </Button>
+            </div>
+
+            {/* Desktop: Horizontal layout */}
+            <div className="hidden sm:flex items-center gap-4">
+              <Button variant="outline" onClick={() => navigate('/dashboard')} size="sm">
+                Back to Dashboard
+              </Button>
+              <Button variant="destructive" onClick={handleLogout} size="sm">
                 <LogOut className="w-4 h-4 mr-2" />
                 Logout
               </Button>
@@ -349,26 +373,70 @@ export default function Profile() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="date_filed">Date Filed</Label>
-                  <Input
-                    id="date_filed"
-                    type="date"
-                    {...register('date_filed')}
-                    disabled={isLoading}
-                  />
+                  <Label>Date Filed</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          'w-full justify-start text-left font-normal',
+                          !watch('date_filed') && 'text-muted-foreground'
+                        )}
+                        disabled={isLoading}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {watch('date_filed') ? (
+                          format(watch('date_filed'), 'PPP')
+                        ) : (
+                          <span>Pick a date</span>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <CalendarComponent
+                        mode="single"
+                        selected={watch('date_filed')}
+                        onSelect={(date) => setValue('date_filed', date)}
+                        className={cn("p-3 pointer-events-auto")}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
                   {errors.date_filed && (
                     <p className="text-sm text-destructive">{errors.date_filed.message}</p>
                   )}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="interview_date">Interview Date</Label>
-                  <Input
-                    id="interview_date"
-                    type="date"
-                    {...register('interview_date')}
-                    disabled={isLoading}
-                  />
+                  <Label>Interview Date</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          'w-full justify-start text-left font-normal',
+                          !watch('interview_date') && 'text-muted-foreground'
+                        )}
+                        disabled={isLoading}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {watch('interview_date') ? (
+                          format(watch('interview_date'), 'PPP')
+                        ) : (
+                          <span>Pick a date</span>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <CalendarComponent
+                        mode="single"
+                        selected={watch('interview_date')}
+                        onSelect={(date) => setValue('interview_date', date)}
+                        className={cn("p-3 pointer-events-auto")}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
                   {errors.interview_date && (
                     <p className="text-sm text-destructive">{errors.interview_date.message}</p>
                   )}
