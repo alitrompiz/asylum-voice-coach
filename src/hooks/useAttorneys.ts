@@ -71,7 +71,7 @@ export const useAttorneys = () => {
     const firmMatch = attorney.firm_name.toLowerCase().includes(searchLower);
     
     return nameMatch || firmMatch;
-  }) || [];
+  }) ?? []; // Use nullish coalescing instead of logical OR to ensure array
 
   // Select attorney mutation
   const selectAttorney = useMutation({
