@@ -253,7 +253,7 @@ serve(async (req) => {
           entitlement_status: activeGrant ? 'full_prep_grant' : 'free_trial',
           
           // Subscription
-          subscribed: user.has_active_subscription,
+          subscribed: subscriberData?.subscription_tier ? true : false,
           subscription_tier: subscriberData?.subscription_tier,
           subscription_end: subscriberData?.subscription_end,
           grace_period_end: subscriberData?.grace_period_end,
