@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useOcrJob } from '@/hooks/useOcrJob';
 import { supabase } from '@/integrations/supabase/client';
-import { Upload, FileText, Trash2, CheckCircle, Loader2, Clock, AlertCircle } from 'lucide-react';
+import { Upload, FileText, Trash2, CheckCircle, Loader2, Clock, AlertCircle, RefreshCw } from 'lucide-react';
 import { isDebugEnabled } from '@/lib/env';
 
 interface StoryModalProps {
@@ -27,9 +27,13 @@ interface StoryModalProps {
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const MAX_CHARS = 10000; // Character limit for text
+const OCR_TIMEOUT_MS = 90000; // 90 seconds
+
+// Unified state flow
+type StoryModalState = 'idle' | 'uploading' | 'ocr_processing' | 'preview_ready' | 'saving' | 'saved' | 'error';
 
 // Query key function for consistent cache invalidation
-const getStoryQueryKey = (userId: string | undefined) => ['active-story', userId];
+const getStoryQueryKey = (userId: string | undefined) => ['active-story', String(userId)];
 
 export const StoryModal = ({
   isOpen,
@@ -46,133 +50,108 @@ export const StoryModal = ({
   
   const [activeTab, setActiveTab] = useState<'pdf' | 'text'>(defaultTab);
   const [textContent, setTextContent] = useState(existingText);
-  const [isUploading, setIsUploading] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
+  const [modalState, setModalState] = useState<StoryModalState>('idle');
   const [currentJobId, setCurrentJobId] = useState<string | null>(null);
   const [ocrText, setOcrText] = useState('');
-  const [showOcrPreview, setShowOcrPreview] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [currentFileName, setCurrentFileName] = useState('');
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const ocrTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  
   const { job: ocrJob } = useOcrJob(currentJobId);
 
-  // Initialize text content when modal opens in edit mode
-  useEffect(() => {
-    if (isOpen && mode === 'edit') {
-      setTextContent(existingText);
-    } else if (isOpen && mode === 'create') {
-      // Clear local state and set cache to empty immediately, then invalidate
-      setTextContent('');
-      queryClient.setQueryData(getStoryQueryKey(user.id), null);
-      setOcrText('');
-      setShowOcrPreview(false);
+  // Debug logging
+  const logStateTransition = (from: StoryModalState, to: StoryModalState, extra?: any) => {
+    if (isDebugEnabled('DEBUG_STORY')) {
+      console.log(`[DEBUG_STORY] State: ${from} → ${to}`, extra || '');
     }
-  }, [isOpen, mode, existingText]);
+  };
 
-  // Handle OCR completion
+  // Initialize modal state
   useEffect(() => {
-    if (ocrJob?.status === 'completed' && ocrJob.result && currentJobId) {
-      handleOcrCompletion(ocrJob);
-    } else if (ocrJob?.status === 'failed' && currentJobId) {
-      handleOcrFailure(ocrJob);
-    }
-  }, [ocrJob?.status, ocrJob?.result, currentJobId]);
-
-  const handleOcrCompletion = async (job: any) => {
-    try {
-      if (!job.result?.extracted_text) {
-        console.error('No extracted text in OCR job result');
-        return;
-      }
-
-      const extractedText = job.result.extracted_text;
-      
-      // Automatically save the OCR result to the database
-      await saveOcrStory(extractedText, job.file_name);
-      
-      setOcrText(extractedText);
-      setShowOcrPreview(true);
+    if (isOpen) {
+      setModalState('idle');
+      setErrorMessage('');
       setCurrentJobId(null);
-
-      toast({
-        title: t('story.ocr_success'),
-        description: t('story.ocr_success_desc'),
-      });
-    } catch (error) {
-      console.error('Error handling OCR completion:', error);
-      handleOcrFailure(job);
-    }
-  };
-
-  const saveOcrStory = async (ocrText: string, fileName: string) => {
-    if (!user) return;
-    
-    try {
-      // Cancel any in-flight queries to prevent race conditions
-      await queryClient.cancelQueries({ queryKey: getStoryQueryKey(user.id) });
+      setOcrText('');
       
-      // Check if user already has an active story
-      const { data: existingStory } = await supabase
-        .from('stories')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('is_active', true)
-        .maybeSingle();
-
-      const storyData = {
-        story_text: ocrText,
-        source_type: 'pdf',
-        title: `OCR Story - ${fileName}`,
-        file_path: `stories/${Date.now()}-${Math.random().toString(36).substr(2, 9)}-${fileName}`,
-        updated_at: new Date().toISOString()
-      };
-
-      if (existingStory) {
-        // Update existing story
-        const { error } = await supabase
-          .from('stories')
-          .update(storyData)
-          .eq('user_id', user.id)
-          .eq('is_active', true);
-
-        if (error) throw error;
+      if (mode === 'edit') {
+        setTextContent(existingText);
       } else {
-        // Create new story
-        const { error } = await supabase
-          .from('stories')
-          .insert({
-            user_id: user.id,
-            is_active: true,
-            ...storyData
-          });
-
-        if (error) throw error;
+        setTextContent('');
+        // Clear cache immediately for create mode
+        queryClient.setQueryData(getStoryQueryKey(user?.id), null);
       }
-
-      // Invalidate and refetch to ensure immediate UI updates
-      await queryClient.invalidateQueries({ queryKey: getStoryQueryKey(user.id) });
-      await queryClient.refetchQueries({ queryKey: getStoryQueryKey(user.id) });
-      window.dispatchEvent(new CustomEvent('storyChanged'));
-      
-    } catch (error) {
-      console.error('Error saving OCR story:', error);
-      // Don't show error toast here since we'll show the preview anyway
     }
-  };
+  }, [isOpen, mode, existingText, user?.id, queryClient]);
 
-  const handleOcrFailure = (job: any) => {
-    toast({
-      title: t('story.ocr_failed'),
-      description: job?.error_message || t('story.ocr_failed_desc'),
-      variant: 'destructive'
-    });
-    setCurrentJobId(null);
-  };
+  // OCR timeout handler
+  useEffect(() => {
+    if (modalState === 'ocr_processing') {
+      ocrTimeoutRef.current = setTimeout(() => {
+        logStateTransition('ocr_processing', 'error', 'timeout');
+        setModalState('error');
+        setErrorMessage(t('story.processing_timeout'));
+        setCurrentJobId(null);
+      }, OCR_TIMEOUT_MS);
+    } else {
+      if (ocrTimeoutRef.current) {
+        clearTimeout(ocrTimeoutRef.current);
+        ocrTimeoutRef.current = null;
+      }
+    }
+
+    return () => {
+      if (ocrTimeoutRef.current) {
+        clearTimeout(ocrTimeoutRef.current);
+      }
+    };
+  }, [modalState, t]);
+
+  // Handle OCR job updates
+  useEffect(() => {
+    if (!currentJobId || !ocrJob) return;
+
+    if (ocrJob.status === 'completed' && ocrJob.result?.extracted_text) {
+      logStateTransition('ocr_processing', 'preview_ready', `chars=${ocrJob.result.extracted_text.length}`);
+      
+      const extractedText = ocrJob.result.extracted_text;
+      setOcrText(extractedText);
+      setModalState('preview_ready');
+      setCurrentJobId(null);
+      
+      // Auto-focus the preview editor
+      setTimeout(() => {
+        if (textareaRef.current) {
+          textareaRef.current.focus();
+        }
+      }, 100);
+
+      // Check for empty/poor OCR results
+      if (extractedText.trim().length < 50) {
+        toast({
+          title: t('story.ocr_warning'),
+          description: t('story.ocr_poor_quality'),
+          variant: 'default'
+        });
+      }
+      
+    } else if (ocrJob.status === 'failed') {
+      logStateTransition('ocr_processing', 'error', ocrJob.error_message);
+      setModalState('error');
+      setErrorMessage(ocrJob.error_message || t('story.processing_failed'));
+      setCurrentJobId(null);
+    }
+  }, [ocrJob, currentJobId, t]);
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    // Validation
     if (file.size > MAX_FILE_SIZE) {
       toast({
         title: t('common.error'),
@@ -191,7 +170,9 @@ export const StoryModal = ({
       return;
     }
 
-    setIsUploading(true);
+    logStateTransition('idle', 'uploading', `file=${file.name}`);
+    setModalState('uploading');
+    setCurrentFileName(file.name);
 
     try {
       // Get signed URL for S3 upload
@@ -215,6 +196,9 @@ export const StoryModal = ({
 
       if (!uploadResponse.ok) throw new Error('Failed to upload file');
 
+      logStateTransition('uploading', 'ocr_processing');
+      setModalState('ocr_processing');
+
       // Start OCR processing
       const { data: ocrData, error: ocrError } = await supabase.functions.invoke('ocr-pdf', {
         body: {
@@ -227,27 +211,20 @@ export const StoryModal = ({
 
       setCurrentJobId(ocrData.jobId);
 
-      toast({
-        title: t('story.uploading'),
-        description: t('story.processing_background'),
-      });
-
     } catch (error) {
       console.error('Upload error:', error);
-      toast({
-        title: t('story.upload_failed'),
-        description: t('story.upload_failed_desc'),
-        variant: 'destructive'
-      });
+      logStateTransition(modalState, 'error', error);
+      setModalState('error');
+      setErrorMessage(t('story.upload_failed_desc'));
     } finally {
-      setIsUploading(false);
+      // Clear file input
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
     }
   };
 
-  const handleSaveText = async (textToSave: string = textContent) => {
+  const handleSaveStory = async (textToSave: string) => {
     if (!user || !textToSave.trim()) {
       toast({
         title: t('common.error'),
@@ -266,11 +243,9 @@ export const StoryModal = ({
       return;
     }
 
-    if (isDebugEnabled('DEBUG_STORY')) {
-      console.log('[DEBUG_STORY] Modal save story, invalidating queryKey:', getStoryQueryKey(user.id));
-    }
+    logStateTransition(modalState, 'saving');
+    setModalState('saving');
 
-    setIsSaving(true);
     try {
       // Cancel any in-flight queries to prevent race conditions
       await queryClient.cancelQueries({ queryKey: getStoryQueryKey(user.id) });
@@ -281,7 +256,7 @@ export const StoryModal = ({
           .from('stories')
           .update({ 
             story_text: textToSave,
-            source_type: 'text',
+            source_type: modalState === 'preview_ready' ? 'pdf' : 'text',
             updated_at: new Date().toISOString()
           })
           .eq('user_id', user.id)
@@ -297,16 +272,18 @@ export const StoryModal = ({
           .eq('is_active', true)
           .maybeSingle();
 
+        const storyData = {
+          story_text: textToSave,
+          source_type: modalState === 'preview_ready' ? 'pdf' : 'text',
+          title: modalState === 'preview_ready' ? `OCR Story - ${currentFileName}` : `Story ${new Date().toLocaleDateString()}`,
+          updated_at: new Date().toISOString()
+        };
+
         if (existingStory) {
           // Update existing story
           const { error } = await supabase
             .from('stories')
-            .update({ 
-              story_text: textToSave,
-              source_type: 'text',
-              title: `Story ${new Date().toLocaleDateString()}`,
-              updated_at: new Date().toISOString()
-            })
+            .update(storyData)
             .eq('user_id', user.id)
             .eq('is_active', true);
 
@@ -317,50 +294,50 @@ export const StoryModal = ({
             .from('stories')
             .insert({
               user_id: user.id,
-              title: `Story ${new Date().toLocaleDateString()}`,
-              story_text: textToSave,
-              source_type: 'text',
-              is_active: true
+              is_active: true,
+              ...storyData
             });
 
           if (error) throw error;
         }
       }
 
+      // Immediate cache update for instant UI response
+      queryClient.setQueryData(getStoryQueryKey(user.id), { story_text: textToSave });
+      
+      // Invalidate and refetch to ensure consistency
+      await queryClient.invalidateQueries({ queryKey: getStoryQueryKey(user.id) });
+      await queryClient.refetchQueries({ queryKey: getStoryQueryKey(user.id) });
+      
+      // Dispatch custom event for other components
+      window.dispatchEvent(new CustomEvent('storyChanged'));
+      
+      logStateTransition('saving', 'saved');
+      setModalState('saved');
+
       toast({
         title: t('story.story_saved'),
       });
 
-      // Invalidate and refetch to ensure immediate UI updates
-      await queryClient.invalidateQueries({ queryKey: getStoryQueryKey(user.id) });
-      await queryClient.refetchQueries({ queryKey: getStoryQueryKey(user.id) });
-      window.dispatchEvent(new CustomEvent('storyChanged'));
+      // Close modal after brief delay
+      setTimeout(() => {
+        onOpenChange(false);
+      }, 500);
       
-      onOpenChange(false);
     } catch (error) {
       console.error('Error saving story:', error);
-      toast({
-        title: t('common.error'),
-        variant: 'destructive',
-      });
-    } finally {
-      setIsSaving(false);
+      logStateTransition('saving', 'error', error);
+      setModalState('error');
+      setErrorMessage(t('story.save_failed'));
     }
-  };
-
-  const handleAcceptOcrText = () => {
-    // Story is already saved automatically, just close modal
-    onOpenChange(false);
   };
 
   const handleDeleteStory = async () => {
     if (!user) return;
     
-    if (isDebugEnabled('DEBUG_STORY')) {
-      console.log('[DEBUG_STORY] Modal delete story, invalidating queryKey:', getStoryQueryKey(user.id));
-    }
+    logStateTransition(modalState, 'saving', 'delete');
+    setModalState('saving');
     
-    setIsSaving(true);
     try {
       // Cancel any in-flight queries to prevent race conditions
       await queryClient.cancelQueries({ queryKey: getStoryQueryKey(user.id) });
@@ -369,7 +346,7 @@ export const StoryModal = ({
         .from('stories')
         .update({ 
           story_text: '',
-          file_path: null, // Also clear PDF file path when deleting
+          file_path: null,
           updated_at: new Date().toISOString()
         })
         .eq('user_id', user.id)
@@ -377,35 +354,33 @@ export const StoryModal = ({
 
       if (error) throw error;
 
-      toast({
-        title: t('story.story_deleted'),
-      });
-      
-      // Clear local state and set cache to empty immediately, then invalidate  
+      // Clear cache immediately
       queryClient.setQueryData(getStoryQueryKey(user.id), null);
       
-      // Invalidate and refetch to ensure fresh data
+      // Invalidate and refetch
       await queryClient.invalidateQueries({ queryKey: getStoryQueryKey(user.id) });
       await queryClient.refetchQueries({ queryKey: getStoryQueryKey(user.id) });
       window.dispatchEvent(new CustomEvent('storyChanged'));
+      
+      toast({
+        title: t('story.story_deleted'),
+      });
       
       onOpenChange(false);
       setShowDeleteDialog(false);
     } catch (error) {
       console.error('Error deleting story:', error);
-      toast({
-        title: t('common.error'),
-        variant: 'destructive',
-      });
-    } finally {
-      setIsSaving(false);
+      setModalState('error');
+      setErrorMessage(t('story.delete_failed'));
     }
   };
 
   const retryOcr = () => {
+    logStateTransition(modalState, 'idle', 'retry');
+    setModalState('idle');
+    setErrorMessage('');
     setCurrentJobId(null);
     setOcrText('');
-    setShowOcrPreview(false);
     if (fileInputRef.current) {
       fileInputRef.current.click();
     }
@@ -413,12 +388,28 @@ export const StoryModal = ({
 
   const switchToPasteText = () => {
     setActiveTab('text');
+    if (ocrText) {
+      setTextContent(ocrText);
+    }
+    setModalState('idle');
+    setErrorMessage('');
     setCurrentJobId(null);
     setOcrText('');
-    setShowOcrPreview(false);
   };
 
-  const charCount = textContent.length;
+  const resetModal = () => {
+    setModalState('idle');
+    setErrorMessage('');
+    setCurrentJobId(null);
+    setOcrText('');
+  };
+
+  // Computed states
+  const charCount = modalState === 'preview_ready' ? ocrText.length : textContent.length;
+  const currentText = modalState === 'preview_ready' ? ocrText : textContent;
+  const isProcessing = modalState === 'uploading' || modalState === 'ocr_processing';
+  const isSaving = modalState === 'saving';
+  const isError = modalState === 'error';
 
   return (
     <>
@@ -435,7 +426,6 @@ export const StoryModal = ({
               <TabsTrigger value="pdf" className="flex items-center gap-2">
                 <Upload className="w-4 h-4" />
                 {t('story.upload_pdf')}
-                {/* "Recommended" badge on PDF tab */}
                 <Badge variant="secondary" className="ml-1 text-xs">
                   {t('story.recommended')}
                 </Badge>
@@ -448,7 +438,8 @@ export const StoryModal = ({
 
             {/* PDF Upload Tab */}
             <TabsContent value="pdf" className="space-y-4 mt-4">
-              {!showOcrPreview && !currentJobId && (
+              {/* Idle State - File Upload */}
+              {modalState === 'idle' && (
                 <div className="space-y-4">
                   <p className="text-sm text-muted-foreground">
                     {t('story.pdf_helper')}
@@ -463,15 +454,10 @@ export const StoryModal = ({
                     />
                     <Button
                       onClick={() => fileInputRef.current?.click()}
-                      disabled={isUploading}
                       size="lg"
                     >
-                      {isUploading ? (
-                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                      ) : (
-                        <Upload className="w-5 h-5 mr-2" />
-                      )}
-                      {isUploading ? t('story.processing') : t('story.choose_pdf')}
+                      <Upload className="w-5 h-5 mr-2" />
+                      {t('story.choose_pdf')}
                     </Button>
                     <p className="text-sm text-muted-foreground mt-2">
                       {t('story.pdf_size_limit')}
@@ -480,71 +466,71 @@ export const StoryModal = ({
                 </div>
               )}
 
-              {/* OCR Progress */}
-              {ocrJob && (
-                <div className="space-y-4 p-4 border rounded-lg">
+              {/* Uploading State */}
+              {modalState === 'uploading' && (
+                <div className="space-y-4 p-4 border rounded-lg" role="status" aria-live="polite">
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <h4 className="font-medium">{t('story.uploading')}</h4>
+                  </div>
+                  <Progress value={50} className="w-full" />
+                </div>
+              )}
+
+              {/* OCR Processing State */}
+              {modalState === 'ocr_processing' && (
+                <div className="space-y-4 p-4 border rounded-lg" role="status" aria-live="polite">
                   <div className="flex items-center gap-2">
                     <Clock className="w-5 h-5" />
-                    <h4 className="font-medium">{t('story.processing_pdf', { fileName: ocrJob.file_name })}</h4>
+                    <h4 className="font-medium">{t('story.processing_with_ocr')}</h4>
                   </div>
                   
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
-                      <span className="capitalize">{ocrJob.status.replace('_', ' ')}</span>
-                      <span>{ocrJob.progress}%</span>
+                      <span>{t('story.processing')}</span>
+                      <span>{ocrJob?.progress || 0}%</span>
                     </div>
-                    <Progress value={ocrJob.progress} className="w-full" />
+                    <Progress value={ocrJob?.progress || 0} className="w-full" />
                   </div>
                   
-                  {ocrJob.status === 'processing' && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>{t('story.processing_with_ocr')}</span>
-                    </div>
-                  )}
-                  
-                  {ocrJob.status === 'failed' && (
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2 text-sm text-destructive">
-                        <AlertCircle className="w-4 h-4" />
-                        <span>{ocrJob.error_message || t('story.processing_failed')}</span>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button onClick={retryOcr} variant="outline" size="sm">
-                          {t('story.retry_ocr')}
-                        </Button>
-                        <Button onClick={switchToPasteText} variant="outline" size="sm">
-                          {t('story.switch_to_text')}
-                        </Button>
-                      </div>
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>{t('story.processing_background')}</span>
+                  </div>
                 </div>
               )}
 
-              {/* OCR Preview */}
-              {showOcrPreview && (
-                <div className="space-y-4">
+              {/* Preview Ready State */}
+              {modalState === 'preview_ready' && (
+                <div className="space-y-4" role="region" aria-live="polite">
                   <div className="flex items-center gap-2">
                     <CheckCircle className="w-5 h-5 text-green-600" />
                     <h4 className="font-medium">{t('story.preview_edit')}</h4>
                   </div>
                   
-                  <Textarea
-                    value={ocrText}
-                    onChange={(e) => setOcrText(e.target.value)}
-                    className="min-h-[300px] resize-none"
-                    placeholder={t('story.extracted_text_placeholder')}
-                  />
-                  
-                  <div className="flex justify-between text-sm text-muted-foreground">
-                    <span>{ocrText.length} / {MAX_CHARS} {t('story.characters')}</span>
+                  <div className="space-y-2">
+                    <Textarea
+                      ref={textareaRef}
+                      value={ocrText}
+                      onChange={(e) => setOcrText(e.target.value)}
+                      className="min-h-[320px] max-h-[480px] md:max-h-[60vh] resize-none overflow-y-auto"
+                      placeholder={t('story.extracted_text_placeholder')}
+                      aria-label={t('story.preview_edit')}
+                    />
+                    
+                    <div className="flex justify-between text-sm text-muted-foreground">
+                      <span>{ocrText.length} / {MAX_CHARS} {t('story.characters')}</span>
+                      {ocrText.length > MAX_CHARS && (
+                        <span className="text-destructive">{t('story.text_too_long_inline')}</span>
+                      )}
+                    </div>
                   </div>
                   
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <Button 
-                      onClick={handleAcceptOcrText}
+                      onClick={() => handleSaveStory(ocrText)}
                       disabled={isSaving || ocrText.length > MAX_CHARS || !ocrText.trim()}
+                      className="min-h-[44px]"
                     >
                       {isSaving ? (
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -553,8 +539,34 @@ export const StoryModal = ({
                       )}
                       {t('story.accept_save')}
                     </Button>
-                    <Button onClick={retryOcr} variant="outline">
+                    <Button onClick={retryOcr} variant="outline" className="min-h-[44px]">
+                      <RefreshCw className="w-4 h-4 mr-2" />
                       {t('story.retry_ocr')}
+                    </Button>
+                    <Button onClick={switchToPasteText} variant="outline" className="min-h-[44px]">
+                      <FileText className="w-4 h-4 mr-2" />
+                      {t('story.switch_to_text')}
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Error State */}
+              {isError && (
+                <div className="space-y-4 p-4 border border-destructive/20 rounded-lg" role="alert" aria-live="assertive">
+                  <div className="flex items-center gap-2 text-destructive">
+                    <AlertCircle className="w-5 h-5" />
+                    <h4 className="font-medium">{t('story.error_occurred')}</h4>
+                  </div>
+                  <p className="text-sm text-muted-foreground">{errorMessage}</p>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <Button onClick={retryOcr} variant="outline" className="min-h-[44px]">
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                      {t('story.retry_ocr')}
+                    </Button>
+                    <Button onClick={switchToPasteText} variant="outline" className="min-h-[44px]">
+                      <FileText className="w-4 h-4 mr-2" />
+                      {t('story.switch_to_text')}
                     </Button>
                   </div>
                 </div>
@@ -571,7 +583,7 @@ export const StoryModal = ({
                 value={textContent}
                 onChange={(e) => setTextContent(e.target.value)}
                 placeholder={t('story.text_placeholder')}
-                className="min-h-[300px] resize-none"
+                className="min-h-[320px] max-h-[480px] md:max-h-[60vh] resize-none overflow-y-auto"
                 aria-label={t('story.asylum_story_text_label')}
               />
               
@@ -586,10 +598,11 @@ export const StoryModal = ({
                 )}
               </div>
               
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <Button
-                  onClick={() => handleSaveText()}
+                  onClick={() => handleSaveStory(textContent)}
                   disabled={isSaving || charCount > MAX_CHARS || !textContent.trim()}
+                  className="min-h-[44px]"
                 >
                   {isSaving ? (
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -604,6 +617,7 @@ export const StoryModal = ({
                     variant="outline" 
                     onClick={() => setShowDeleteDialog(true)}
                     disabled={isSaving}
+                    className="min-h-[44px]"
                   >
                     <Trash2 className="w-4 h-4 mr-2" />
                     {t('story.delete')}
