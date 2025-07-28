@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -9,9 +9,12 @@ export const useAdminAccess = () => {
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
 
+  // Memoize the user ID to prevent unnecessary re-runs
+  const userId = useMemo(() => user?.id, [user?.id]);
+
   useEffect(() => {
     const checkAdminAccess = async () => {
-      if (!user) {
+      if (!userId) {
         setIsAdmin(false);
         setLoading(false);
         return;
@@ -21,13 +24,16 @@ export const useAdminAccess = () => {
         setLoading(true);
         setError(null);
 
-        console.log('Checking admin access for user:', user.id);
+        // Only log on first check or user change, not on every render
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Checking admin access for user:', userId);
+        }
 
         // Check if user has admin role
         const { data, error } = await supabase
           .from('user_roles')
           .select('role')
-          .eq('user_id', user.id)
+          .eq('user_id', userId)
           .eq('role', 'admin')
           .maybeSingle();
 
@@ -37,7 +43,9 @@ export const useAdminAccess = () => {
         }
 
         const hasAdminRole = !!data;
-        console.log('Admin role check result:', { hasAdminRole, data });
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Admin role check result:', { hasAdminRole, data });
+        }
         
         setIsAdmin(hasAdminRole);
       } catch (error: any) {
@@ -50,7 +58,7 @@ export const useAdminAccess = () => {
     };
 
     checkAdminAccess();
-  }, [user]);
+  }, [userId]); // Only depend on userId, not the entire user object
 
   return { isAdmin, loading, error };
 };

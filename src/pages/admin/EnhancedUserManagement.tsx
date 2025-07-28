@@ -183,7 +183,19 @@ const UserManagement = () => {
 
       if (error) {
         console.error('❌ Admin users function error:', error);
-        throw new Error(`Failed to fetch users: ${error.message}`);
+        
+        // Provide specific error messages based on error type
+        if (error.message?.includes('CORS')) {
+          throw new Error('CORS policy error: Unable to connect to admin service. Please contact support.');
+        } else if (error.message?.includes('Failed to fetch')) {
+          throw new Error('Network error: Unable to connect to admin service. Please check your connection.');
+        } else if (error.message?.includes('401') || error.message?.includes('Unauthorized')) {
+          throw new Error('Authentication required: Please refresh the page and try again.');
+        } else if (error.message?.includes('403') || error.message?.includes('Forbidden')) {
+          throw new Error('Access denied: Admin privileges required for this operation.');
+        } else {
+          throw new Error(`Failed to fetch users: ${error.message}`);
+        }
       }
       
       console.log('✅ Admin users data received:', data);
@@ -191,6 +203,7 @@ const UserManagement = () => {
     },
     retry: 2,
     refetchOnWindowFocus: false,
+    staleTime: 30000, // Consider data fresh for 30 seconds
   });
 
   // Grant Full Prep access
