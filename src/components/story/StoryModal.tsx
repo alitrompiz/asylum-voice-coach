@@ -211,6 +211,9 @@ export const StoryModal = ({
 
     setIsSaving(true);
     try {
+      // Cancel any in-flight queries to prevent race conditions
+      await queryClient.cancelQueries({ queryKey: getStoryQueryKey(user.id) });
+      
       if (mode === 'edit') {
         // Update existing active story
         const { error } = await supabase
@@ -243,8 +246,9 @@ export const StoryModal = ({
         title: t('story.story_saved'),
       });
 
-      // Invalidate story query to update dashboard and profile immediately
-      queryClient.invalidateQueries({ queryKey: getStoryQueryKey(user.id) });
+      // Invalidate and refetch to ensure immediate UI updates
+      await queryClient.invalidateQueries({ queryKey: getStoryQueryKey(user.id) });
+      await queryClient.refetchQueries({ queryKey: getStoryQueryKey(user.id) });
       window.dispatchEvent(new CustomEvent('storyChanged'));
       
       onOpenChange(false);
@@ -273,6 +277,9 @@ export const StoryModal = ({
     
     setIsSaving(true);
     try {
+      // Cancel any in-flight queries to prevent race conditions
+      await queryClient.cancelQueries({ queryKey: getStoryQueryKey(user.id) });
+      
       const { error } = await supabase
         .from('stories')
         .update({ 
@@ -288,8 +295,12 @@ export const StoryModal = ({
         title: t('story.story_deleted'),
       });
       
-      // Invalidate story query to update dashboard and profile immediately
-      queryClient.invalidateQueries({ queryKey: getStoryQueryKey(user.id) });
+      // Clear local state and set cache to empty immediately, then invalidate  
+      queryClient.setQueryData(getStoryQueryKey(user.id), null);
+      
+      // Invalidate and refetch to ensure fresh data
+      await queryClient.invalidateQueries({ queryKey: getStoryQueryKey(user.id) });
+      await queryClient.refetchQueries({ queryKey: getStoryQueryKey(user.id) });
       window.dispatchEvent(new CustomEvent('storyChanged'));
       
       onOpenChange(false);

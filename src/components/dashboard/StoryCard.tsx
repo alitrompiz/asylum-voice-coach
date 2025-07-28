@@ -32,12 +32,13 @@ export const StoryCard = () => {
     enabled: !!user,
     staleTime: 0, // Always refetch to ensure fresh data
     refetchOnWindowFocus: true, // Refetch when user returns to tab
+    refetchOnMount: 'always', // Always refetch on mount
   });
 
-  // Compute story state: text first, then PDF - normalized for whitespace
+  // Compute story state: ONLY text content determines "loaded" status
   const hasText = typeof activeStory?.story_text === 'string' && activeStory.story_text.trim().length > 0;
   const hasPdf = !!activeStory?.file_path;
-  const hasStory = hasText || hasPdf;
+  const hasStory = hasText; // Only text determines "loaded" state, not PDF
 
   // Debug logging when enabled
   useEffect(() => {

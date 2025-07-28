@@ -18,7 +18,6 @@ export const AsylumStorySection = ({ onStoryChange }: AsylumStorySectionProps) =
   const queryClient = useQueryClient();
   const [showStoryModal, setShowStoryModal] = useState(false);
 
-  // Use the same query as Dashboard for consistency
   const { data: activeStory, isLoading, error } = useQuery({
     queryKey: ['active-story', user?.id],
     queryFn: async () => {
@@ -37,6 +36,7 @@ export const AsylumStorySection = ({ onStoryChange }: AsylumStorySectionProps) =
     enabled: !!user,
     staleTime: 0, // Always refetch to ensure fresh data
     refetchOnWindowFocus: true, // Refetch when user returns to tab
+    refetchOnMount: 'always', // Always refetch on mount
   });
 
   // Debug logging
@@ -58,10 +58,10 @@ export const AsylumStorySection = ({ onStoryChange }: AsylumStorySectionProps) =
     onStoryChange?.();
   };
 
-  // Compute if we have story content - normalized for whitespace
+  // Compute if we have story content - ONLY text content determines "loaded" status
   const hasText = typeof activeStory?.story_text === 'string' && activeStory.story_text.trim().length > 0;
   const hasPdf = !!activeStory?.file_path;
-  const hasStory = hasText || hasPdf;
+  const hasStory = hasText; // Only text determines "loaded" state, not PDF
 
   if (isLoading) {
     return (
