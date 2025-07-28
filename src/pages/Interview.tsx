@@ -22,7 +22,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 export default function Interview() {
   const [isAiSpeaking, setIsAiSpeaking] = useState(false);
-  const [showSubtitles, setShowSubtitles] = useState(true);
+  const [showSubtitles, setShowSubtitles] = useState(false); // OFF by default per session
   const [isPaused, setIsPaused] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [showSessionEnd, setShowSessionEnd] = useState(false);
@@ -32,6 +32,7 @@ export default function Interview() {
   const [showDebugPanel, setShowDebugPanel] = useState(false);
   const [userTranscription, setUserTranscription] = useState('');
   const [audioBlocked, setAudioBlocked] = useState(false);
+  const [audioActuallyPlaying, setAudioActuallyPlaying] = useState(false); // Track actual audio playback
   const isMobile = useIsMobile();
   const navigate = useNavigate();
 
@@ -145,10 +146,12 @@ export default function Interview() {
             console.log('🕐 First TTS started - session timer begins');
           }
           setIsAiSpeaking(true);
+          setAudioActuallyPlaying(true); // Gate subtitles on actual playback
         },
         onEnd: () => {
           console.log('✅ TTS ENDED - Audio finished playing');
           setIsAiSpeaking(false);
+          setAudioActuallyPlaying(false); // Clear playback state
         },
         onError: error => {
           console.error('❌ TTS ERROR:', error);
@@ -194,6 +197,7 @@ export default function Interview() {
     if (isTTSPlaying) {
       stopTTS();
       setIsAiSpeaking(false);
+      setAudioActuallyPlaying(false); // Clear playback state when stopped
     }
 
     // Ensure AudioContext is ready before any audio operations
@@ -247,6 +251,7 @@ export default function Interview() {
     if (isTTSPlaying) {
       stopTTS();
       setIsAiSpeaking(false);
+      setAudioActuallyPlaying(false); // Clear playback state when stopped
     }
 
     // Ensure AudioContext is ready before any audio operations
@@ -314,6 +319,7 @@ export default function Interview() {
     }
     
     setIsAiSpeaking(false);
+    setAudioActuallyPlaying(false); // Clear playback state
     clearConversation();
     setShowSessionEnd(true);
   };
@@ -374,19 +380,23 @@ export default function Interview() {
     if (isTTSPlaying) {
       stopTTS();
       setIsAiSpeaking(false);
+      setAudioActuallyPlaying(false); // Clear playback state
     } else if (currentSubtitle && !currentSubtitle.includes("Processing your message") && !currentSubtitle.includes("Transcribing your message") && selectedPersonaData?.tts_voice) {
       // Use OpenAI voice directly (no mapping needed)
       speak(currentSubtitle, {
         voice: selectedPersonaData.tts_voice,
         onStart: () => {
           setIsAiSpeaking(true);
+          setAudioActuallyPlaying(true); // Gate subtitles on actual playback
         },
         onEnd: () => {
           setIsAiSpeaking(false);
+          setAudioActuallyPlaying(false); // Clear playback state
         },
         onError: error => {
           console.error('TTS error:', error);
           setIsAiSpeaking(false);
+          setAudioActuallyPlaying(false); // Clear playback state on error
         }
       });
     }
@@ -456,7 +466,7 @@ export default function Interview() {
                 </div>}
 
               {/* Officer Subtitles - positioned at 60% down from top of photo */}
-              {showSubtitles && currentSubtitle && <div className="absolute top-[60%] left-1/2 transform -translate-x-1/2 max-w-[1000px] w-full px-4 z-10">
+              {showSubtitles && currentSubtitle && audioActuallyPlaying && <div className="absolute top-[60%] left-1/2 transform -translate-x-1/2 max-w-[1000px] w-full px-4 z-10">
                   <div className="bg-black/60 backdrop-blur-sm rounded-lg px-3 py-2 text-center">
                     <p className="text-xs text-white leading-relaxed">{currentSubtitle}</p>
                   </div>
