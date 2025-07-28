@@ -214,20 +214,57 @@ export const StoryModal = ({
       // Cancel any in-flight queries to prevent race conditions
       await queryClient.cancelQueries({ queryKey: getStoryQueryKey(user.id) });
       
-      // Always update existing active story or create if none exists
-      const { error } = await supabase
-        .from('stories')
-        .upsert({
-          user_id: user.id,
-          title: `Story ${new Date().toLocaleDateString()}`,
-          story_text: textToSave,
-          source_type: 'text',
-          is_active: true
-        }, {
-          onConflict: 'user_id,is_active'
-        });
+      if (mode === 'edit') {
+        // Update existing active story
+        const { error } = await supabase
+          .from('stories')
+          .update({ 
+            story_text: textToSave,
+            source_type: 'text',
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', user.id)
+          .eq('is_active', true);
 
-      if (error) throw error;
+        if (error) throw error;
+      } else {
+        // For create mode, check if user already has an active story
+        const { data: existingStory } = await supabase
+          .from('stories')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('is_active', true)
+          .single();
+
+        if (existingStory) {
+          // Update existing story
+          const { error } = await supabase
+            .from('stories')
+            .update({ 
+              story_text: textToSave,
+              source_type: 'text',
+              title: `Story ${new Date().toLocaleDateString()}`,
+              updated_at: new Date().toISOString()
+            })
+            .eq('user_id', user.id)
+            .eq('is_active', true);
+
+          if (error) throw error;
+        } else {
+          // Create new story
+          const { error } = await supabase
+            .from('stories')
+            .insert({
+              user_id: user.id,
+              title: `Story ${new Date().toLocaleDateString()}`,
+              story_text: textToSave,
+              source_type: 'text',
+              is_active: true
+            });
+
+          if (error) throw error;
+        }
+      }
 
       toast({
         title: t('story.story_saved'),
