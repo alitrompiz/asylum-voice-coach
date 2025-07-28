@@ -26,7 +26,7 @@ interface StoryModalProps {
 }
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-const MAX_CHARS = 10000; // Character limit for text
+const MAX_CHARS = 100000; // Character limit for text
 const OCR_TIMEOUT_MS = 90000; // 90 seconds
 
 // Unified state flow
