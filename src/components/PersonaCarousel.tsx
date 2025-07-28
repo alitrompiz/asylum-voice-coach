@@ -173,11 +173,6 @@ export const PersonaCarousel = ({
                   )}>
                     {translateMood(persona.mood)}
                   </p>
-                  {isLocked && (
-                    <p className="text-xs text-gray-500 mt-1">
-                      {t('personas.unlock_tooltip', 'Unlock with Full Prep')}
-                    </p>
-                  )}
                 </div>
               </div>
             );

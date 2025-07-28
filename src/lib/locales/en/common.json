@@ -23,7 +23,7 @@
     "title": "Pick areas of focus",
     "no_areas": "No focus areas are currently active.",
     "contact_admin": "Contact your administrator to add areas.",
-    "upgrade_nudge": "Upgrade to Full Prep to unlock all",
+    "upgrade_nudge": "Upgrade to get fully prepared",
     "unlock_with_full_prep": "Unlock this with Full Prep",
     "names": {
       "describe_past_harm": "Describe past harm",
@@ -57,7 +57,7 @@
   "personas": {
     "title": "Select an officer",
     "no_officers": "No officers available at the moment.",
-    "upgrade_nudge": "Upgrade to Full Prep to unlock all",
+    "upgrade_nudge": "Upgrade to get fully prepared",
     "unlock_with_full_prep": "Unlock this with Full Prep",
     "unlock_tooltip": "Unlock with Full Prep",
     "moods": {
