@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAttorneys } from '@/hooks/useAttorneys';
 import { useDebounce } from '@/hooks/useDebounce';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { Check, ChevronsUpDown, AlertTriangle } from 'lucide-react';
@@ -49,18 +49,20 @@ export const AttorneySelector = () => {
   // Debug logging when enabled
   const debugEnabled = process.env.NODE_ENV === 'development';
   
-  // Safe attorney list with proper defaults
+  // Safe attorney list with proper filtering - no null children
   const safeAttorneys = useMemo(() => {
     const result = Array.isArray(attorneys) ? attorneys : [];
+    // Filter out invalid items before mapping to avoid null children
+    const validItems = result.filter(a => a && a.id && a.display_name && a.firm_name);
     
     if (debugEnabled) {
       console.log('[DEBUG_ATTORNEY] Input value:', searchValue);
-      console.log('[DEBUG_ATTORNEY] Result count:', result.length);
-      console.log('[DEBUG_ATTORNEY] Item sample:', result[0] || 'none');
+      console.log('[DEBUG_ATTORNEY] Result count:', validItems.length);
+      console.log('[DEBUG_ATTORNEY] Item sample:', validItems[0] || 'none');
       console.log('[DEBUG_ATTORNEY] Is array undefined?', attorneys === undefined);
     }
     
-    return result;
+    return validItems;
   }, [attorneys, searchValue, debugEnabled]);
 
   const debouncedSearch = useDebounce((value: string) => {
@@ -133,20 +135,15 @@ export const AttorneySelector = () => {
               value={searchValue}
               onValueChange={handleSearchChange}
             />
-            <CommandEmpty>
-              {loading ? 'Loading attorneys...' : 'No attorney found.'}
-            </CommandEmpty>
-            <CommandGroup>
-              {safeAttorneys.map((attorney) => {
-                // Extra safety check for each attorney item
-                if (!attorney || !attorney.id || !attorney.display_name || !attorney.firm_name) {
-                  return null;
-                }
-                
-                return (
+            <CommandList>
+              <CommandEmpty>
+                {loading ? 'Loading attorneys...' : 'No attorney found.'}
+              </CommandEmpty>
+              <CommandGroup>
+                {safeAttorneys.map((attorney) => (
                   <CommandItem
                     key={attorney.id}
-                    value={attorney.id}
+                    value={`${attorney.id} ${attorney.display_name} ${attorney.firm_name}`}
                     onSelect={() => handleSelect(attorney.id)}
                   >
                     <Check
@@ -160,9 +157,9 @@ export const AttorneySelector = () => {
                       <div className="text-sm text-muted-foreground">{attorney.firm_name}</div>
                     </div>
                   </CommandItem>
-                );
-              })}
-            </CommandGroup>
+                ))}
+              </CommandGroup>
+            </CommandList>
           </Command>
         </PopoverContent>
       </Popover>
