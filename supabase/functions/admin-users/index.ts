@@ -66,9 +66,17 @@ serve(async (req) => {
         sort_by: url.searchParams.get('sort_by') || 'created_at',
         sort_order: url.searchParams.get('sort_order') || 'desc',
       };
-    } else {
-      // Handle POST request with body
-      const body = await req.json();
+    } else if (req.method === 'POST') {
+      // Handle POST request with body - safely parse JSON
+      let body;
+      try {
+        const bodyText = await req.text();
+        body = bodyText ? JSON.parse(bodyText) : {};
+      } catch (error) {
+        console.error('Error parsing request body:', error);
+        body = {};
+      }
+      
       params = {
         page: body.page || 1,
         limit: body.limit || 20,
@@ -78,6 +86,11 @@ serve(async (req) => {
         sort_by: body.sort_by || 'created_at',
         sort_order: body.sort_order || 'desc',
       };
+    } else {
+      return new Response(JSON.stringify({ error: "Method not allowed" }), {
+        status: 405,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // Fetch users directly from auth.users since the RPC might not exist
