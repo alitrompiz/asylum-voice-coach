@@ -93,18 +93,18 @@ serve(async (req) => {
       });
     }
 
-    // Fetch users directly from auth.users since the RPC might not exist
+    // Fetch users from profiles table
     console.log('Fetching users with params:', params);
     
     let query = supabase
       .from('profiles')
       .select(`
-        id,
         user_id,
         display_name,
         created_at,
-        updated_at
-      `);
+        updated_at,
+        is_banned
+      `, { count: 'exact' });
 
     if (params.search) {
       query = query.or(`display_name.ilike.%${params.search}%,user_id.eq.${params.search}`);
@@ -126,7 +126,7 @@ serve(async (req) => {
     }
 
     const users = basicUsers || [];
-    const totalCount = users.length > 0 ? users[0].total_count : 0;
+    const totalCount = count || 0;
 
     // Enrich the data with additional fields
     const enrichedUsers = [];
@@ -138,7 +138,7 @@ serve(async (req) => {
           .from('minutes_balance')
           .select('session_seconds_used, session_seconds_limit')
           .eq('user_id', user.user_id)
-          .single();
+          .maybeSingle();
 
         // Get lifetime session data
         const { data: sessionData } = await supabase
@@ -192,16 +192,14 @@ serve(async (req) => {
 
         enrichedUsers.push({
           user_id: user.user_id,
-          email: user.email,
-          display_name: user.display_name,
-          is_banned: user.is_banned,
+          email: user.email || `user_${user.user_id.slice(0, 8)}@example.com`, // Fallback email
+          display_name: user.display_name || 'No name',
+          is_banned: user.is_banned || false,
           created_at: user.created_at,
           last_sign_in_at: null, // We'll need to get this from auth if needed
           
           // Entitlement status
-          entitlement_status: user.entitlement_status === 'full_prep' ? 
-            (user.has_active_subscription ? 'full_prep_subscription' : 'full_prep_grant') : 
-            'free_trial',
+          entitlement_status: activeGrant ? 'full_prep_grant' : 'free_trial',
           
           // Subscription
           subscribed: user.has_active_subscription,
@@ -238,12 +236,12 @@ serve(async (req) => {
         // Add basic user data even if enrichment fails
         enrichedUsers.push({
           user_id: user.user_id,
-          email: user.email,
-          display_name: user.display_name,
-          is_banned: user.is_banned,
+          email: user.email || `user_${user.user_id.slice(0, 8)}@example.com`,
+          display_name: user.display_name || 'No name',
+          is_banned: user.is_banned || false,
           created_at: user.created_at,
-          entitlement_status: user.entitlement_status === 'full_prep' ? 'full_prep_grant' : 'free_trial',
-          subscribed: user.has_active_subscription,
+          entitlement_status: 'free_trial',
+          subscribed: false,
           lifetime_session_seconds: 0,
           session_seconds_used: 0,
           session_seconds_limit: 3600,
