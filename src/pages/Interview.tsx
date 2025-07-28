@@ -33,6 +33,8 @@ export default function Interview() {
   const [userTranscription, setUserTranscription] = useState('');
   const [audioBlocked, setAudioBlocked] = useState(false);
   const [audioActuallyPlaying, setAudioActuallyPlaying] = useState(false); // Track actual audio playback
+  const [showEndConfirmation, setShowEndConfirmation] = useState(false); // Confirmation dialog before ending
+  const [isEnding, setIsEnding] = useState(false); // Guard to prevent new TTS during cleanup
   const isMobile = useIsMobile();
   const navigate = useNavigate();
 
@@ -119,8 +121,8 @@ export default function Interview() {
     });
 
     // Only speak if it's an actual AI response (not processing/transcribing/system messages)
-    // AND it's different from the last spoken subtitle
-    if (currentSubtitle && !currentSubtitle.includes("Processing your message") && !currentSubtitle.includes("Transcribing your message") && !currentSubtitle.includes("Connecting...") && !currentSubtitle.includes("Processing failed") && selectedPersonaData?.tts_voice && !isProcessing && !isTTSPlaying && currentSubtitle !== lastSpokenSubtitle.current) {
+    // AND it's different from the last spoken subtitle AND session is not ending
+    if (currentSubtitle && !currentSubtitle.includes("Processing your message") && !currentSubtitle.includes("Transcribing your message") && !currentSubtitle.includes("Connecting...") && !currentSubtitle.includes("Processing failed") && selectedPersonaData?.tts_voice && !isProcessing && !isTTSPlaying && currentSubtitle !== lastSpokenSubtitle.current && !isEnding) {
       console.log('🚀 STARTING TTS for NEW content:', {
         text: currentSubtitle.substring(0, 50) + '...',
         voice: selectedPersonaData.tts_voice,
@@ -180,7 +182,7 @@ export default function Interview() {
         isSameAsLast: currentSubtitle === lastSpokenSubtitle.current
       });
     }
-  }, [currentSubtitle, selectedPersonaData?.tts_voice, speak, isProcessing, isTTSPlaying]);
+  }, [currentSubtitle, selectedPersonaData?.tts_voice, speak, isProcessing, isTTSPlaying, isEnding]);
 
   // Handle touch events (primary for mobile)
   const handleTouch = async (e: React.TouchEvent) => {
@@ -289,39 +291,71 @@ export default function Interview() {
       }
     }
   };
-  const handleEndSession = () => {
-    console.log('🚪 Exit button pressed - stopping all audio immediately');
+  // Show confirmation dialog when user wants to end session
+  const onRequestEndSession = () => {
+    setShowEndConfirmation(true);
+  };
+
+  // Gracefully end the session after user confirms
+  const gracefulEndSession = async () => {
+    console.log('🚪 User confirmed session end - stopping all audio and timers');
     
-    // Stop TTS immediately and abort any ongoing requests
-    stopTTS();
+    // Set ending guard to prevent new TTS
+    setIsEnding(true);
     
-    // Abort any ongoing TTS requests by setting currentRequestRef to null
-    if (currentRequestRef && currentRequestRef.current) {
-      console.log('🛑 Aborting TTS request:', currentRequestRef.current);
-      currentRequestRef.current = null;
+    try {
+      // Stop TTS immediately and abort any ongoing requests
+      stopTTS();
+      
+      // Abort any ongoing TTS requests by setting currentRequestRef to null
+      if (currentRequestRef && currentRequestRef.current) {
+        console.log('🛑 Aborting TTS request:', currentRequestRef.current);
+        currentRequestRef.current = null;
+      }
+      
+      // Stop any audio element that might be playing
+      const audioElement = document.getElementById('tts-audio') as HTMLAudioElement;
+      if (audioElement) {
+        audioElement.pause();
+        audioElement.currentTime = 0;
+        audioElement.removeAttribute('src');
+        console.log('🔇 Audio element stopped and cleared');
+      }
+      
+      // Stop any AudioContext
+      if (window.audioContext && window.audioContext.state === 'running') {
+        try {
+          await window.audioContext.suspend();
+          console.log('🔇 AudioContext suspended');
+        } catch (err) {
+          console.warn('⚠️ Failed to suspend AudioContext:', err);
+        }
+      }
+      
+      // Stop recording if active
+      if (isRecording) {
+        stopRecording();
+      }
+      
+      // Clear all audio/subtitle state
+      setIsAiSpeaking(false);
+      setAudioActuallyPlaying(false);
+      clearConversation();
+      
+      // Close confirmation dialog
+      setShowEndConfirmation(false);
+      
+      // Brief delay to ensure cleanup completes, then show feedback modal
+      setTimeout(() => {
+        setShowSessionEnd(true);
+      }, 100);
+      
+    } catch (error) {
+      console.error('Error during graceful session end:', error);
+      // Even if cleanup fails, proceed to show session end
+      setShowEndConfirmation(false);
+      setShowSessionEnd(true);
     }
-    
-    // Stop any audio element that might be playing
-    const audioElement = document.getElementById('tts-audio') as HTMLAudioElement;
-    if (audioElement) {
-      audioElement.pause();
-      audioElement.currentTime = 0;
-      console.log('🔇 Audio element stopped');
-    }
-    
-    // Stop any AudioContext
-    if (window.audioContext && window.audioContext.state === 'running') {
-      window.audioContext.suspend().then(() => {
-        console.log('🔇 AudioContext suspended');
-      }).catch(err => {
-        console.warn('⚠️ Failed to suspend AudioContext:', err);
-      });
-    }
-    
-    setIsAiSpeaking(false);
-    setAudioActuallyPlaying(false); // Clear playback state
-    clearConversation();
-    setShowSessionEnd(true);
   };
 
   const handleFeedbackRequest = async () => {
@@ -485,7 +519,7 @@ export default function Interview() {
 
               {/* Exit Interview Button - Top Left Corner of Photo */}
               <button 
-                onClick={handleEndSession} 
+                onClick={onRequestEndSession} 
                 className="absolute top-2 left-2 bg-red-600 hover:bg-red-500 rounded-full p-2 border-2 border-white/20 transition-colors" 
                 title="Exit Interview"
                 data-testid="exit-button"
@@ -745,6 +779,36 @@ export default function Interview() {
               navigate('/dashboard'); // TODO: Navigate to session history when implemented
             }} className="flex-1 bg-gray-600 hover:bg-gray-700 text-white">
                 Session History
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* End Session Confirmation Dialog */}
+      <Dialog open={showEndConfirmation} onOpenChange={setShowEndConfirmation}>
+        <DialogContent className="sm:max-w-[400px] bg-gradient-to-br from-gray-900 to-gray-800 border-gray-700">
+          <div className="text-center space-y-6 py-6">
+            <h2 className="text-xl font-bold text-white">
+              Are you sure you want to end this session?
+            </h2>
+            
+            <div className="space-y-3">
+              {/* Primary Button: Continue Session */}
+              <Button 
+                onClick={() => setShowEndConfirmation(false)}
+                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium py-3"
+              >
+                Continue Session
+              </Button>
+              
+              {/* Secondary Button: End Session */}
+              <Button 
+                onClick={gracefulEndSession}
+                variant="outline"
+                className="w-full border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white"
+              >
+                End Session
               </Button>
             </div>
           </div>
