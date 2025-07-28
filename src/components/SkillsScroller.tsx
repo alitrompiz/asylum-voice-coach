@@ -135,13 +135,18 @@ export const SkillsScroller = () => {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-2">
-        <h3 className="text-lg font-semibold text-white">{t('skills.title')}</h3>
-        {entitlementStatus === 'free_trial' && (
-          <div className="text-xs text-gray-400">
-            {t('skills.upgrade_nudge', 'Upgrade to Full Prep to unlock all')}
-          </div>
-        )}
+      <div className="mb-2">
+        <div className="flex items-baseline flex-wrap gap-3">
+          <h3 className="text-lg font-semibold text-white">{t('skills.title')}</h3>
+          {entitlementStatus === 'free_trial' && (
+            <button 
+              className="text-xs text-gray-400 hover:text-gray-300 transition-colors"
+              aria-label={t('skills.upgrade_nudge', 'Upgrade to get fully prepared')}
+            >
+              {t('skills.upgrade_nudge', 'Upgrade to get fully prepared')}
+            </button>
+          )}
+        </div>
       </div>
       <div className="space-y-2">
         {/* Row 1 */}

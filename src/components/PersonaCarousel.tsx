@@ -118,13 +118,18 @@ export const PersonaCarousel = ({
       </div>;
   }
   return <div>
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-xl font-bold text-white">{t('personas.title')}</h3>
-        {entitlementStatus === 'free_trial' && (
-          <div className="text-xs text-gray-400">
-            {t('personas.upgrade_nudge', 'Upgrade to Full Prep to unlock all')}
-          </div>
-        )}
+      <div className="mb-3">
+        <div className="flex items-baseline flex-wrap gap-3">
+          <h3 className="text-xl font-bold text-white">{t('personas.title')}</h3>
+          {entitlementStatus === 'free_trial' && (
+            <button 
+              className="text-xs text-gray-400 hover:text-gray-300 transition-colors"
+              aria-label={t('personas.upgrade_nudge', 'Upgrade to get fully prepared')}
+            >
+              {t('personas.upgrade_nudge', 'Upgrade to get fully prepared')}
+            </button>
+          )}
+        </div>
       </div>
       <ScrollArea className="w-full p-1">
         <div className="flex gap-6 pt-2 pb-0 snap-x snap-mandatory overflow-x-auto py-[4px] my-0">
