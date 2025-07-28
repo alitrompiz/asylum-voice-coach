@@ -5,7 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 import { 
   Loader2, Search, Filter, Download, MoreHorizontal, Crown, Clock, 
   UserCheck, UserX, Mail, ExternalLink, RefreshCw, Eye, Trash2,
-  Calendar, AlertTriangle, CheckCircle
+  Calendar, AlertTriangle, CheckCircle, Settings
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -15,6 +15,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -72,6 +76,28 @@ interface UsersResponse {
   };
 }
 
+// Column configuration
+interface ColumnConfig {
+  key: string;
+  label: string;
+  visible: boolean;
+  mobile?: boolean; // Show in mobile cards
+}
+
+const DEFAULT_COLUMNS: ColumnConfig[] = [
+  { key: 'user', label: 'User', visible: true, mobile: true },
+  { key: 'plan_status', label: 'Plan/Status', visible: true, mobile: true },
+  { key: 'usage', label: 'Usage', visible: true, mobile: false },
+  { key: 'free_minutes', label: 'Free Minutes Left', visible: true, mobile: false },
+  { key: 'grant_remaining', label: 'Premium Grant Remaining', visible: true, mobile: false },
+  { key: 'attorney', label: 'Attorney', visible: true, mobile: false },
+  { key: 'price', label: 'Price', visible: false, mobile: false },
+  { key: 'created', label: 'Created', visible: true, mobile: false },
+  { key: 'member_age', label: 'Member Age', visible: false, mobile: false },
+  { key: 'last_active', label: 'Last Active', visible: false, mobile: false },
+  { key: 'actions', label: 'Actions', visible: true, mobile: true },
+];
+
 const UserManagement = () => {
   const [selectedUser, setSelectedUser] = useState<EnrichedUser | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -80,6 +106,8 @@ const UserManagement = () => {
   const [sortBy, setSortBy] = useState<string>('created_at');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [currentPage, setCurrentPage] = useState(1);
+  const [columnConfig, setColumnConfig] = useState<ColumnConfig[]>(DEFAULT_COLUMNS);
+  const [exportVisibleOnly, setExportVisibleOnly] = useState(false);
   const [confirmAction, setConfirmAction] = useState<{
     type: 'grant' | 'revoke' | 'delete' | 'ban' | 'unban' | null;
     user: EnrichedUser | null;
@@ -88,6 +116,41 @@ const UserManagement = () => {
   const isMobile = useIsMobile();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Load column preferences from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('admin-users-columns');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        setColumnConfig(parsed);
+      } catch (error) {
+        console.warn('Failed to load column preferences:', error);
+      }
+    }
+  }, []);
+
+  // Save column preferences to localStorage
+  const saveColumnConfig = (config: ColumnConfig[]) => {
+    setColumnConfig(config);
+    localStorage.setItem('admin-users-columns', JSON.stringify(config));
+  };
+
+  const toggleColumn = (key: string) => {
+    const newConfig = columnConfig.map(col => 
+      col.key === key ? { ...col, visible: !col.visible } : col
+    );
+    saveColumnConfig(newConfig);
+  };
+
+  const resetColumns = () => {
+    saveColumnConfig(DEFAULT_COLUMNS);
+  };
+
+  const isColumnVisible = (key: string) => {
+    const col = columnConfig.find(c => c.key === key);
+    return col?.visible ?? false;
+  };
 
   // Fetch users with enhanced data
   const { data: usersData, isLoading, error } = useQuery({
@@ -228,6 +291,8 @@ const UserManagement = () => {
           search: searchTerm,
           status_filter: statusFilter,
           attorney_filter: attorneyFilter,
+          visible_columns_only: exportVisibleOnly,
+          visible_columns: exportVisibleOnly ? columnConfig.filter(c => c.visible).map(c => c.key) : undefined
         }
       });
 
@@ -324,87 +389,126 @@ const UserManagement = () => {
           <table className="w-full">
             <thead className="border-b bg-muted/50">
               <tr>
-                <th className="h-12 px-4 text-left align-middle font-medium">User</th>
-                <th className="h-12 px-4 text-left align-middle font-medium">Plan/Status</th>
-                <th className="h-12 px-4 text-left align-middle font-medium">Usage</th>
-                <th className="h-12 px-4 text-left align-middle font-medium">Free Minutes Left</th>
-                <th className="h-12 px-4 text-left align-middle font-medium">Premium Grant</th>
-                <th className="h-12 px-4 text-left align-middle font-medium">Attorney</th>
-                <th className="h-12 px-4 text-left align-middle font-medium">Created</th>
-                <th className="h-12 px-4 text-left align-middle font-medium">Actions</th>
+                {isColumnVisible('user') && <th className="h-12 px-4 text-left align-middle font-medium">User</th>}
+                {isColumnVisible('plan_status') && <th className="h-12 px-4 text-left align-middle font-medium">Plan/Status</th>}
+                {isColumnVisible('usage') && <th className="h-12 px-4 text-left align-middle font-medium">Usage</th>}
+                {isColumnVisible('free_minutes') && <th className="h-12 px-4 text-left align-middle font-medium">Free Minutes Left</th>}
+                {isColumnVisible('grant_remaining') && <th className="h-12 px-4 text-left align-middle font-medium">Premium Grant</th>}
+                {isColumnVisible('attorney') && <th className="h-12 px-4 text-left align-middle font-medium">Attorney</th>}
+                {isColumnVisible('price') && <th className="h-12 px-4 text-left align-middle font-medium">Price</th>}
+                {isColumnVisible('created') && <th className="h-12 px-4 text-left align-middle font-medium">Created</th>}
+                {isColumnVisible('member_age') && <th className="h-12 px-4 text-left align-middle font-medium">Member Age</th>}
+                {isColumnVisible('last_active') && <th className="h-12 px-4 text-left align-middle font-medium">Last Active</th>}
+                {isColumnVisible('actions') && <th className="h-12 px-4 text-left align-middle font-medium">Actions</th>}
               </tr>
             </thead>
             <tbody>
               {usersData.users.map((user) => (
                 <tr key={user.user_id} className="border-b hover:bg-muted/50">
-                  <td className="p-4">
-                    <div>
-                      <div className="font-medium">{user.display_name || 'No name'}</div>
-                      <div className="text-sm text-muted-foreground">{user.email}</div>
-                      {user.is_banned && (
-                        <Badge variant="destructive" className="mt-1">Banned</Badge>
-                      )}
-                    </div>
-                  </td>
-                  <td className="p-4">
-                    {renderStatusBadge(user)}
-                    {user.subscribed && (
-                      <div className="text-xs text-muted-foreground mt-1">
-                        {user.subscription_tier}
-                      </div>
-                    )}
-                  </td>
-                  <td className="p-4">
-                    <div className="text-sm">
-                      {formatMinutes(user.lifetime_session_seconds)} min total
-                    </div>
-                    {user.last_session_at && (
-                      <div className="text-xs text-muted-foreground">
-                        Last: {new Date(user.last_session_at).toLocaleDateString()}
-                      </div>
-                    )}
-                  </td>
-                  <td className="p-4">
-                    <div className="text-sm">
-                      {formatMinutes(user.free_seconds_remaining)} min
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      of {formatMinutes(user.session_seconds_limit)}
-                    </div>
-                  </td>
-                  <td className="p-4">
-                    {user.grant_remaining_seconds > 0 ? (
-                      <div className="text-sm text-green-600">
-                        {formatTimeRemaining(user.grant_remaining_seconds)}
-                      </div>
-                    ) : (
-                      <div className="text-sm text-muted-foreground">None</div>
-                    )}
-                    {user.grant_history_count > 0 && (
-                      <div className="text-xs text-muted-foreground">
-                        {user.grant_history_count} grants total
-                      </div>
-                    )}
-                  </td>
-                  <td className="p-4">
-                    {user.attorney_display_name ? (
+                  {isColumnVisible('user') && (
+                    <td className="p-4">
                       <div>
-                        <div className="text-sm">{user.attorney_display_name}</div>
-                        <div className="text-xs text-muted-foreground">{user.attorney_firm}</div>
+                        <div className="font-medium">{user.display_name || 'No name'}</div>
+                        <div className="text-sm text-muted-foreground">{user.email}</div>
+                        {user.is_banned && (
+                          <Badge variant="destructive" className="mt-1">Banned</Badge>
+                        )}
                       </div>
-                    ) : (
-                      <div className="text-sm text-muted-foreground">None</div>
-                    )}
-                  </td>
-                  <td className="p-4">
-                    <div className="text-sm">
-                      {new Date(user.created_at).toLocaleDateString()}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {Math.round(user.member_age_days)}d ago
-                    </div>
-                  </td>
-                  <td className="p-4">
+                    </td>
+                  )}
+                  {isColumnVisible('plan_status') && (
+                    <td className="p-4">
+                      {renderStatusBadge(user)}
+                      {user.subscribed && (
+                        <div className="text-xs text-muted-foreground mt-1">
+                          {user.subscription_tier}
+                        </div>
+                      )}
+                    </td>
+                  )}
+                  {isColumnVisible('usage') && (
+                    <td className="p-4">
+                      <div className="text-sm">
+                        {formatMinutes(user.lifetime_session_seconds)} min total
+                      </div>
+                      {user.last_session_at && (
+                        <div className="text-xs text-muted-foreground">
+                          Last: {new Date(user.last_session_at).toLocaleDateString()}
+                        </div>
+                      )}
+                    </td>
+                  )}
+                  {isColumnVisible('free_minutes') && (
+                    <td className="p-4">
+                      <div className="text-sm">
+                        {formatMinutes(user.free_seconds_remaining)} min
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        of {formatMinutes(user.session_seconds_limit)}
+                      </div>
+                    </td>
+                  )}
+                  {isColumnVisible('grant_remaining') && (
+                    <td className="p-4">
+                      {user.grant_remaining_seconds > 0 ? (
+                        <div className="text-sm text-green-600">
+                          {formatTimeRemaining(user.grant_remaining_seconds)}
+                        </div>
+                      ) : (
+                        <div className="text-sm text-muted-foreground">None</div>
+                      )}
+                      {user.grant_history_count > 0 && (
+                        <div className="text-xs text-muted-foreground">
+                          {user.grant_history_count} grants total
+                        </div>
+                      )}
+                    </td>
+                  )}
+                  {isColumnVisible('attorney') && (
+                    <td className="p-4">
+                      {user.attorney_display_name ? (
+                        <div>
+                          <div className="text-sm">{user.attorney_display_name}</div>
+                          <div className="text-xs text-muted-foreground">{user.attorney_firm}</div>
+                        </div>
+                      ) : (
+                        <div className="text-sm text-muted-foreground">None</div>
+                      )}
+                    </td>
+                  )}
+                  {isColumnVisible('price') && (
+                    <td className="p-4">
+                      <div className="text-sm">
+                        ${user.subscription_tier === 'premium' ? '29' : '0'}/mo
+                      </div>
+                    </td>
+                  )}
+                  {isColumnVisible('created') && (
+                    <td className="p-4">
+                      <div className="text-sm">
+                        {new Date(user.created_at).toLocaleDateString()}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {Math.round(user.member_age_days)}d ago
+                      </div>
+                    </td>
+                  )}
+                  {isColumnVisible('member_age') && (
+                    <td className="p-4">
+                      <div className="text-sm">
+                        {Math.round(user.member_age_days)} days
+                      </div>
+                    </td>
+                  )}
+                  {isColumnVisible('last_active') && (
+                    <td className="p-4">
+                      <div className="text-sm">
+                        {user.last_session_at ? new Date(user.last_session_at).toLocaleDateString() : 'Never'}
+                      </div>
+                    </td>
+                  )}
+                  {isColumnVisible('actions') && (
+                    <td className="p-4">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="sm">
@@ -469,7 +573,8 @@ const UserManagement = () => {
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
-                  </td>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -628,6 +733,59 @@ const UserManagement = () => {
             <SelectItem value="last_active">Last Active</SelectItem>
           </SelectContent>
         </Select>
+
+        {/* Column Configuration */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm">
+              <Settings className="w-4 h-4 mr-2" />
+              Columns
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-80" align="end">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h4 className="font-medium">Configure Columns</h4>
+                <Button variant="ghost" size="sm" onClick={resetColumns}>
+                  Reset
+                </Button>
+              </div>
+              
+              <div className="space-y-2">
+                {columnConfig.map((column) => (
+                  column.key !== 'actions' && (
+                    <div key={column.key} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={column.key}
+                        checked={column.visible}
+                        onCheckedChange={() => toggleColumn(column.key)}
+                      />
+                      <Label
+                        htmlFor={column.key}
+                        className="text-sm font-normal cursor-pointer"
+                      >
+                        {column.label}
+                      </Label>
+                    </div>
+                  )
+                ))}
+              </div>
+              
+              <div className="border-t pt-3 space-y-2">
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="export-visible"
+                    checked={exportVisibleOnly}
+                    onCheckedChange={setExportVisibleOnly}
+                  />
+                  <Label htmlFor="export-visible" className="text-sm">
+                    Export only visible columns
+                  </Label>
+                </div>
+              </div>
+            </div>
+          </PopoverContent>
+        </Popover>
       </div>
 
       {/* User List */}

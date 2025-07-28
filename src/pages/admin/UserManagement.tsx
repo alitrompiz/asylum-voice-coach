@@ -36,37 +36,35 @@ export default function UserManagement() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch all users using admin function
+  // Fetch all users using admin edge function
   const { data: usersData, isLoading } = useQuery({
     queryKey: ['admin-users', searchTerm, statusFilter, currentPage],
     queryFn: async () => {
-      // First, backfill any missing profiles
-      try {
-        await supabase.rpc('backfill_missing_profiles');
-      } catch (error) {
-        console.warn('Backfill failed, continuing...', error);
-      }
-
-      // Get all users using admin function
-      const { data, error } = await supabase.rpc('get_all_users_admin', {
-        search_term: searchTerm || null,
-        status_filter: statusFilter,
-        page_offset: (currentPage - 1) * pageSize,
-        page_limit: pageSize
+      const { data, error } = await supabase.functions.invoke('admin-users', {
+        body: {
+          page: currentPage,
+          limit: pageSize,
+          search: searchTerm || undefined,
+          status_filter: statusFilter,
+          sort_by: 'created_at',
+          sort_order: 'desc'
+        }
       });
 
       if (error) {
-        console.error('Error fetching users:', error);
-        throw error;
+        console.error('❌ Error fetching admin users:', error);
+        throw new Error('Failed to load user data. Please try again.');
       }
 
-      // Apply status filter if needed (the function doesn't filter by status yet)
-      const users = data || [];
+      console.log('✅ Admin users data received:', data);
+
+      const users = data?.users || [];
+      const totalCount = data?.pagination?.total || 0;
+
+      // Apply status filter if needed
       const filteredUsers = statusFilter === 'all' 
         ? users 
         : users.filter((user: any) => user.entitlement_status === statusFilter);
-
-      const totalCount = users.length > 0 ? users[0].total_count : 0;
 
       return {
         users: filteredUsers.map((user: any) => ({
@@ -76,13 +74,13 @@ export default function UserManagement() {
           display_name: user.display_name,
           is_banned: user.is_banned,
           entitlement_status: user.entitlement_status,
-          subscription_status: user.subscription_status,
-          has_active_grant: user.has_active_grant,
-          has_active_subscription: user.has_active_subscription,
+          subscription_status: user.subscription_status || 'None',
+          has_active_grant: user.grant_remaining_seconds > 0,
+          has_active_subscription: user.subscribed || false,
           created_at: user.created_at,
         })),
-        totalCount: parseInt(totalCount.toString()),
-        totalPages: Math.ceil(parseInt(totalCount.toString()) / pageSize)
+        totalCount,
+        totalPages: data?.pagination?.totalPages || 1
       };
     },
   });

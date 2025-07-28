@@ -93,10 +93,30 @@ serve(async (req) => {
       });
     }
 
-    // Fetch users from profiles table
+    // Fetch users from auth.users (using service role) and profiles
     console.log('Fetching users with params:', params);
     
-    let query = supabase
+    // First get users from auth.users to get real emails
+    const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers({
+      page: params.page,
+      perPage: params.limit
+    });
+
+    if (authError) {
+      console.error('Error fetching auth users:', authError);
+      return new Response(JSON.stringify({ 
+        error: "Failed to fetch auth users",
+        details: authError.message 
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const authUsersList = authUsers.users || [];
+    
+    // Get profiles for these users
+    let profileQuery = supabase
       .from('profiles')
       .select(`
         user_id,
@@ -104,15 +124,25 @@ serve(async (req) => {
         created_at,
         updated_at,
         is_banned
-      `, { count: 'exact' });
+      `)
+      .in('user_id', authUsersList.map(u => u.id));
 
     if (params.search) {
-      query = query.or(`display_name.ilike.%${params.search}%,user_id.eq.${params.search}`);
+      // Filter auth users by email or search profiles by name
+      const emailMatch = authUsersList.filter(u => 
+        u.email?.toLowerCase().includes(params.search.toLowerCase())
+      );
+      const userIds = emailMatch.map(u => u.id);
+      
+      if (userIds.length > 0) {
+        profileQuery = profileQuery.or(`display_name.ilike.%${params.search}%,user_id.in.(${userIds.join(',')})`);
+      } else {
+        profileQuery = profileQuery.or(`display_name.ilike.%${params.search}%`);
+      }
     }
 
-    const { data: basicUsers, error: usersError, count } = await query
-      .order('created_at', { ascending: params.sort_order === 'asc' })
-      .range((params.page - 1) * params.limit, params.page * params.limit - 1);
+    const { data: basicProfiles, error: usersError } = await profileQuery
+      .order('created_at', { ascending: params.sort_order === 'asc' });
 
     if (usersError) {
       console.error('Error fetching users:', usersError);
@@ -125,13 +155,34 @@ serve(async (req) => {
       });
     }
 
-    const users = basicUsers || [];
-    const totalCount = count || 0;
+    const profiles = basicProfiles || [];
+    const totalCount = authUsersList.length;
+
+    // Merge auth data with profile data
+    const mergedUsers = authUsersList.map(authUser => {
+      const profile = profiles.find(p => p.user_id === authUser.id);
+      return {
+        user_id: authUser.id,
+        email: authUser.email,
+        display_name: profile?.display_name || authUser.user_metadata?.display_name || authUser.user_metadata?.name || 'No name',
+        is_banned: profile?.is_banned || false,
+        created_at: authUser.created_at,
+        last_sign_in_at: authUser.last_sign_in_at,
+        profile_created_at: profile?.created_at
+      };
+    });
+
+    // Apply search filter if needed
+    const filteredUsers = params.search ? 
+      mergedUsers.filter(user => 
+        user.email?.toLowerCase().includes(params.search.toLowerCase()) ||
+        user.display_name?.toLowerCase().includes(params.search.toLowerCase())
+      ) : mergedUsers;
 
     // Enrich the data with additional fields
     const enrichedUsers = [];
     
-    for (const user of users) {
+    for (const user of filteredUsers) {
       try {
         // Get minutes balance
         const { data: minutesData } = await supabase
@@ -192,11 +243,11 @@ serve(async (req) => {
 
         enrichedUsers.push({
           user_id: user.user_id,
-          email: user.email || `user_${user.user_id.slice(0, 8)}@example.com`, // Fallback email
-          display_name: user.display_name || 'No name',
-          is_banned: user.is_banned || false,
+          email: user.email, // Real email from auth.users
+          display_name: user.display_name,
+          is_banned: user.is_banned,
           created_at: user.created_at,
-          last_sign_in_at: null, // We'll need to get this from auth if needed
+          last_sign_in_at: user.last_sign_in_at,
           
           // Entitlement status
           entitlement_status: activeGrant ? 'full_prep_grant' : 'free_trial',
@@ -236,9 +287,9 @@ serve(async (req) => {
         // Add basic user data even if enrichment fails
         enrichedUsers.push({
           user_id: user.user_id,
-          email: user.email || `user_${user.user_id.slice(0, 8)}@example.com`,
-          display_name: user.display_name || 'No name',
-          is_banned: user.is_banned || false,
+          email: user.email, // Real email from auth.users
+          display_name: user.display_name,
+          is_banned: user.is_banned,
           created_at: user.created_at,
           entitlement_status: 'free_trial',
           subscribed: false,
