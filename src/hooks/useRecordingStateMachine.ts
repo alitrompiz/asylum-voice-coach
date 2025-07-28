@@ -124,17 +124,7 @@ export const useRecordingStateMachine = (): UseRecordingStateMachineReturn => {
   const setUserTranscriptWrapper = useCallback((transcript: string) => {
     setUserTranscript(transcript);
     
-    // If this is a new user transcript (not processing message), move to ready state
-    if (transcript && !transcript.includes('Transcribing') && !transcript.includes('Processing') && state === 'processing') {
-      setState('ready');
-      
-      // Auto-return to idle after transcript is shown (transcript persists until next one)
-      setTimeout(() => {
-        setState(currentState => currentState === 'ready' ? 'idle' : currentState);
-      }, 1000);
-    }
-    
-    // Handle transcription errors
+    // Handle transcription errors first
     if (transcript.includes('transcription failed') || transcript.includes('error')) {
       setState('idle');
       setProcessingError('Transcription failed');
@@ -142,6 +132,28 @@ export const useRecordingStateMachine = (): UseRecordingStateMachineReturn => {
         title: t('interview.transcription_failed'),
         variant: 'destructive',
       });
+      return;
+    }
+    
+    // If we're in processing state, we need to transition out of it
+    if (state === 'processing') {
+      // If this is a processing message, stay in processing
+      if (transcript.includes('Transcribing') || transcript.includes('Processing')) {
+        return;
+      }
+      
+      // If we have a real transcript (not empty), move to ready state
+      if (transcript && transcript.trim()) {
+        setState('ready');
+        
+        // Auto-return to idle after transcript is shown
+        setTimeout(() => {
+          setState(currentState => currentState === 'ready' ? 'idle' : currentState);
+        }, 1000);
+      } else {
+        // If transcript is empty/null, return to idle immediately
+        setState('idle');
+      }
     }
   }, [state, t]);
 
