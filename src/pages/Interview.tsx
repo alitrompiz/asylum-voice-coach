@@ -141,14 +141,14 @@ export default function Interview() {
       speak(currentSubtitle, {
         voice: selectedPersonaData.tts_voice,
         onStart: () => {
-          console.log('✅ TTS STARTED - Audio should be playing now');
+          console.log('✅ TTS STARTED - Request sent, loading audio...');
           // Track first TTS start for accurate session timing
           if (!firstTTSStartTime) {
             setFirstTTSStartTime(Date.now());
             console.log('🕐 First TTS started - session timer begins');
           }
           setIsAiSpeaking(true);
-          setAudioActuallyPlaying(true); // Gate subtitles on actual playback
+          // Don't set audioActuallyPlaying here - wait for actual playback
         },
         onEnd: () => {
           console.log('✅ TTS ENDED - Audio finished playing');
@@ -158,6 +158,7 @@ export default function Interview() {
         onError: error => {
           console.error('❌ TTS ERROR:', error);
           setIsAiSpeaking(false);
+          setAudioActuallyPlaying(false); // Clear playback state on error
 
           // Check if audio is blocked and show appropriate feedback
           if (error.message.includes('Audio blocked') || error.message.includes('user interaction')) {
@@ -166,6 +167,10 @@ export default function Interview() {
           } else {
             alert(`TTS Error: ${error.message}`);
           }
+        },
+        onAudioPlaying: () => {
+          console.log('🔊 AUDIO ACTUALLY PLAYING - Subtitles can now show');
+          setAudioActuallyPlaying(true); // Only set when audio is audibly playing
         }
       });
     } else if (currentSubtitle === lastSpokenSubtitle.current) {
@@ -421,7 +426,7 @@ export default function Interview() {
         voice: selectedPersonaData.tts_voice,
         onStart: () => {
           setIsAiSpeaking(true);
-          setAudioActuallyPlaying(true); // Gate subtitles on actual playback
+          // Don't set audioActuallyPlaying here - wait for actual playback
         },
         onEnd: () => {
           setIsAiSpeaking(false);
@@ -431,6 +436,10 @@ export default function Interview() {
           console.error('TTS error:', error);
           setIsAiSpeaking(false);
           setAudioActuallyPlaying(false); // Clear playback state on error
+        },
+        onAudioPlaying: () => {
+          console.log('🔊 AUDIO ACTUALLY PLAYING - Subtitles can now show');
+          setAudioActuallyPlaying(true); // Only set when audio is audibly playing
         }
       });
     }

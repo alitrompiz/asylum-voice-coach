@@ -9,6 +9,7 @@ interface TTSOptions {
   onStart?: () => void;
   onEnd?: () => void;
   onError?: (error: Error) => void;
+  onAudioPlaying?: () => void; // Called when audio actually starts playing (not just loaded)
 }
 
 export const useTextToSpeech = () => {
@@ -184,13 +185,22 @@ export const useTextToSpeech = () => {
             }
           };
 
+          const handlePlaying = () => {
+            console.log('🔊 Audio "playing" event fired - audio is actually audible');
+            if (currentRequestRef.current === requestId) {
+              options.onAudioPlaying?.(); // Signal that audio is actually playing
+            }
+          };
+
           // Remove any existing event listeners to prevent duplicates
           audio.removeEventListener('ended', cleanup);
           audio.removeEventListener('error', handleError);
+          audio.removeEventListener('playing', handlePlaying);
           
           // Add fresh event listeners
           audio.addEventListener('ended', cleanup, { once: true });
           audio.addEventListener('error', handleError, { once: true });
+          audio.addEventListener('playing', handlePlaying, { once: true }); // Listen for actual playback
 
           // Use the utility function for consistent playback
           await playAudioWithContext(audioSrc);
