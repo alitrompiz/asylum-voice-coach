@@ -111,24 +111,30 @@ export const StoryModal = ({
     };
   }, [modalState, t]);
 
-  // Handle OCR job updates
+  // Handle OCR job updates - fixed dependency array to prevent clearing currentJobId too early
   useEffect(() => {
     if (!currentJobId || !ocrJob) return;
 
+    if (isDebugEnabled('DEBUG_STORY')) {
+      console.log(`[DEBUG_STORY] OCR update: jobId=${currentJobId}, status=${ocrJob.status}, progress=${ocrJob.progress}`);
+    }
+
     if (ocrJob.status === 'completed' && ocrJob.result?.extracted_text) {
-      logStateTransition('ocr_processing', 'preview_ready', `chars=${ocrJob.result.extracted_text.length}`);
-      
       const extractedText = ocrJob.result.extracted_text;
+      
+      logStateTransition('ocr_processing', 'preview_ready', `chars=${extractedText.length}`);
+      
       setOcrText(extractedText);
       setModalState('preview_ready');
-      setCurrentJobId(null);
+      // Don't clear currentJobId until after state transition
+      setTimeout(() => setCurrentJobId(null), 100);
       
       // Auto-focus the preview editor
       setTimeout(() => {
         if (textareaRef.current) {
           textareaRef.current.focus();
         }
-      }, 100);
+      }, 200);
 
       // Check for empty/poor OCR results
       if (extractedText.trim().length < 50) {
@@ -139,13 +145,21 @@ export const StoryModal = ({
         });
       }
       
+      if (isDebugEnabled('DEBUG_STORY')) {
+        console.log(`[DEBUG_STORY] ocr_done(chars=${extractedText.length})`);
+      }
+      
     } else if (ocrJob.status === 'failed') {
       logStateTransition('ocr_processing', 'error', ocrJob.error_message);
       setModalState('error');
       setErrorMessage(ocrJob.error_message || t('story.processing_failed'));
       setCurrentJobId(null);
+      
+      if (isDebugEnabled('DEBUG_STORY')) {
+        console.log(`[DEBUG_STORY] ocr_failed: ${ocrJob.error_message}`);
+      }
     }
-  }, [ocrJob, currentJobId, t]);
+  }, [ocrJob?.status, ocrJob?.result, currentJobId, t]); // Fixed: only depend on specific fields
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -170,6 +184,10 @@ export const StoryModal = ({
       return;
     }
 
+    if (isDebugEnabled('DEBUG_STORY')) {
+      console.log(`[DEBUG_STORY] upload_start → file=${file.name}, size=${file.size}`);
+    }
+    
     logStateTransition('idle', 'uploading', `file=${file.name}`);
     setModalState('uploading');
     setCurrentFileName(file.name);
@@ -196,6 +214,10 @@ export const StoryModal = ({
 
       if (!uploadResponse.ok) throw new Error('Failed to upload file');
 
+      if (isDebugEnabled('DEBUG_STORY')) {
+        console.log(`[DEBUG_STORY] upload_done(fileId=${signedUrlData.filePath})`);
+      }
+
       logStateTransition('uploading', 'ocr_processing');
       setModalState('ocr_processing');
 
@@ -208,6 +230,10 @@ export const StoryModal = ({
       });
 
       if (ocrError) throw ocrError;
+
+      if (isDebugEnabled('DEBUG_STORY')) {
+        console.log(`[DEBUG_STORY] ocr_start(jobId=${ocrData.jobId})`);
+      }
 
       setCurrentJobId(ocrData.jobId);
 
@@ -243,12 +269,18 @@ export const StoryModal = ({
       return;
     }
 
+    const queryKey = getStoryQueryKey(user.id);
+    
+    if (isDebugEnabled('DEBUG_STORY')) {
+      console.log(`[DEBUG_STORY] save_start → userId=${user.id}, queryKey=${JSON.stringify(queryKey)}`);
+    }
+
     logStateTransition(modalState, 'saving');
     setModalState('saving');
 
     try {
       // Cancel any in-flight queries to prevent race conditions
-      await queryClient.cancelQueries({ queryKey: getStoryQueryKey(user.id) });
+      await queryClient.cancelQueries({ queryKey });
       
       if (mode === 'edit') {
         // Update existing active story
@@ -303,17 +335,25 @@ export const StoryModal = ({
       }
 
       // Immediate cache update for instant UI response
-      queryClient.setQueryData(getStoryQueryKey(user.id), { story_text: textToSave });
+      queryClient.setQueryData(queryKey, { 
+        story_text: textToSave,
+        source_type: modalState === 'preview_ready' ? 'pdf' : 'text',
+        file_path: modalState === 'preview_ready' ? `stories/${Date.now()}-${currentFileName}` : null
+      });
       
       // Invalidate and refetch to ensure consistency
-      await queryClient.invalidateQueries({ queryKey: getStoryQueryKey(user.id) });
-      await queryClient.refetchQueries({ queryKey: getStoryQueryKey(user.id) });
+      await queryClient.invalidateQueries({ queryKey });
+      await queryClient.refetchQueries({ queryKey });
       
       // Dispatch custom event for other components
       window.dispatchEvent(new CustomEvent('storyChanged'));
       
       logStateTransition('saving', 'saved');
       setModalState('saved');
+
+      if (isDebugEnabled('DEBUG_STORY')) {
+        console.log(`[DEBUG_STORY] save_success → userId=${user.id}, queryKey=${JSON.stringify(queryKey)}`);
+      }
 
       toast({
         title: t('story.story_saved'),
