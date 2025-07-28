@@ -97,16 +97,16 @@ serve(async (req) => {
     console.log('Fetching users with params:', params);
     
     // First get users from auth.users to get real emails
-    const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers({
+    const { data: authUsers, error: authUsersError } = await supabase.auth.admin.listUsers({
       page: params.page,
       perPage: params.limit
     });
 
-    if (authError) {
-      console.error('Error fetching auth users:', authError);
+    if (authUsersError) {
+      console.error('Error fetching auth users:', authUsersError);
       return new Response(JSON.stringify({ 
         error: "Failed to fetch auth users",
-        details: authError.message 
+        details: authUsersError.message 
       }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
