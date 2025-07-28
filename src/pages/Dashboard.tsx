@@ -7,6 +7,8 @@ import { PersonaCarousel } from '@/components/PersonaCarousel';
 import { LanguageSelector } from '@/components/LanguageSelector';
 import { SkillsScroller } from '@/components/SkillsScroller';
 import { HamburgerMenu } from '@/components/HamburgerMenu';
+import { StoryCard } from '@/components/dashboard/StoryCard';
+import { SubscriptionCard } from '@/components/dashboard/SubscriptionCard';
 import { useSkillsStore } from '@/stores/personaStore';
 import { useAdminAccess } from '@/hooks/useAdminAccess';
 import { useTranslation } from 'react-i18next';
@@ -73,12 +75,10 @@ export default function Dashboard() {
           <HamburgerMenu onHelpClick={() => setShowFeedbackModal(true)} />
         </header>
 
-        <div className="mb-3">
-          <UserScoreCard />
-        </div>
-
-        <div className="mb-3">
-          <LanguageSelector />
+        {/* New Dashboard Cards - Side by side layout */}
+        <div className="grid grid-cols-2 gap-3 mb-4">
+          <StoryCard />
+          <SubscriptionCard />
         </div>
 
         <div className="mb-3">
