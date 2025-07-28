@@ -125,14 +125,14 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl sm:text-3xl font-bold">Admin Dashboard</h1>
+          <p className="text-muted-foreground text-sm sm:text-base">
             Welcome to the AsylumPrep administration panel
           </p>
         </div>
-        <Button asChild>
+        <Button asChild size="sm" className="w-full sm:w-auto">
           <Link to="/admin/usage">
             <BarChart3 className="w-4 h-4 mr-2" />
             View Analytics
@@ -141,14 +141,14 @@ export default function AdminDashboard() {
       </div>
 
       {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-xs sm:text-sm font-medium">Total Users</CardTitle>
+            <Users className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.totalUsers || 0}</div>
+            <div className="text-lg sm:text-2xl font-bold">{stats?.totalUsers || 0}</div>
             <p className="text-xs text-muted-foreground">
               {stats?.activeUsers7d || 0} active this week
             </p>
@@ -157,11 +157,11 @@ export default function AdminDashboard() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Minutes Today</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-xs sm:text-sm font-medium">Minutes Today</CardTitle>
+            <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.minutesUsedToday || 0}</div>
+            <div className="text-lg sm:text-2xl font-bold">{stats?.minutesUsedToday || 0}</div>
             <p className="text-xs text-muted-foreground">
               Practice minutes used
             </p>
@@ -170,11 +170,11 @@ export default function AdminDashboard() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Avg Minutes/User</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-xs sm:text-sm font-medium">Avg Minutes/User</CardTitle>
+            <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-lg sm:text-2xl font-bold">
               {stats?.avgMinutesPerUser ? stats.avgMinutesPerUser.toFixed(1) : '0.0'}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -185,11 +185,11 @@ export default function AdminDashboard() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">System Health</CardTitle>
-            <Activity className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-xs sm:text-sm font-medium">System Health</CardTitle>
+            <Activity className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">Good</div>
+            <div className="text-lg sm:text-2xl font-bold text-green-600">Good</div>
             <p className="text-xs text-muted-foreground">
               All systems operational
             </p>
@@ -198,7 +198,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Quick Actions and Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         <Card>
           <CardHeader>
             <CardTitle>Quick Actions</CardTitle>
@@ -209,20 +209,20 @@ export default function AdminDashboard() {
                 <Button
                   key={action.href}
                   variant="outline"
-                  className="w-full justify-between h-auto p-4"
+                  className="w-full justify-between h-auto p-3 sm:p-4"
                   asChild
                 >
                   <Link to={action.href}>
-                    <div className="flex items-center space-x-3">
-                      <action.icon className="h-5 w-5 text-primary" />
-                      <div className="text-left">
-                        <div className="font-medium">{action.title}</div>
-                        <div className="text-sm text-muted-foreground">
+                    <div className="flex items-center space-x-2 sm:space-x-3">
+                      <action.icon className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
+                      <div className="text-left min-w-0 flex-1">
+                        <div className="font-medium text-sm sm:text-base truncate">{action.title}</div>
+                        <div className="text-xs sm:text-sm text-muted-foreground truncate">
                           {action.description}
                         </div>
                       </div>
                     </div>
-                    <Badge variant="secondary">{action.count}</Badge>
+                    <Badge variant="secondary" className="text-xs flex-shrink-0">{action.count}</Badge>
                   </Link>
                 </Button>
               ))}
@@ -266,7 +266,7 @@ export default function AdminDashboard() {
           <CardTitle>System Overview</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <div className="space-y-2">
               <h4 className="font-medium">Content Status</h4>
               <div className="space-y-1 text-sm">

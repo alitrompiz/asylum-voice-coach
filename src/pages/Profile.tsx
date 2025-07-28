@@ -242,21 +242,23 @@ export default function Profile() {
   return (
     <div className="min-h-screen bg-background p-4">
       <div className="max-w-4xl mx-auto">
-        <header className="mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold mb-2">Profile</h1>
-            <p className="text-muted-foreground">
-              Manage your personal information and asylum stories
-            </p>
-          </div>
-          <div className="flex items-center gap-4">
-            <Button variant="outline" onClick={() => navigate('/dashboard')}>
-              Back to Dashboard
-            </Button>
-            <Button variant="destructive" onClick={handleLogout}>
-              <LogOut className="w-4 h-4 mr-2" />
-              Logout
-            </Button>
+        <header className="mb-6 sm:mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold mb-2">Profile</h1>
+              <p className="text-muted-foreground text-sm sm:text-base">
+                Manage your personal information and asylum stories
+              </p>
+            </div>
+            <div className="flex items-center gap-2 sm:gap-4">
+              <Button variant="outline" onClick={() => navigate('/dashboard')} size="sm" className="flex-1 sm:flex-none">
+                Back to Dashboard
+              </Button>
+              <Button variant="destructive" onClick={handleLogout} size="sm" className="flex-1 sm:flex-none">
+                <LogOut className="w-4 h-4 mr-2" />
+                Logout
+              </Button>
+            </div>
           </div>
         </header>
 
@@ -278,7 +280,7 @@ export default function Profile() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit(onSubmitProfile)} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="preferred_name">Preferred Name</Label>
                   <Input
@@ -318,7 +320,7 @@ export default function Profile() {
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="asylum_office_filed">Asylum Office Filed</Label>
                   <Input
@@ -345,7 +347,7 @@ export default function Profile() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="date_filed">Date Filed</Label>
                   <Input
@@ -377,9 +379,9 @@ export default function Profile() {
 
               {/* Asylum Story Section */}
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                   <div>
-                    <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <h3 className="text-base sm:text-lg font-semibold flex items-center gap-2">
                       <FileText className="w-5 h-5" />
                       Asylum Story
                     </h3>
@@ -390,42 +392,42 @@ export default function Profile() {
                   
                   <Dialog open={storyDialogOpen} onOpenChange={setStoryDialogOpen}>
                     <DialogTrigger asChild>
-                      <Button>
+                      <Button size="sm" className="w-full sm:w-auto">
                         <Plus className="w-4 h-4 mr-2" />
                         Add Asylum Story
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
+                    <DialogContent className="max-w-4xl max-h-[90vh] sm:max-h-[80vh] overflow-hidden flex flex-col mx-2 sm:mx-auto">
                       <DialogHeader>
-                        <DialogTitle>Add Your Asylum Story</DialogTitle>
-                        <DialogDescription>
+                        <DialogTitle className="text-lg sm:text-xl">Add Your Asylum Story</DialogTitle>
+                        <DialogDescription className="text-sm">
                           Choose how you'd like to add your asylum story
                         </DialogDescription>
                       </DialogHeader>
                       
                       {/* Story Mode Selection */}
-                      <div className="flex gap-2 my-4">
+                      <div className="flex flex-col sm:flex-row gap-2 my-4">
                         <Button
                           variant={storyMode === 'upload' ? 'default' : 'outline'}
                           onClick={() => setStoryMode('upload')}
-                          className="flex-1 h-auto py-4 px-6"
-                          size="lg"
+                          className="flex-1 h-auto py-3 sm:py-4 px-4 sm:px-6"
+                          size="sm"
                         >
-                          <Upload className="w-5 h-5 mr-2" />
+                          <Upload className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
                           <div>
-                            <div className="font-semibold">Upload Complete Form I-589</div>
+                            <div className="font-semibold text-sm sm:text-base">Upload Complete Form I-589</div>
                             <div className="text-xs opacity-75">(Recommended)</div>
                           </div>
                         </Button>
                         <Button
                           variant={storyMode === 'text' ? 'default' : 'outline'}
                           onClick={() => setStoryMode('text')}
-                          className="flex-1 h-auto py-4 px-6"
-                          size="lg"
+                          className="flex-1 h-auto py-3 sm:py-4 px-4 sm:px-6"
+                          size="sm"
                         >
-                          <FileText className="w-5 h-5 mr-2" />
+                          <FileText className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
                           <div>
-                            <div className="font-semibold">Paste Story as Text</div>
+                            <div className="font-semibold text-sm sm:text-base">Paste Story as Text</div>
                             <div className="text-xs opacity-75">Manual entry</div>
                           </div>
                         </Button>
