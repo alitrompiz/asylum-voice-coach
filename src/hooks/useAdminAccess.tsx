@@ -1,7 +1,8 @@
 
-import { useEffect, useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from './useAuth';
+import { isDev } from '@/lib/env';
 
 export const useAdminAccess = () => {
   const [isAdmin, setIsAdmin] = useState(false);
@@ -25,7 +26,7 @@ export const useAdminAccess = () => {
         setError(null);
 
         // Only log on first check or user change, not on every render
-        if (process.env.NODE_ENV === 'development') {
+        if (isDev) {
           console.log('Checking admin access for user:', userId);
         }
 
@@ -43,7 +44,7 @@ export const useAdminAccess = () => {
         }
 
         const hasAdminRole = !!data;
-        if (process.env.NODE_ENV === 'development') {
+        if (isDev) {
           console.log('Admin role check result:', { hasAdminRole, data });
         }
         

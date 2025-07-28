@@ -123,8 +123,7 @@ export default function Dashboard() {
           </Tooltip>
         </div>}
 
-      {/* Debug info for development */}
-      {process.env.NODE_ENV === 'development'}
+      {/* Debug info removed for production */}
 
       {/* General Feedback Modal */}
       <GeneralFeedbackModal 

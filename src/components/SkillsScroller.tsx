@@ -1,14 +1,18 @@
 
+import { useState, useRef, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useTranslation } from 'react-i18next';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { supabase } from '@/integrations/supabase/client';
-import { useSkillsStore } from '@/stores/personaStore';
+import { ChevronLeft, ChevronRight, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { ChevronRight, Lock } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 import { useEntitlementStatus } from '@/hooks/useEntitlementStatus';
+import { useSkillsStore } from '@/stores/personaStore';
 import { useToast } from '@/hooks/use-toast';
+import { isDev } from '@/lib/env';
 
 interface Skill {
   id: string;
@@ -113,7 +117,7 @@ export const SkillsScroller = () => {
   }
 
   // Debug logging for gating
-  if (process.env.NODE_ENV === 'development' && skills) {
+  if (isDev && skills) {
     const enabledCount = skills.filter(s => isSkillAccessible(s)).length;
     const disabledCount = skills.length - enabledCount;
     console.log('[GATING DEBUG] Skills:', {

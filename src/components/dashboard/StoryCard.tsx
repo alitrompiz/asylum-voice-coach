@@ -6,6 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
+import { isDev, isDebugEnabled } from '@/lib/env';
 
 export const StoryCard = () => {
   const { t } = useTranslation();
@@ -39,7 +40,7 @@ export const StoryCard = () => {
 
   // Debug logging when enabled
   useEffect(() => {
-    if (process.env.NODE_ENV === 'development' && process.env.DEBUG_STORY === 'on') {
+    if (isDebugEnabled('DEBUG_STORY')) {
       console.log('[DEBUG_STORY] Dashboard StoryCard:', { 
         hasText,
         hasPdf,

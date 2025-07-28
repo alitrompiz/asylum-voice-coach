@@ -1,8 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { isDev } from '@/lib/env';
 
-const DEBUG_GATING = process.env.NODE_ENV === 'development'; // Enable debug logging in development
+const DEBUG_GATING = isDev; // Enable debug logging in development
 
 export const useEntitlementStatus = () => {
   const { user } = useAuth();

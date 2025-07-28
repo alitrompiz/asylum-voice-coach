@@ -1,11 +1,14 @@
 import { useQuery } from '@tanstack/react-query';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
+import { useTranslation } from 'react-i18next';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Lock, Shield, UserCheck } from 'lucide-react';
+import { useEntitlementStatus } from '@/hooks/useEntitlementStatus';
 import { usePersonaStore } from '@/stores/personaStore';
 import { cn } from '@/lib/utils';
-import { useTranslation } from 'react-i18next';
-import { useEntitlementStatus } from '@/hooks/useEntitlementStatus';
-import { Lock } from 'lucide-react';
+import { isDev } from '@/lib/env';
 import { useToast } from '@/hooks/use-toast';
 interface Persona {
   id: string;
@@ -99,7 +102,7 @@ export const PersonaCarousel = ({
   }
 
   // Debug logging for gating
-  if (process.env.NODE_ENV === 'development' && personas) {
+  if (isDev && personas) {
     const enabledCount = personas.filter(p => isPersonaAccessible(p)).length;
     const disabledCount = personas.length - enabledCount;
     console.log('[GATING DEBUG] Personas:', {

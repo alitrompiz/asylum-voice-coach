@@ -46,24 +46,14 @@ export const AttorneySelector = () => {
     loading 
   } = useAttorneys();
 
-  // Debug logging when enabled
-  const debugEnabled = process.env.NODE_ENV === 'development';
-  
   // Safe attorney list with proper filtering - no null children
   const safeAttorneys = useMemo(() => {
     const result = Array.isArray(attorneys) ? attorneys : [];
     // Filter out invalid items before mapping to avoid null children
     const validItems = result.filter(a => a && a.id && a.display_name && a.firm_name);
     
-    if (debugEnabled) {
-      console.log('[DEBUG_ATTORNEY] Input value:', searchValue);
-      console.log('[DEBUG_ATTORNEY] Result count:', validItems.length);
-      console.log('[DEBUG_ATTORNEY] Item sample:', validItems[0] || 'none');
-      console.log('[DEBUG_ATTORNEY] Is array undefined?', attorneys === undefined);
-    }
-    
     return validItems;
-  }, [attorneys, searchValue, debugEnabled]);
+  }, [attorneys]);
 
   const debouncedSearch = useDebounce((value: string) => {
     try {

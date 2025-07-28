@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { isDev, isDebugEnabled } from '@/lib/env';
 
 interface AsylumStorySectionProps {
   activeStory: any;
@@ -41,7 +42,7 @@ export const AsylumStorySection = ({ activeStory, onStoryChange }: AsylumStorySe
 
   // Debug logging
   useEffect(() => {
-    if (process.env.NODE_ENV === 'development' && process.env.DEBUG_STORY === 'on') {
+    if (isDebugEnabled('DEBUG_STORY')) {
       console.log('[DEBUG_STORY] AsylumStorySection:', { 
         hasText: activeStory?.story_text?.length > 0,
         hasPdf: !!activeStory?.file_path,
