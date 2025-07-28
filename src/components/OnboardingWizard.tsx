@@ -258,7 +258,7 @@ export default function OnboardingWizard() {
             
             <div className="space-y-4">
               <div>
-                <Label>{t('onboarding.dates.date_filed_label')}</Label>
+                <Label>Date you filed for Asylum</Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
