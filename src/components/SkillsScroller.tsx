@@ -98,7 +98,12 @@ export const SkillsScroller = () => {
 
   return (
     <div>
-      <h3 className="text-lg font-semibold mb-2 text-white">{t('skills.title')}</h3>
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="text-lg font-semibold text-white">{t('skills.title')}</h3>
+        <div className="text-xs text-gray-400">
+          Upgrade to Full Prep to unlock all
+        </div>
+      </div>
       <div className="space-y-2">
         {/* Row 1 */}
         <ScrollArea className="w-full [&>div>div]:!overflow-visible">

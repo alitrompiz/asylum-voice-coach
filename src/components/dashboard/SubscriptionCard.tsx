@@ -1,11 +1,10 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useSessionTime } from '@/hooks/useSessionTime';
 import { useTranslation } from 'react-i18next';
-import { Crown, Clock, ArrowRight } from 'lucide-react';
+import { Crown, Clock } from 'lucide-react';
 
 export const SubscriptionCard = () => {
   const { t } = useTranslation();
@@ -14,18 +13,14 @@ export const SubscriptionCard = () => {
 
   if (!isFreeTier) {
     return (
-      <Card className="bg-gradient-to-br from-purple-500/10 to-blue-500/10 border-purple-500/20">
-        <CardContent className="p-3">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-1.5">
-              <Crown className="h-3.5 w-3.5 text-purple-400" />
-              <Badge variant="default" className="text-xs px-1.5 py-0.5 bg-gradient-to-r from-purple-500 to-blue-500">
-                Full Prep
-              </Badge>
+      <Card className="h-20 bg-gray-900 border border-gray-600">
+        <CardContent className="p-3 h-full flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Crown className="h-4 w-4 text-gray-300" />
+            <div>
+              <div className="text-sm font-medium text-gray-300">Full Prep</div>
+              <div className="text-xs text-gray-300">∞ minutes • All officers • All skills</div>
             </div>
-          </div>
-          <div className="text-xs text-gray-300 leading-relaxed">
-            ∞ minutes • All officers • All skills • Priority support
           </div>
         </CardContent>
       </Card>
@@ -36,38 +31,66 @@ export const SubscriptionCard = () => {
     ? Math.min(100, (sessionTime.session_seconds_used / sessionTime.session_seconds_limit) * 100)
     : 0;
 
+  // Create a simple progress circle using stroke-dasharray
+  const circumference = 2 * Math.PI * 8; // radius of 8
+  const strokeDashoffset = circumference - (progressPercentage / 100) * circumference;
+
   return (
-    <Card className="bg-gradient-to-br from-orange-500/10 to-yellow-500/10 border-orange-500/20">
-      <CardContent className="p-3 space-y-2.5">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5">
-            <Clock className="h-3.5 w-3.5 text-orange-400" />
-            <Badge variant="secondary" className="text-xs px-1.5 py-0.5">
-              Free Trial
-            </Badge>
+    <Card className="h-20 bg-gray-900 border border-gray-600">
+      <CardContent className="p-3 h-full flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <Clock className="h-4 w-4 text-gray-300" />
+            <svg className="absolute -top-1 -left-1 w-6 h-6 transform -rotate-90" viewBox="0 0 20 20">
+              <circle
+                cx="10"
+                cy="10"
+                r="8"
+                stroke="currentColor"
+                strokeWidth="2"
+                fill="transparent"
+                className="text-gray-600"
+              />
+              <circle
+                cx="10"
+                cy="10"
+                r="8"
+                stroke="currentColor"
+                strokeWidth="2"
+                fill="transparent"
+                strokeDasharray={circumference}
+                strokeDashoffset={strokeDashoffset}
+                className="text-orange-400"
+                strokeLinecap="round"
+              />
+            </svg>
           </div>
-          <span className="text-xs font-medium text-white">
-            {remainingMinutes === Infinity ? '∞' : remainingMinutes}m
-          </span>
+          <div>
+            <div className="text-sm font-medium text-gray-300">Free Trial</div>
+            <div className="text-xs text-gray-300">
+              {remainingMinutes === Infinity ? '∞' : remainingMinutes}min left
+            </div>
+          </div>
         </div>
         
-        <Progress value={progressPercentage} className="h-1.5" />
-        
-        <Button 
-          onClick={createCheckout}
-          disabled={creatingCheckout}
-          size="sm"
-          className="w-full h-7 text-xs bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600"
-        >
-          {creatingCheckout ? (
-            'Loading...'
-          ) : (
-            <>
-              Upgrade
-              <ArrowRight className="ml-1 h-3 w-3" />
-            </>
-          )}
-        </Button>
+        <div className="flex flex-col items-end gap-1">
+          <Button 
+            onClick={createCheckout}
+            disabled={creatingCheckout}
+            size="sm"
+            className="h-6 px-2 text-xs bg-officer-halo hover:bg-officer-halo/90 text-white"
+          >
+            {creatingCheckout ? (
+              'Loading...'
+            ) : (
+              <>
+                <Crown className="w-3 h-3 mr-1 text-yellow-300" aria-label="Crown icon" />
+                Upgrade to Full Prep
+              </>
+            )}
+          </Button>
+          <div className="text-xs text-gray-300">to ace your interview</div>
+        </div>
       </CardContent>
     </Card>
   );

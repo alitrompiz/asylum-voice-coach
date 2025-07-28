@@ -1,5 +1,4 @@
 import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -38,52 +37,43 @@ export const StoryCard = () => {
 
   if (isLoading) {
     return (
-      <Card className="bg-gradient-to-br from-blue-500/10 to-indigo-500/10 border-blue-500/20">
-        <CardContent className="p-3 flex items-center justify-center h-16">
-          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-400"></div>
+      <Card className="h-20 bg-gray-900 border border-gray-600">
+        <CardContent className="p-3 h-full flex items-center justify-center">
+          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-400"></div>
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <Card className="bg-gradient-to-br from-blue-500/10 to-indigo-500/10 border-blue-500/20">
-      <CardContent className="p-3 space-y-2.5">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5">
-            <FileText className="h-3.5 w-3.5 text-blue-400" />
-            <span className="text-xs font-medium text-white">
-              {hasStory ? 'Story Ready' : 'Add Story'}
-            </span>
+    <Card className="h-20 bg-gray-900 border border-gray-600">
+      <CardContent className="p-3 h-full flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <FileText className="h-4 w-4 text-gray-300" />
+          <div>
+            <div className="text-sm font-medium text-gray-300">
+              {hasStory ? 'Story Ready' : 'Add Asylum Story'}
+            </div>
+            <div className="text-xs text-gray-300">
+              {hasStory 
+                ? 'Ready for practice'
+                : 'Add asylum story to improve your interview practice'
+              }
+            </div>
           </div>
-          {hasStory && <CheckCircle className="h-3.5 w-3.5 text-green-400" />}
         </div>
         
-        <div className="text-xs text-gray-300 leading-relaxed">
-          {hasStory 
-            ? 'Your asylum story is ready for interview practice'
-            : 'Add your story to improve practice sessions'
-          }
-        </div>
-        
-        <Button 
-          variant={hasStory ? "outline" : "default"}
-          size="sm" 
-          className="w-full h-7 text-xs"
+        <button 
           onClick={handleStoryAction}
+          className="p-1 hover:bg-gray-700 rounded"
+          aria-label={hasStory ? 'Edit asylum story' : 'Add asylum story'}
         >
           {hasStory ? (
-            <>
-              <Edit3 className="mr-1 h-3 w-3" />
-              Edit
-            </>
+            <Edit3 className="h-4 w-4 text-gray-300" />
           ) : (
-            <>
-              <Plus className="mr-1 h-3 w-3" />
-              Add Story
-            </>
+            <Plus className="h-4 w-4 text-gray-300" />
           )}
-        </Button>
+        </button>
       </CardContent>
     </Card>
   );

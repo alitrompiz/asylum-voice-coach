@@ -80,7 +80,12 @@ export const PersonaCarousel = ({
       </div>;
   }
   return <div>
-      <h3 className="text-xl font-bold text-white mb-3">{t('personas.title')}</h3>
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-xl font-bold text-white">{t('personas.title')}</h3>
+        <div className="text-xs text-gray-400">
+          Upgrade to Full Prep to unlock all
+        </div>
+      </div>
       <ScrollArea className="w-full p-1">
         <div className="flex gap-6 pt-2 pb-0 snap-x snap-mandatory overflow-x-auto py-[4px] my-0">
           {personas.map(persona => <div key={persona.id} className="flex flex-col items-center min-w-[160px] cursor-pointer snap-center pb-0" onClick={() => handlePersonaSelect(persona.id)} data-testid={`persona-${persona.id}`}>
