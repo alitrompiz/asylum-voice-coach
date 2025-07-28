@@ -137,7 +137,9 @@
     "asylum_story_ready": "Historia de asilo cargada",
     "edit": "Editar",
     "to_improve_interview": "Para mejorar tu práctica",
-    "add_asylum_story": "Agregar historia de asilo"
+    "add_asylum_story": "Agregar historia de asilo",
+    "add_story_text": "Agrega tu historia de asilo para personalizar tu práctica",
+    "add_story": "Agregar historia"
   },
   "profile": {
     "attorney_label": "Abogado",

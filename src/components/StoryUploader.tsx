@@ -97,6 +97,8 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
       });
 
       onStoryAdded?.({ ...storyData, source_type: storyData.source_type as 'pdf' | 'text' });
+      // Emit story change event for dashboard cache invalidation
+      window.dispatchEvent(new CustomEvent('storyChanged'));
       loadExistingStories();
       setCurrentJobId(null);
     } catch (error) {
@@ -267,6 +269,8 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
         });
 
         onStoryUpdated?.({ ...data, source_type: data.source_type as 'pdf' | 'text' });
+        // Emit story change event for dashboard cache invalidation
+        window.dispatchEvent(new CustomEvent('storyChanged'));
         setEditingStory(null);
       } else {
         // Create new story
@@ -288,6 +292,8 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
         onStoryAdded?.({ ...data, source_type: data.source_type as 'pdf' | 'text' });
       }
 
+      // Emit story change event for dashboard cache invalidation
+      window.dispatchEvent(new CustomEvent('storyChanged'));
       setTextContent('');
       loadExistingStories();
 

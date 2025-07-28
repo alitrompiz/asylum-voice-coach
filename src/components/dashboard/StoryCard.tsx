@@ -1,17 +1,19 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
 
 export const StoryCard = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
-  const { data: activeStory, isLoading } = useQuery({
+  const { data: activeStory, isLoading, error } = useQuery({
     queryKey: ['active-story', user?.id],
     queryFn: async () => {
       if (!user) return null;
@@ -27,9 +29,42 @@ export const StoryCard = () => {
       return data;
     },
     enabled: !!user,
+    staleTime: 0, // Always refetch to ensure fresh data
   });
 
-  const hasStory = !!activeStory?.story_text?.trim();
+  // Correct hasStory computation - normalize empty as no story
+  const hasStory = typeof activeStory?.story_text === 'string' && activeStory.story_text.trim().length > 0;
+
+  // Debug logging when enabled
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[DEBUG_PROFILE] Dashboard StoryCard:', { 
+        hasStory, 
+        length: activeStory?.story_text?.length,
+        activeStory: !!activeStory 
+      });
+    }
+  }, [hasStory, activeStory]);
+
+  // Listen for story changes from other components and invalidate cache
+  useEffect(() => {
+    const handleStorageChange = () => {
+      queryClient.invalidateQueries({ queryKey: ['active-story'] });
+    };
+
+    // Custom event listener for story changes from Profile
+    const handleStoryChange = () => {
+      queryClient.invalidateQueries({ queryKey: ['active-story'] });
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('storyChanged', handleStoryChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('storyChanged', handleStoryChange);
+    };
+  }, [queryClient]);
 
   const handleStoryAction = () => {
     navigate('/profile#asylum-story');
@@ -45,11 +80,30 @@ export const StoryCard = () => {
     );
   }
 
+  // Error fallback - non-blocking
+  if (error) {
+    return (
+      <Card className="h-20 bg-dashboard-blue border border-focus-border">
+        <CardContent className="p-3 h-full flex flex-col justify-center items-center">
+          <div className="text-xs text-red-400 text-center mb-2">Error loading story</div>
+          <Button 
+            onClick={() => queryClient.invalidateQueries({ queryKey: ['active-story'] })}
+            size="sm"
+            variant="outline"
+            className="h-6 text-xs"
+          >
+            Retry
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className="h-20 bg-dashboard-blue border border-focus-border">
       <CardContent className="p-3 h-full flex flex-col justify-between">
         <div className="text-sm font-medium text-focus-text text-center">
-          {hasStory ? t('dashboard.asylum_story_ready') : t('dashboard.to_improve_interview')}
+          {hasStory ? t('dashboard.asylum_story_ready') : t('dashboard.add_story_text')}
         </div>
         
         <Button 
@@ -59,7 +113,7 @@ export const StoryCard = () => {
           className="w-full h-6 text-xs"
           aria-label={hasStory ? 'Edit asylum story' : 'Add asylum story'}
         >
-          {hasStory ? t('dashboard.edit') : t('dashboard.add_asylum_story')}
+          {hasStory ? t('dashboard.edit') : t('dashboard.add_story')}
         </Button>
       </CardContent>
     </Card>

@@ -137,7 +137,9 @@
     "asylum_story_ready": "Asylum story loaded",
     "edit": "Edit",
     "to_improve_interview": "To improve your interview",
-    "add_asylum_story": "Add Asylum Story"
+    "add_asylum_story": "Add Asylum Story",
+    "add_story_text": "Add your Asylum Story to tailor your interview practice",
+    "add_story": "Add Story"
   },
   "profile": {
     "attorney_label": "Attorney",

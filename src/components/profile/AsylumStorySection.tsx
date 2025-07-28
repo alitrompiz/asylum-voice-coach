@@ -36,6 +36,8 @@ export const AsylumStorySection = ({ activeStory, onStoryChange }: AsylumStorySe
         title: t('profile.story_deleted'),
       });
       
+      // Emit story change event for dashboard cache invalidation
+      window.dispatchEvent(new CustomEvent('storyChanged'));
       onStoryChange();
     } catch (error) {
       console.error('Error deleting story:', error);
