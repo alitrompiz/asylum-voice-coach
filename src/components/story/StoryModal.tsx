@@ -111,16 +111,25 @@ export const StoryModal = ({
     };
   }, [modalState, t]);
 
-  // Handle OCR job updates - fixed dependency array to prevent clearing currentJobId too early
-  useEffect(() => {
-    if (!currentJobId || !ocrJob) return;
-
-    if (isDebugEnabled('DEBUG_STORY')) {
-      console.log(`[DEBUG_STORY] OCR update: jobId=${currentJobId}, status=${ocrJob.status}, progress=${ocrJob.progress}`);
-    }
-
-    if (ocrJob.status === 'completed' && ocrJob.result?.extracted_text) {
-      const extractedText = ocrJob.result.extracted_text;
+  // Handle OCR completion async function
+  const handleOcrCompletion = async (storyId: string) => {
+    try {
+      if (isDebugEnabled('DEBUG_STORY')) {
+        console.log(`[DEBUG_STORY] OCR completed, fetching story ${storyId}`);
+      }
+      
+      const { data: story, error: storyError } = await supabase
+        .from('stories')
+        .select('story_text')
+        .eq('id', storyId)
+        .single();
+        
+      if (storyError || !story) {
+        console.error('Error fetching OCR story:', storyError);
+        throw new Error('Failed to fetch OCR story');
+      }
+      
+      const extractedText = story.story_text || '';
       
       logStateTransition('ocr_processing', 'preview_ready', `chars=${extractedText.length}`);
       
@@ -149,6 +158,33 @@ export const StoryModal = ({
         console.log(`[DEBUG_STORY] ocr_done(chars=${extractedText.length})`);
       }
       
+    } catch (error) {
+      console.error('Error processing OCR completion:', error);
+      logStateTransition('ocr_processing', 'error', 'Failed to fetch story');
+      setModalState('error');
+      setErrorMessage(t('story.ocr_failed_desc'));
+      setCurrentJobId(null);
+    }
+  };
+
+  // Handle OCR job updates - fixed dependency array to prevent clearing currentJobId too early
+  useEffect(() => {
+    console.log(`[STORY_MODAL] OCR useEffect triggered - currentJobId: ${currentJobId}, ocrJob:`, ocrJob);
+    
+    if (!currentJobId || !ocrJob) {
+      console.log(`[STORY_MODAL] Skipping OCR processing - missing currentJobId or ocrJob`);
+      return;
+    }
+
+    if (isDebugEnabled('DEBUG_STORY')) {
+      console.log(`[DEBUG_STORY] OCR update: jobId=${currentJobId}, status=${ocrJob.status}, progress=${ocrJob.progress}`);
+    }
+
+    if (ocrJob.status === 'completed' && ocrJob.result?.story_id) {
+      // OCR completed - fetch the created story from the database
+      const storyId = ocrJob.result.story_id;
+      handleOcrCompletion(storyId);
+      
     } else if (ocrJob.status === 'failed') {
       logStateTransition('ocr_processing', 'error', ocrJob.error_message);
       setModalState('error');
@@ -159,7 +195,7 @@ export const StoryModal = ({
         console.log(`[DEBUG_STORY] ocr_failed: ${ocrJob.error_message}`);
       }
     }
-  }, [ocrJob?.status, ocrJob?.result, currentJobId, t]); // Fixed: only depend on specific fields
+  }, [ocrJob?.status, ocrJob?.result, currentJobId, t]);
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -272,7 +308,7 @@ export const StoryModal = ({
     const queryKey = getStoryQueryKey(user.id);
     
     if (isDebugEnabled('DEBUG_STORY')) {
-      console.log(`[DEBUG_STORY] save_start → userId=${user.id}, queryKey=${JSON.stringify(queryKey)}`);
+      console.log(`[DEBUG_STORY] save_start → userId=${user.id}, queryKey=${JSON.stringify(queryKey)}, mode=${mode}, modalState=${modalState}`);
     }
 
     logStateTransition(modalState, 'saving');

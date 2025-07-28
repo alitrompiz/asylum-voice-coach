@@ -17,25 +17,40 @@ export const useOcrJob = (jobId: string | null) => {
 
   const pollJob = async (id: string) => {
     try {
+      console.log(`[OCR_POLL] Polling job ${id}...`);
+      
       const { data, error } = await supabase
         .from('ocr_jobs')
         .select('*')
         .eq('id', id)
-        .single();
+        .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        console.error(`[OCR_POLL] Error fetching job ${id}:`, error);
+        throw error;
+      }
       
-      setJob({
+      if (!data) {
+        console.warn(`[OCR_POLL] Job ${id} not found in database`);
+        return null;
+      }
+      
+      console.log(`[OCR_POLL] Job ${id} status: ${data.status}, progress: ${data.progress}`);
+      
+      const jobData = {
         id: data.id,
         status: data.status as 'pending' | 'processing' | 'completed' | 'failed',
-        progress: data.progress,
+        progress: data.progress || 0,
         result: data.result,
         error_message: data.error_message,
         file_name: data.file_name
-      });
+      };
+      
+      setJob(jobData);
       
       // Stop polling if job is completed or failed
       if (data.status === 'completed' || data.status === 'failed') {
+        console.log(`[OCR_POLL] Job ${id} finished with status: ${data.status}`);
         if (intervalRef.current) {
           clearInterval(intervalRef.current);
           intervalRef.current = null;
@@ -45,7 +60,7 @@ export const useOcrJob = (jobId: string | null) => {
       
       return data;
     } catch (error) {
-      console.error('Error polling job:', error);
+      console.error(`[OCR_POLL] Error polling job ${id}:`, error);
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
@@ -56,8 +71,12 @@ export const useOcrJob = (jobId: string | null) => {
   };
 
   const startPolling = (id: string) => {
-    if (intervalRef.current) return;
+    if (intervalRef.current) {
+      console.log(`[OCR_POLL] Already polling job ${id}, skipping start`);
+      return;
+    }
     
+    console.log(`[OCR_POLL] Starting to poll job ${id}`);
     setLoading(true);
     
     // Poll immediately
