@@ -71,12 +71,12 @@ export const StoryModal = ({
 
   // Handle OCR completion
   useEffect(() => {
-    if (ocrJob?.status === 'completed' && ocrJob.result) {
+    if (ocrJob?.status === 'completed' && ocrJob.result && currentJobId) {
       handleOcrCompletion(ocrJob);
-    } else if (ocrJob?.status === 'failed') {
+    } else if (ocrJob?.status === 'failed' && currentJobId) {
       handleOcrFailure(ocrJob);
     }
-  }, [ocrJob?.status]);
+  }, [ocrJob?.status, ocrJob?.result, currentJobId]);
 
   const handleOcrCompletion = async (job: any) => {
     try {
@@ -85,7 +85,12 @@ export const StoryModal = ({
         return;
       }
 
-      setOcrText(job.result.extracted_text);
+      const extractedText = job.result.extracted_text;
+      
+      // Automatically save the OCR result to the database
+      await saveOcrStory(extractedText, job.file_name);
+      
+      setOcrText(extractedText);
       setShowOcrPreview(true);
       setCurrentJobId(null);
 
@@ -96,6 +101,62 @@ export const StoryModal = ({
     } catch (error) {
       console.error('Error handling OCR completion:', error);
       handleOcrFailure(job);
+    }
+  };
+
+  const saveOcrStory = async (ocrText: string, fileName: string) => {
+    if (!user) return;
+    
+    try {
+      // Cancel any in-flight queries to prevent race conditions
+      await queryClient.cancelQueries({ queryKey: getStoryQueryKey(user.id) });
+      
+      // Check if user already has an active story
+      const { data: existingStory } = await supabase
+        .from('stories')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      const storyData = {
+        story_text: ocrText,
+        source_type: 'pdf',
+        title: `OCR Story - ${fileName}`,
+        file_path: `stories/${Date.now()}-${Math.random().toString(36).substr(2, 9)}-${fileName}`,
+        updated_at: new Date().toISOString()
+      };
+
+      if (existingStory) {
+        // Update existing story
+        const { error } = await supabase
+          .from('stories')
+          .update(storyData)
+          .eq('user_id', user.id)
+          .eq('is_active', true);
+
+        if (error) throw error;
+      } else {
+        // Create new story
+        const { error } = await supabase
+          .from('stories')
+          .insert({
+            user_id: user.id,
+            is_active: true,
+            ...storyData
+          });
+
+        if (error) throw error;
+      }
+
+      // Invalidate and refetch to ensure immediate UI updates
+      await queryClient.invalidateQueries({ queryKey: getStoryQueryKey(user.id) });
+      await queryClient.refetchQueries({ queryKey: getStoryQueryKey(user.id) });
+      window.dispatchEvent(new CustomEvent('storyChanged'));
+      
+    } catch (error) {
+      console.error('Error saving OCR story:', error);
+      // Don't show error toast here since we'll show the preview anyway
     }
   };
 
@@ -234,7 +295,7 @@ export const StoryModal = ({
           .select('id')
           .eq('user_id', user.id)
           .eq('is_active', true)
-          .single();
+          .maybeSingle();
 
         if (existingStory) {
           // Update existing story
@@ -288,8 +349,8 @@ export const StoryModal = ({
   };
 
   const handleAcceptOcrText = () => {
-    // Save the OCR text and close modal
-    handleSaveText(ocrText);
+    // Story is already saved automatically, just close modal
+    onOpenChange(false);
   };
 
   const handleDeleteStory = async () => {
