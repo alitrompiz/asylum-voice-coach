@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -14,21 +14,18 @@ export const SubscriptionCard = () => {
 
   if (!isFreeTier) {
     return (
-      <Card className="h-full">
-        <CardHeader className="pb-3">
-          <div className="flex items-center gap-2">
-            <Crown className="h-5 w-5 text-primary" />
-            <Badge variant="default" className="bg-gradient-to-r from-primary to-primary/80">
-              Full Prep
-            </Badge>
+      <Card className="bg-gradient-to-br from-purple-500/10 to-blue-500/10 border-purple-500/20">
+        <CardContent className="p-3">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-1.5">
+              <Crown className="h-3.5 w-3.5 text-purple-400" />
+              <Badge variant="default" className="text-xs px-1.5 py-0.5 bg-gradient-to-r from-purple-500 to-blue-500">
+                Full Prep
+              </Badge>
+            </div>
           </div>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="text-sm text-muted-foreground">
-            ✓ Unlimited practice time<br />
-            ✓ All officers available<br />
-            ✓ All areas of focus<br />
-            ✓ Priority support
+          <div className="text-xs text-gray-300 leading-relaxed">
+            ∞ minutes • All officers • All skills • Priority support
           </div>
         </CardContent>
       </Card>
@@ -40,45 +37,37 @@ export const SubscriptionCard = () => {
     : 0;
 
   return (
-    <Card className="h-full">
-      <CardHeader className="pb-3">
-        <div className="flex items-center gap-2">
-          <Clock className="h-5 w-5 text-orange-500" />
-          <Badge variant="secondary">Free Trial</Badge>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">
-              {t('dashboard.freeMinutesLeft')}
-            </span>
-            <span className="font-medium">
-              {remainingMinutes === Infinity ? '∞' : remainingMinutes} min
-            </span>
+    <Card className="bg-gradient-to-br from-orange-500/10 to-yellow-500/10 border-orange-500/20">
+      <CardContent className="p-3 space-y-2.5">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <Clock className="h-3.5 w-3.5 text-orange-400" />
+            <Badge variant="secondary" className="text-xs px-1.5 py-0.5">
+              Free Trial
+            </Badge>
           </div>
-          <Progress value={progressPercentage} className="h-2" />
+          <span className="text-xs font-medium text-white">
+            {remainingMinutes === Infinity ? '∞' : remainingMinutes}m
+          </span>
         </div>
+        
+        <Progress value={progressPercentage} className="h-1.5" />
         
         <Button 
           onClick={createCheckout}
           disabled={creatingCheckout}
-          className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
           size="sm"
+          className="w-full h-7 text-xs bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600"
         >
           {creatingCheckout ? (
-            'Opening checkout...'
+            'Loading...'
           ) : (
             <>
-              Upgrade to Full Prep
-              <ArrowRight className="ml-2 h-4 w-4" />
+              Upgrade
+              <ArrowRight className="ml-1 h-3 w-3" />
             </>
           )}
         </Button>
-        
-        <button className="text-xs text-muted-foreground hover:text-foreground transition-colors">
-          {t('dashboard.whatsIncluded')}
-        </button>
       </CardContent>
     </Card>
   );

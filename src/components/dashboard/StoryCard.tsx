@@ -1,10 +1,10 @@
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from 'react-i18next';
-import { FileText, Plus, Edit3 } from 'lucide-react';
+import { FileText, Plus, Edit3, CheckCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export const StoryCard = () => {
@@ -22,12 +22,9 @@ export const StoryCard = () => {
         .select('id, title, story_text')
         .eq('user_id', user.id)
         .eq('is_active', true)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') { // Not found is ok
-        throw error;
-      }
-
+      if (error) throw error;
       return data;
     },
     enabled: !!user,
@@ -36,61 +33,57 @@ export const StoryCard = () => {
   const hasStory = !!activeStory?.story_text?.trim();
 
   const handleStoryAction = () => {
-    // Navigate to story management (you may need to create this route)
     navigate('/onboarding?step=story');
   };
 
   if (isLoading) {
     return (
-      <Card className="h-full">
-        <CardContent className="flex items-center justify-center h-32">
-          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+      <Card className="bg-gradient-to-br from-blue-500/10 to-indigo-500/10 border-blue-500/20">
+        <CardContent className="p-3 flex items-center justify-center h-16">
+          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-400"></div>
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <Card className="h-full">
-      <CardHeader className="pb-3">
-        <div className="flex items-center gap-2">
-          <FileText className="h-5 w-5 text-blue-500" />
-          <span className="font-medium text-sm">
-            {hasStory ? 'Asylum Story' : 'Add Your Story'}
-          </span>
+    <Card className="bg-gradient-to-br from-blue-500/10 to-indigo-500/10 border-blue-500/20">
+      <CardContent className="p-3 space-y-2.5">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <FileText className="h-3.5 w-3.5 text-blue-400" />
+            <span className="text-xs font-medium text-white">
+              {hasStory ? 'Story Ready' : 'Add Story'}
+            </span>
+          </div>
+          {hasStory && <CheckCircle className="h-3.5 w-3.5 text-green-400" />}
         </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {hasStory ? (
-          <>
-            <div className="text-sm text-muted-foreground">
-              {activeStory.title || 'Your asylum story is ready for practice'}
-            </div>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="w-full"
-              onClick={handleStoryAction}
-            >
-              <Edit3 className="mr-2 h-4 w-4" />
-              {t('dashboard.editStory')}
-            </Button>
-          </>
-        ) : (
-          <>
-            <div className="text-sm text-muted-foreground">
-              {t('dashboard.addStoryDescription')}
-            </div>
-            <Button 
-              size="sm" 
-              className="w-full"
-              onClick={handleStoryAction}
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Add Asylum Story
-            </Button>
-          </>
-        )}
+        
+        <div className="text-xs text-gray-300 leading-relaxed">
+          {hasStory 
+            ? 'Your asylum story is ready for interview practice'
+            : 'Add your story to improve practice sessions'
+          }
+        </div>
+        
+        <Button 
+          variant={hasStory ? "outline" : "default"}
+          size="sm" 
+          className="w-full h-7 text-xs"
+          onClick={handleStoryAction}
+        >
+          {hasStory ? (
+            <>
+              <Edit3 className="mr-1 h-3 w-3" />
+              Edit
+            </>
+          ) : (
+            <>
+              <Plus className="mr-1 h-3 w-3" />
+              Add Story
+            </>
+          )}
+        </Button>
       </CardContent>
     </Card>
   );
