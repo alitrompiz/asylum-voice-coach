@@ -31,9 +31,10 @@ export const StoryCard = () => {
     },
     enabled: !!user,
     staleTime: 0, // Always refetch to ensure fresh data
+    refetchOnWindowFocus: true, // Refetch when user returns to tab
   });
 
-  // Compute story state: text first, then PDF
+  // Compute story state: text first, then PDF - normalized for whitespace
   const hasText = typeof activeStory?.story_text === 'string' && activeStory.story_text.trim().length > 0;
   const hasPdf = !!activeStory?.file_path;
   const hasStory = hasText || hasPdf;
@@ -42,34 +43,32 @@ export const StoryCard = () => {
   useEffect(() => {
     if (isDebugEnabled('DEBUG_STORY')) {
       console.log('[DEBUG_STORY] Dashboard StoryCard:', { 
+        userId: user?.id,
         hasText,
         hasPdf,
         hasStory, 
-        textLength: activeStory?.story_text?.length,
-        filePath: activeStory?.file_path
+        storyLen: activeStory?.story_text?.length ?? null,
+        trimmed: activeStory?.story_text?.trim().length ?? null,
+        queryKey: ['active-story', user?.id]
       });
     }
-  }, [hasText, hasPdf, hasStory, activeStory]);
+  }, [hasText, hasPdf, hasStory, activeStory, user?.id]);
 
   // Listen for story changes from other components and invalidate cache
   useEffect(() => {
-    const handleStorageChange = () => {
-      queryClient.invalidateQueries({ queryKey: ['active-story'] });
-    };
-
-    // Custom event listener for story changes from Profile
     const handleStoryChange = () => {
-      queryClient.invalidateQueries({ queryKey: ['active-story'] });
+      if (isDebugEnabled('DEBUG_STORY')) {
+        console.log('[DEBUG_STORY] Dashboard received storyChanged event, invalidating cache');
+      }
+      queryClient.invalidateQueries({ queryKey: ['active-story', user?.id] });
     };
 
-    window.addEventListener('storage', handleStorageChange);
     window.addEventListener('storyChanged', handleStoryChange);
 
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('storyChanged', handleStoryChange);
     };
-  }, [queryClient]);
+  }, [queryClient, user?.id]);
 
   const handleStoryAction = () => {
     setShowStoryModal(true);
@@ -92,7 +91,7 @@ export const StoryCard = () => {
         <CardContent className="p-3 h-full flex flex-col justify-center items-center">
           <div className="text-xs text-red-400 text-center mb-2">Error loading story</div>
           <Button 
-            onClick={() => queryClient.invalidateQueries({ queryKey: ['active-story'] })}
+            onClick={() => queryClient.invalidateQueries({ queryKey: ['active-story', user?.id] })}
             size="sm"
             variant="outline"
             className="h-6 text-xs"

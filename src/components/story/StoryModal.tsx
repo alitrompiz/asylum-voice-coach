@@ -13,6 +13,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useOcrJob } from '@/hooks/useOcrJob';
 import { supabase } from '@/integrations/supabase/client';
 import { Upload, FileText, Trash2, CheckCircle, Loader2, Clock, AlertCircle } from 'lucide-react';
+import { isDebugEnabled } from '@/lib/env';
 
 interface StoryModalProps {
   isOpen: boolean;
@@ -27,8 +28,8 @@ interface StoryModalProps {
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const MAX_CHARS = 10000; // Character limit for text
 
-// Query key constant for cache invalidation
-const STORY_QUERY_KEY = 'active-story';
+// Query key function for consistent cache invalidation
+const getStoryQueryKey = (userId: string | undefined) => ['active-story', userId];
 
 export const StoryModal = ({
   isOpen,
@@ -60,7 +61,9 @@ export const StoryModal = ({
     if (isOpen && mode === 'edit') {
       setTextContent(existingText);
     } else if (isOpen && mode === 'create') {
+      // Clear local state and set cache to empty immediately, then invalidate
       setTextContent('');
+      queryClient.setQueryData(getStoryQueryKey(user.id), null);
       setOcrText('');
       setShowOcrPreview(false);
     }
@@ -237,7 +240,7 @@ export const StoryModal = ({
       });
 
       // Invalidate story query to update dashboard and profile immediately
-      queryClient.invalidateQueries({ queryKey: [STORY_QUERY_KEY] });
+      queryClient.invalidateQueries({ queryKey: getStoryQueryKey(user.id) });
       window.dispatchEvent(new CustomEvent('storyChanged'));
       
       onOpenChange(false);
@@ -260,6 +263,10 @@ export const StoryModal = ({
   const handleDeleteStory = async () => {
     if (!user) return;
     
+    if (isDebugEnabled('DEBUG_STORY')) {
+      console.log('[DEBUG_STORY] Modal delete story, invalidating queryKey:', getStoryQueryKey(user.id));
+    }
+    
     setIsSaving(true);
     try {
       const { error } = await supabase
@@ -278,7 +285,7 @@ export const StoryModal = ({
       });
       
       // Invalidate story query to update dashboard and profile immediately
-      queryClient.invalidateQueries({ queryKey: [STORY_QUERY_KEY] });
+      queryClient.invalidateQueries({ queryKey: getStoryQueryKey(user.id) });
       window.dispatchEvent(new CustomEvent('storyChanged'));
       
       onOpenChange(false);
