@@ -40,6 +40,11 @@ All colors MUST be HSL.
     /* Officer halo color - green used for selected state */
     --officer-halo: 142 76% 36%;
 
+    /* Dashboard card design tokens */
+    --dashboard-blue: 215 28% 17%;
+    --focus-border: 217 33% 17%;
+    --focus-text: 213 27% 84%;
+
     --radius: 0.5rem;
 
     --sidebar-background: 0 0% 98%;
@@ -91,6 +96,11 @@ All colors MUST be HSL.
     
     /* Officer halo color - green used for selected state */
     --officer-halo: 142 76% 36%;
+
+    /* Dashboard card design tokens - dark mode */
+    --dashboard-blue: 215 28% 17%;
+    --focus-border: 217 33% 17%;
+    --focus-text: 213 27% 84%;
     
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;

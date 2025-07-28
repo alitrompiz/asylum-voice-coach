@@ -75,15 +75,15 @@ export default function Dashboard() {
           <HamburgerMenu onHelpClick={() => setShowFeedbackModal(true)} />
         </header>
 
-        {/* Language Picker */}
-        <div className="mb-4">
-          <LanguageSelector />
-        </div>
-
         {/* New Dashboard Cards - Side by side layout */}
         <div className="grid grid-cols-2 gap-3 mb-4">
           <StoryCard />
           <SubscriptionCard />
+        </div>
+
+        {/* Language Picker - Moved below cards */}
+        <div className="mb-4">
+          <LanguageSelector />
         </div>
 
         <div className="mb-3">

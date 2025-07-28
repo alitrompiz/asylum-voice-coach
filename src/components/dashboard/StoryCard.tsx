@@ -37,24 +37,24 @@ export const StoryCard = () => {
 
   if (isLoading) {
     return (
-      <Card className="h-20 bg-gray-900 border border-gray-600">
+      <Card className="h-20 bg-dashboard-blue border border-focus-border">
         <CardContent className="p-3 h-full flex items-center justify-center">
-          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-400"></div>
+          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-focus-text"></div>
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <Card className="h-20 bg-gray-900 border border-gray-600">
+    <Card className="h-20 bg-dashboard-blue border border-focus-border">
       <CardContent className="p-3 h-full flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <FileText className="h-4 w-4 text-gray-300" />
+          <FileText className="h-4 w-4 text-focus-text" />
           <div>
-            <div className="text-sm font-medium text-gray-300">
+            <div className="text-sm font-medium text-focus-text">
               {hasStory ? 'Story Ready' : 'Add Asylum Story'}
             </div>
-            <div className="text-xs text-gray-300">
+            <div className="text-xs text-focus-text">
               {hasStory 
                 ? 'Ready for practice'
                 : 'Add asylum story to improve your interview practice'
@@ -65,13 +65,13 @@ export const StoryCard = () => {
         
         <button 
           onClick={handleStoryAction}
-          className="p-1 hover:bg-gray-700 rounded"
+          className="p-1 hover:bg-gray-700/50 rounded"
           aria-label={hasStory ? 'Edit asylum story' : 'Add asylum story'}
         >
           {hasStory ? (
-            <Edit3 className="h-4 w-4 text-gray-300" />
+            <Edit3 className="h-4 w-4 text-focus-text" />
           ) : (
-            <Plus className="h-4 w-4 text-gray-300" />
+            <Plus className="h-4 w-4 text-focus-text" />
           )}
         </button>
       </CardContent>

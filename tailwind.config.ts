@@ -17,6 +17,14 @@ export default {
 				'2xl': '1400px'
 			}
 		},
+		screens: {
+			xs: "390px",
+			sm: "640px",
+			md: "768px",
+			lg: "1024px",
+			xl: "1280px",
+			"2xl": "1536px",
+		},
 		extend: {
 			colors: {
 				border: 'hsl(var(--border))',
@@ -62,7 +70,10 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
-				'officer-halo': 'hsl(var(--officer-halo))'
+				'officer-halo': 'hsl(var(--officer-halo))',
+				'dashboard-blue': 'hsl(var(--dashboard-blue))',
+				'focus-border': 'hsl(var(--focus-border))',
+				'focus-text': 'hsl(var(--focus-text))'
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
