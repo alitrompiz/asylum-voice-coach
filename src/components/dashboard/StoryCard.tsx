@@ -1,9 +1,9 @@
 import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from 'react-i18next';
-import { FileText, Plus, Edit3, CheckCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export const StoryCard = () => {
@@ -32,7 +32,7 @@ export const StoryCard = () => {
   const hasStory = !!activeStory?.story_text?.trim();
 
   const handleStoryAction = () => {
-    navigate('/onboarding?step=story');
+    navigate('/profile#asylum-story');
   };
 
   if (isLoading) {
@@ -47,33 +47,20 @@ export const StoryCard = () => {
 
   return (
     <Card className="h-20 bg-dashboard-blue border border-focus-border">
-      <CardContent className="p-3 h-full flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <FileText className="h-4 w-4 text-focus-text" />
-          <div>
-            <div className="text-sm font-medium text-focus-text">
-              {hasStory ? 'Story Ready' : 'Add Asylum Story'}
-            </div>
-            <div className="text-xs text-focus-text">
-              {hasStory 
-                ? 'Ready for practice'
-                : 'Add asylum story to improve your interview practice'
-              }
-            </div>
-          </div>
+      <CardContent className="p-3 h-full flex flex-col justify-between">
+        <div className="text-sm font-medium text-focus-text text-center">
+          {hasStory ? t('dashboard.asylum_story_ready') : t('dashboard.to_improve_interview')}
         </div>
         
-        <button 
+        <Button 
           onClick={handleStoryAction}
-          className="p-1 hover:bg-gray-700/50 rounded"
+          size="sm"
+          variant="outline"
+          className="w-full h-6 text-xs"
           aria-label={hasStory ? 'Edit asylum story' : 'Add asylum story'}
         >
-          {hasStory ? (
-            <Edit3 className="h-4 w-4 text-focus-text" />
-          ) : (
-            <Plus className="h-4 w-4 text-focus-text" />
-          )}
-        </button>
+          {hasStory ? t('dashboard.edit') : t('dashboard.add_asylum_story')}
+        </Button>
       </CardContent>
     </Card>
   );

@@ -121,5 +121,21 @@
   "validation": {
     "required": "Este campo es obligatorio",
     "invalid_date": "Por favor ingrese una fecha válida"
+  },
+  "dashboard": {
+    "asylum_story_ready": "Historia de asilo lista",
+    "edit": "Editar",
+    "to_improve_interview": "Para mejorar tu práctica",
+    "add_asylum_story": "Agregar historia de asilo"
+  },
+  "profile": {
+    "attorney_label": "Abogado",
+    "attorney_placeholder": "Buscar abogado...",
+    "asylum_story_title": "Historia de Asilo",
+    "delete_story": "Eliminar Historia",
+    "delete_story_confirm": "¿Eliminar tu historia de asilo?",
+    "delete": "Eliminar",
+    "cancel": "Cancelar",
+    "story_deleted": "Historia eliminada exitosamente"
   }
 }

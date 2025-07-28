@@ -20,6 +20,8 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { StoryUploader } from '@/components/StoryUploader';
+import { AttorneySelector } from '@/components/profile/AttorneySelector';
+import { AsylumStorySection } from '@/components/profile/AsylumStorySection';
 
 const profileSchema = z.object({
   legal_name: z.string().optional(),
@@ -445,106 +447,8 @@ export default function Profile() {
 
               <Separator />
 
-              {/* Asylum Story Section */}
-              <div className="space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                  <div>
-                    <h3 className="text-base sm:text-lg font-semibold flex items-center gap-2">
-                      <FileText className="w-5 h-5" />
-                      Asylum Story
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      Add your asylum story to help prepare for interviews
-                    </p>
-                  </div>
-                  
-                  <Dialog open={storyDialogOpen} onOpenChange={setStoryDialogOpen}>
-                    <DialogTrigger asChild>
-                      <Button size="sm" className="w-full sm:w-auto">
-                        <Plus className="w-4 h-4 mr-2" />
-                        Add Asylum Story
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-4xl max-h-[90vh] sm:max-h-[80vh] overflow-hidden flex flex-col mx-2 sm:mx-auto">
-                      <DialogHeader>
-                        <DialogTitle className="text-lg sm:text-xl">Add Your Asylum Story</DialogTitle>
-                        <DialogDescription className="text-sm">
-                          Choose how you'd like to add your asylum story
-                        </DialogDescription>
-                      </DialogHeader>
-                      
-                      {/* Story Mode Selection */}
-                      <div className="flex flex-col sm:flex-row gap-2 my-4">
-                        <Button
-                          variant={storyMode === 'upload' ? 'default' : 'outline'}
-                          onClick={() => setStoryMode('upload')}
-                          className="flex-1 h-auto py-3 sm:py-4 px-4 sm:px-6"
-                          size="sm"
-                        >
-                          <Upload className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-                          <div>
-                            <div className="font-semibold text-sm sm:text-base">Upload Complete Form I-589</div>
-                            <div className="text-xs opacity-75">(Recommended)</div>
-                          </div>
-                        </Button>
-                        <Button
-                          variant={storyMode === 'text' ? 'default' : 'outline'}
-                          onClick={() => setStoryMode('text')}
-                          className="flex-1 h-auto py-3 sm:py-4 px-4 sm:px-6"
-                          size="sm"
-                        >
-                          <FileText className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-                          <div>
-                            <div className="font-semibold text-sm sm:text-base">Paste Story as Text</div>
-                            <div className="text-xs opacity-75">Manual entry</div>
-                          </div>
-                        </Button>
-                      </div>
-
-                      {/* StoryUploader Component */}
-                      <div className="flex-1 overflow-auto">
-                        <StoryUploader
-                          activeMode={storyMode}
-                          onStoryAdded={handleStoryAdded}
-                          onStoryUpdated={handleStoryUpdated}
-                          onStoryDeleted={handleStoryDeleted}
-                        />
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-                </div>
-
-                {/* Active Story Display */}
-                {activeStory && (
-                  <div 
-                    className="border rounded-lg p-4 bg-muted/50 cursor-pointer hover:bg-muted/70 transition-colors"
-                    onClick={() => openStoryViewer(activeStory)}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <CheckCircle className="w-4 h-4 text-green-600" />
-                        <h4 className="font-medium">Active Story (Click to read)</h4>
-                        <Badge variant="secondary">{activeStory.source_type}</Badge>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        Created: {new Date(activeStory.created_at).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      {activeStory.story_text.substring(0, 200)}...
-                    </p>
-                  </div>
-                )}
-
-                {!activeStory && (
-                  <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
-                    <FileText className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
-                    <p className="text-sm text-muted-foreground">
-                      No active asylum story. Add your story to get started with interview practice.
-                    </p>
-                  </div>
-                )}
-              </div>
+              {/* Attorney Selector */}
+              <AttorneySelector />
 
               <Button type="submit" disabled={isLoading}>
                 <Save className="w-4 h-4 mr-2" />
@@ -553,6 +457,14 @@ export default function Profile() {
             </form>
           </CardContent>
         </Card>
+
+        {/* Asylum Story Section - Separate Card */}
+        <div className="mt-6">
+          <AsylumStorySection 
+            activeStory={activeStory}
+            onStoryChange={fetchStories}
+          />
+        </div>
 
         {/* Previous Stories Section */}
         {stories.filter(story => !story.is_active).length > 0 && (

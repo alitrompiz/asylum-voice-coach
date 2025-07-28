@@ -122,6 +122,22 @@
     "required": "This field is required",
     "invalid_date": "Please enter a valid date"
   },
+  "dashboard": {
+    "asylum_story_ready": "Asylum story ready",
+    "edit": "Edit",
+    "to_improve_interview": "To improve your interview",
+    "add_asylum_story": "Add Asylum Story"
+  },
+  "profile": {
+    "attorney_label": "Attorney",
+    "attorney_placeholder": "Search for attorney...",
+    "asylum_story_title": "Asylum Story",
+    "delete_story": "Delete Story",
+    "delete_story_confirm": "Delete your asylum story?",
+    "delete": "Delete",
+    "cancel": "Cancel",
+    "story_deleted": "Story deleted successfully"
+  },
   "countries": {
     "afghanistan": "Afghanistan",
     "albania": "Albania",
