@@ -853,6 +853,10 @@ export type Database = {
         Args: { _user_id: string }
         Returns: undefined
       }
+      backfill_missing_profiles: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       get_active_prompt_by_type: {
         Args: { p_type: string }
         Returns: {
@@ -874,6 +878,26 @@ export type Database = {
           minutes_used_today: number
           total_users: number
           avg_minutes_per_user: number
+        }[]
+      }
+      get_all_users_admin: {
+        Args: {
+          search_term?: string
+          status_filter?: string
+          page_offset?: number
+          page_limit?: number
+        }
+        Returns: {
+          user_id: string
+          email: string
+          display_name: string
+          is_banned: boolean
+          entitlement_status: string
+          subscription_status: string
+          has_active_grant: boolean
+          has_active_subscription: boolean
+          created_at: string
+          total_count: number
         }[]
       }
       get_current_user_role: {

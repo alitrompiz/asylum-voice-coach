@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Search, Filter, Shield, ShieldOff, Plus, Clock, Crown } from 'lucide-react';
+import { Loader2, Search, Filter, Shield, ShieldOff, Plus, Clock, Crown, RefreshCw, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -36,100 +36,78 @@ export default function UserManagement() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch users with entitlement status
+  // Fetch all users using admin function
   const { data: usersData, isLoading } = useQuery({
     queryKey: ['admin-users', searchTerm, statusFilter, currentPage],
     queryFn: async () => {
-      // Build the query for profiles
-      let query = supabase
-        .from('profiles')
-        .select(`
-          id,
-          user_id,
-          display_name,
-          is_banned,
-          created_at
-        `)
-        .order('created_at', { ascending: false });
-
-      // Apply search filter
-      if (searchTerm) {
-        query = query.or(`display_name.ilike.%${searchTerm}%`);
+      // First, backfill any missing profiles
+      try {
+        await supabase.rpc('backfill_missing_profiles');
+      } catch (error) {
+        console.warn('Backfill failed, continuing...', error);
       }
 
-      // Get the basic user data first
-      const { data: users, error } = await query
-        .range((currentPage - 1) * pageSize, currentPage * pageSize - 1);
-      
-      if (error) throw error;
+      // Get all users using admin function
+      const { data, error } = await supabase.rpc('get_all_users_admin', {
+        search_term: searchTerm || null,
+        status_filter: statusFilter,
+        page_offset: (currentPage - 1) * pageSize,
+        page_limit: pageSize
+      });
 
-      // Get total count for pagination
-      const { count } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true });
+      if (error) {
+        console.error('Error fetching users:', error);
+        throw error;
+      }
 
-      // Enhance each user with entitlement status and subscription info
-      const enhancedUsers = await Promise.all(
-        (users || []).map(async (user) => {
-          try {
-            // Check subscription status
-            const { data: subscription } = await supabase
-              .from('subscribers')
-              .select('subscribed, subscription_tier, subscription_end, grace_period_end, email')
-              .eq('user_id', user.user_id)
-              .maybeSingle();
-
-            // Check admin grants
-            const { data: grants } = await supabase
-              .from('admin_entitlement_grants')
-              .select('end_at_utc')
-              .eq('user_id', user.user_id)
-              .gt('end_at_utc', new Date().toISOString())
-              .order('end_at_utc', { ascending: false })
-              .limit(1);
-
-            const hasActiveSubscription = subscription?.subscribed && (
-              !subscription.subscription_end || 
-              new Date(subscription.subscription_end) > new Date() ||
-              (subscription.grace_period_end && new Date(subscription.grace_period_end) > new Date())
-            );
-
-            const hasActiveGrant = grants && grants.length > 0;
-            const entitlementStatus = (hasActiveSubscription || hasActiveGrant) ? 'full_prep' : 'free_trial';
-
-            return {
-              ...user,
-              email: subscription?.email || `user-${user.user_id.slice(0, 8)}`,
-              entitlement_status: entitlementStatus as 'free_trial' | 'full_prep',
-              subscription_status: hasActiveSubscription ? 'Active' : 'None',
-              has_active_grant: hasActiveGrant,
-              has_active_subscription: hasActiveSubscription,
-            };
-          } catch (error) {
-            console.error('Error enhancing user data:', error);
-            return {
-              ...user,
-              email: `user-${user.user_id.slice(0, 8)}`,
-              entitlement_status: 'free_trial' as const,
-              subscription_status: 'None',
-              has_active_grant: false,
-              has_active_subscription: false,
-            };
-          }
-        })
-      );
-
-      // Apply status filter after enhancement
+      // Apply status filter if needed (the function doesn't filter by status yet)
+      const users = data || [];
       const filteredUsers = statusFilter === 'all' 
-        ? enhancedUsers 
-        : enhancedUsers.filter(user => user.entitlement_status === statusFilter);
+        ? users 
+        : users.filter((user: any) => user.entitlement_status === statusFilter);
+
+      const totalCount = users.length > 0 ? users[0].total_count : 0;
 
       return {
-        users: filteredUsers,
-        totalCount: count || 0,
-        totalPages: Math.ceil((count || 0) / pageSize)
+        users: filteredUsers.map((user: any) => ({
+          id: user.user_id,
+          user_id: user.user_id,
+          email: user.email,
+          display_name: user.display_name,
+          is_banned: user.is_banned,
+          entitlement_status: user.entitlement_status,
+          subscription_status: user.subscription_status,
+          has_active_grant: user.has_active_grant,
+          has_active_subscription: user.has_active_subscription,
+          created_at: user.created_at,
+        })),
+        totalCount: parseInt(totalCount.toString()),
+        totalPages: Math.ceil(parseInt(totalCount.toString()) / pageSize)
       };
     },
+  });
+
+  // Manual backfill mutation
+  const backfillMutation = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.rpc('backfill_missing_profiles');
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      toast({ 
+        title: 'Success', 
+        description: 'Missing profiles backfilled successfully' 
+      });
+    },
+    onError: (error) => {
+      console.error('Error backfilling profiles:', error);
+      toast({ 
+        title: 'Error', 
+        description: 'Failed to backfill profiles',
+        variant: 'destructive' 
+      });
+    }
   });
 
   // Grant Full Prep access
@@ -309,7 +287,27 @@ export default function UserManagement() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">User Management</h1>
-        <Badge variant="secondary">{totalCount} Total Users</Badge>
+        <div className="flex gap-2 items-center">
+          <Badge variant="secondary">{totalCount} Total Users</Badge>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => queryClient.invalidateQueries({ queryKey: ['admin-users'] })}
+            disabled={isLoading}
+          >
+            <RefreshCw className="w-4 h-4 mr-1" />
+            Refresh
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => backfillMutation.mutate()}
+            disabled={backfillMutation.isPending}
+          >
+            <UserPlus className="w-4 h-4 mr-1" />
+            Backfill Profiles
+          </Button>
+        </div>
       </div>
 
       {/* Search and Filter Controls */}
