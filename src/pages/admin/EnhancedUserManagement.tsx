@@ -156,9 +156,9 @@ const UserManagement = () => {
   const { data: usersData, isLoading, error } = useQuery({
     queryKey: ['admin-users-enhanced', searchTerm, statusFilter, attorneyFilter, sortBy, sortOrder, currentPage],
     queryFn: async (): Promise<UsersResponse> => {
-      const params = new URLSearchParams({
-        page: currentPage.toString(),
-        limit: '20',
+      console.log('🔍 Making admin-users request with params:', {
+        page: currentPage,
+        limit: 20,
         search: searchTerm,
         status_filter: statusFilter,
         attorney_filter: attorneyFilter,
@@ -170,7 +170,7 @@ const UserManagement = () => {
         body: {
           page: currentPage,
           limit: 20,
-          search: searchTerm,
+          search: searchTerm || undefined,
           status_filter: statusFilter,
           attorney_filter: attorneyFilter,
           sort_by: sortBy,
@@ -181,12 +181,16 @@ const UserManagement = () => {
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Admin users function error:', error);
+        throw new Error(`Failed to fetch users: ${error.message}`);
+      }
       
       console.log('✅ Admin users data received:', data);
       return data;
     },
-    refetchInterval: 30000, // Refresh every 30 seconds
+    retry: 2,
+    refetchOnWindowFocus: false,
   });
 
   // Grant Full Prep access
