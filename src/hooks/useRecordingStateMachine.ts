@@ -132,7 +132,7 @@ export const useRecordingStateMachine = (): UseRecordingStateMachineReturn => {
   }, [state, isDebouncingTap, stopAudioRecording, t]);
 
   const setUserTranscriptWrapper = useCallback((transcript: string) => {
-    console.log('🎤 setUserTranscript called:', { transcript, currentState: state });
+    console.log('🎤 setUserTranscript called:', { transcript: transcript.substring(0, 50), currentState: state });
     setUserTranscript(transcript);
     
     // Handle transcription errors first
@@ -147,36 +147,43 @@ export const useRecordingStateMachine = (): UseRecordingStateMachineReturn => {
       return;
     }
     
-    // If we're in processing state, we need to transition out of it
-    if (state === 'processing') {
-      console.log('🎤 In processing state, transcript:', transcript.substring(0, 50));
+    // Use setState callback to get current state and avoid stale closure
+    setState(currentState => {
+      console.log('🎤 Current state in setState callback:', currentState, 'transcript:', transcript.substring(0, 50));
       
-      // If this is a processing message, stay in processing
-      if (transcript.includes('Transcribing') || transcript.includes('Processing')) {
-        console.log('🎤 Still processing, staying in processing state');
-        return;
-      }
-      
-      // If we have a real transcript (not empty), move to ready state
-      if (transcript && transcript.trim()) {
-        console.log('🎤 Real transcript received, moving to ready state');
-        setState('ready');
+      // If we're in processing state, we need to transition out of it
+      if (currentState === 'processing') {
+        // If this is a processing message, stay in processing
+        if (transcript.includes('Transcribing') || transcript.includes('Processing')) {
+          console.log('🎤 Still processing, staying in processing state');
+          return currentState;
+        }
         
-        // Auto-return to idle after transcript is shown
-        setTimeout(() => {
-          console.log('🎤 Timeout reached, checking if should return to idle');
-          setState(currentState => {
-            console.log('🎤 Current state in timeout:', currentState);
-            return currentState === 'ready' ? 'idle' : currentState;
-          });
-        }, 1000);
-      } else {
-        // If transcript is empty/null, return to idle immediately
-        console.log('🎤 Empty transcript, returning to idle immediately');
-        setState('idle');
+        // If we have a real transcript (not empty), move to ready state
+        if (transcript && transcript.trim()) {
+          console.log('🎤 Real transcript received, moving to ready state');
+          
+          // Auto-return to idle after transcript is shown
+          setTimeout(() => {
+            console.log('🎤 Timeout reached, checking if should return to idle');
+            setState(timeoutState => {
+              console.log('🎤 Current state in timeout:', timeoutState);
+              return timeoutState === 'ready' ? 'idle' : timeoutState;
+            });
+          }, 1000);
+          
+          return 'ready';
+        } else {
+          // If transcript is empty/null, return to idle immediately
+          console.log('🎤 Empty transcript, returning to idle immediately');
+          return 'idle';
+        }
       }
-    }
-  }, [state, t]);
+      
+      // If not in processing state, don't change state
+      return currentState;
+    });
+  }, [t]); // Remove 'state' from dependencies to avoid stale closure
 
   const getButtonLabel = useCallback(() => {
     switch (state) {
