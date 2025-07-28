@@ -131,15 +131,19 @@ export const useInterviewConversation = (setUserTranscript?: (transcript: string
   };
 
   const processAudioMessage = async (recording: AudioRecordingResult) => {
+    console.log('🎯 processAudioMessage started');
     setIsProcessing(true);
     setCurrentSubtitle('Transcribing your message...');
     setUserTranscript?.('Transcribing your message...');
 
     try {
       // Step 1: Transcribe audio
+      console.log('🎯 Starting transcription...');
       const transcription = await transcribeAudio(recording.base64Audio);
+      console.log('🎯 Transcription result:', transcription);
       
       if (!transcription.trim()) {
+        console.log('🎯 Empty transcription detected');
         setUserTranscript?.('No speech detected');
         toast({
           title: "No speech detected",
@@ -150,6 +154,7 @@ export const useInterviewConversation = (setUserTranscript?: (transcript: string
       }
 
       // Update recording state machine with successful transcription
+      console.log('🎯 Sending transcription to recording state machine:', transcription);
       setUserTranscript?.(transcription);
 
       // Step 2: Add user message to conversation

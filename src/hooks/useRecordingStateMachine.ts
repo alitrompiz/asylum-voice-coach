@@ -89,10 +89,12 @@ export const useRecordingStateMachine = (): UseRecordingStateMachineReturn => {
   }, [state, isDebouncingTap, playTapConfirm, startAudioRecording, t]);
 
   const stopRecording = useCallback(async (): Promise<AudioRecordingResult | null> => {
+    console.log('🎤 stopRecording called, current state:', state);
     if (isDebouncingTap() || state !== 'recording') return null;
 
     try {
       setState('stopping');
+      console.log('🎤 State set to stopping');
       
       // Play stop recording cue
       if (audioCues.canPlayAudioCues()) {
@@ -101,13 +103,16 @@ export const useRecordingStateMachine = (): UseRecordingStateMachineReturn => {
       
       // Stop audio recording
       const result = await stopAudioRecording();
+      console.log('🎤 Recording stopped, result:', result ? `${result.duration}s audio` : 'null');
       
       if (result && result.duration > 0) {
         setState('processing');
+        console.log('🎤 State set to processing');
         setUserTranscript('Transcribing your message...');
         return result;
       } else {
         setState('idle');
+        console.log('🎤 No result, state set to idle');
         return null;
       }
     } catch (error) {
@@ -122,10 +127,12 @@ export const useRecordingStateMachine = (): UseRecordingStateMachineReturn => {
   }, [state, isDebouncingTap, stopAudioRecording, t]);
 
   const setUserTranscriptWrapper = useCallback((transcript: string) => {
+    console.log('🎤 setUserTranscript called:', { transcript, currentState: state });
     setUserTranscript(transcript);
     
     // Handle transcription errors first
     if (transcript.includes('transcription failed') || transcript.includes('error')) {
+      console.log('🎤 Error detected, setting to idle');
       setState('idle');
       setProcessingError('Transcription failed');
       toast({
@@ -137,21 +144,30 @@ export const useRecordingStateMachine = (): UseRecordingStateMachineReturn => {
     
     // If we're in processing state, we need to transition out of it
     if (state === 'processing') {
+      console.log('🎤 In processing state, transcript:', transcript.substring(0, 50));
+      
       // If this is a processing message, stay in processing
       if (transcript.includes('Transcribing') || transcript.includes('Processing')) {
+        console.log('🎤 Still processing, staying in processing state');
         return;
       }
       
       // If we have a real transcript (not empty), move to ready state
       if (transcript && transcript.trim()) {
+        console.log('🎤 Real transcript received, moving to ready state');
         setState('ready');
         
         // Auto-return to idle after transcript is shown
         setTimeout(() => {
-          setState(currentState => currentState === 'ready' ? 'idle' : currentState);
+          console.log('🎤 Timeout reached, checking if should return to idle');
+          setState(currentState => {
+            console.log('🎤 Current state in timeout:', currentState);
+            return currentState === 'ready' ? 'idle' : currentState;
+          });
         }, 1000);
       } else {
         // If transcript is empty/null, return to idle immediately
+        console.log('🎤 Empty transcript, returning to idle immediately');
         setState('idle');
       }
     }
