@@ -80,17 +80,33 @@ serve(async (req) => {
       };
     }
 
-    // Use the existing enhanced admin function to get basic user data
-    const { data: basicUsers, error: usersError } = await supabase.rpc('get_all_users_admin', {
-      search_term: params.search || null,
-      status_filter: params.status_filter,
-      page_offset: (params.page - 1) * params.limit,
-      page_limit: params.limit
-    });
+    // Fetch users directly from auth.users since the RPC might not exist
+    console.log('Fetching users with params:', params);
+    
+    let query = supabase
+      .from('profiles')
+      .select(`
+        id,
+        user_id,
+        display_name,
+        created_at,
+        updated_at
+      `);
+
+    if (params.search) {
+      query = query.or(`display_name.ilike.%${params.search}%,user_id.eq.${params.search}`);
+    }
+
+    const { data: basicUsers, error: usersError, count } = await query
+      .order('created_at', { ascending: params.sort_order === 'asc' })
+      .range((params.page - 1) * params.limit, params.page * params.limit - 1);
 
     if (usersError) {
       console.error('Error fetching users:', usersError);
-      return new Response(JSON.stringify({ error: "Failed to fetch users" }), {
+      return new Response(JSON.stringify({ 
+        error: "Database query failed",
+        details: usersError.message 
+      }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
