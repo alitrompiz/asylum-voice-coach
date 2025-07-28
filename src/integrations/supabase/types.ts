@@ -857,6 +857,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      exec_admin_user_query: {
+        Args: { query_text: string; query_params?: Json }
+        Returns: Json
+      }
       get_active_prompt_by_type: {
         Args: { p_type: string }
         Returns: {

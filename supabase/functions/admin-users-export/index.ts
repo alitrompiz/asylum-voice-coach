@@ -60,167 +60,76 @@ serve(async (req) => {
     const dateFrom = url.searchParams.get('date_from');
     const dateTo = url.searchParams.get('date_to');
 
-    // Build comprehensive export query
-    let query = `
-      WITH user_enriched AS (
-        SELECT 
-          au.id as user_id,
-          au.email,
-          au.created_at,
-          au.last_sign_in_at,
-          p.display_name,
-          p.legal_name,
-          p.preferred_name,
-          p.is_banned,
-          
-          -- Entitlement status
-          CASE 
-            WHEN s.subscribed = true AND (
-              s.subscription_end IS NULL OR 
-              s.subscription_end > now() OR
-              (s.grace_period_end IS NOT NULL AND s.grace_period_end > now())
-            ) THEN 'Full Prep (Subscription)'
-            WHEN EXISTS (
-              SELECT 1 FROM admin_entitlement_grants aeg
-              WHERE aeg.user_id = au.id AND aeg.end_at_utc > now()
-            ) THEN 'Full Prep (Grant)'
-            ELSE 'Free Trial'
-          END as entitlement_status,
-          
-          -- Stripe information
-          s.stripe_customer_id,
-          s.subscribed,
-          s.subscription_tier,
-          s.subscription_end,
-          s.grace_period_end,
-          
-          -- Attorney information
-          a.display_name as attorney_display_name,
-          a.firm_name as attorney_firm,
-          
-          -- Usage statistics
-          COALESCE(
-            (SELECT SUM(session_duration_seconds) 
-             FROM interview_sessions 
-             WHERE user_id = au.id), 0
-          ) as lifetime_session_seconds,
-          
-          mb.session_seconds_used,
-          mb.session_seconds_limit,
-          
-          -- Last session
-          (SELECT MAX(created_at) 
-           FROM interview_sessions 
-           WHERE user_id = au.id
-          ) as last_session_at,
-          
-          -- Grant information
-          (SELECT end_at_utc 
-           FROM admin_entitlement_grants 
-           WHERE user_id = au.id AND end_at_utc > now() 
-           ORDER BY end_at_utc DESC 
-           LIMIT 1
-          ) as grant_end_at,
-          
-          (SELECT COUNT(*) 
-           FROM admin_entitlement_grants 
-           WHERE user_id = au.id
-          ) as grant_history_count,
-          
-          -- Auth methods
-          ARRAY(
-            SELECT DISTINCT am.provider 
-            FROM auth.identities am 
-            WHERE am.user_id = au.id
-          ) as auth_methods
-          
-        FROM auth.users au
-        LEFT JOIN profiles p ON p.user_id = au.id
-        LEFT JOIN subscribers s ON s.user_id = au.id
-        LEFT JOIN attorneys a ON a.id = s.attorney_id
-        LEFT JOIN minutes_balance mb ON mb.user_id = au.id
-      )
-      SELECT 
+    // Build comprehensive export query using Supabase client
+    let baseQuery = supabase
+      .from('profiles')
+      .select(`
         user_id,
-        email,
-        COALESCE(display_name, legal_name, preferred_name, 'No name') as name,
-        entitlement_status,
-        CASE WHEN subscribed THEN 'Active' ELSE 'None' END as subscription_status,
-        subscription_tier,
-        subscription_end,
-        ROUND(lifetime_session_seconds / 60.0, 2) as lifetime_minutes,
-        ROUND(GREATEST(0, session_seconds_limit - session_seconds_used) / 60.0, 2) as free_minutes_remaining,
-        attorney_display_name,
-        attorney_firm,
-        CASE 
-          WHEN grant_end_at IS NOT NULL THEN 
-            ROUND(EXTRACT(EPOCH FROM (grant_end_at - now())) / 86400, 1) || ' days'
-          ELSE 'None'
-        END as grant_remaining,
-        grant_history_count,
-        array_to_string(auth_methods, ', ') as auth_methods,
-        CASE WHEN is_banned THEN 'Yes' ELSE 'No' END as is_banned,
+        display_name,
+        legal_name,
+        preferred_name,
+        is_banned,
         created_at,
-        last_sign_in_at,
-        last_session_at,
-        ROUND(EXTRACT(EPOCH FROM (now() - created_at)) / 86400, 1) as member_age_days
-      FROM user_enriched
-      WHERE 1=1
-    `;
+        subscribers (
+          subscribed,
+          subscription_tier,
+          subscription_end,
+          grace_period_end,
+          stripe_customer_id,
+          attorney_id,
+          attorneys (
+            display_name,
+            firm_name
+          )
+        ),
+        minutes_balance (
+          session_seconds_used,
+          session_seconds_limit
+        ),
+        interview_sessions (
+          session_duration_seconds,
+          created_at
+        ),
+        admin_entitlement_grants (
+          end_at_utc,
+          created_at
+        )
+      `);
 
-    const queryParams: any[] = [];
-    let paramIndex = 1;
-
-    // Apply same filters as main query
+    // Apply search filter
     if (search) {
-      query += ` AND (
-        LOWER(display_name) LIKE LOWER($${paramIndex}) OR 
-        LOWER(legal_name) LIKE LOWER($${paramIndex}) OR 
-        LOWER(preferred_name) LIKE LOWER($${paramIndex}) OR 
-        LOWER(email) LIKE LOWER($${paramIndex}) OR
-        LOWER(attorney_display_name) LIKE LOWER($${paramIndex}) OR
-        LOWER(attorney_firm) LIKE LOWER($${paramIndex})
-      )`;
-      queryParams.push(`%${search}%`);
-      paramIndex++;
+      baseQuery = baseQuery.or(
+        `display_name.ilike.%${search}%,` +
+        `legal_name.ilike.%${search}%,` +
+        `preferred_name.ilike.%${search}%`
+      );
     }
 
+    // Apply status filter
     if (statusFilter && statusFilter !== 'all') {
-      if (statusFilter === 'free_trial') {
-        query += ` AND entitlement_status = 'Free Trial'`;
-      } else if (statusFilter === 'full_prep') {
-        query += ` AND entitlement_status LIKE 'Full Prep%'`;
-      } else if (statusFilter === 'subscribed') {
-        query += ` AND subscribed = true`;
-      } else if (statusFilter === 'banned') {
-        query += ` AND is_banned = true`;
+      if (statusFilter === 'banned') {
+        baseQuery = baseQuery.eq('is_banned', true);
       }
     }
 
+    // Apply attorney filter
     if (attorneyFilter && attorneyFilter !== 'all') {
-      query += ` AND attorney_id = $${paramIndex}`;
-      queryParams.push(attorneyFilter);
-      paramIndex++;
+      // This will need to be filtered post-query
     }
 
+    // Apply date filters
     if (dateFrom) {
-      query += ` AND created_at >= $${paramIndex}`;
-      queryParams.push(dateFrom);
-      paramIndex++;
+      baseQuery = baseQuery.gte('created_at', dateFrom);
     }
     if (dateTo) {
-      query += ` AND created_at <= $${paramIndex}`;
-      queryParams.push(dateTo);
-      paramIndex++;
+      baseQuery = baseQuery.lte('created_at', dateTo);
     }
 
-    query += ` ORDER BY created_at DESC`;
+    // Order by created_at
+    baseQuery = baseQuery.order('created_at', { ascending: false });
 
     // Execute query to get all matching users
-    const { data: users, error: queryError } = await supabase.rpc('exec_sql', {
-      sql: query,
-      params: queryParams
-    });
+    const { data: profiles, error: queryError } = await baseQuery;
 
     if (queryError) {
       console.error('Export query error:', queryError);
@@ -230,12 +139,113 @@ serve(async (req) => {
       });
     }
 
-    // Convert to CSV
-    if (!users || users.length === 0) {
+    if (!profiles || profiles.length === 0) {
       return new Response(JSON.stringify({ error: "No data to export" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // Get auth users data
+    const userIds = profiles.map(p => p.user_id);
+    const authUsers = new Map();
+    
+    for (const userId of userIds) {
+      try {
+        const { data: authUser } = await supabase.auth.admin.getUserById(userId);
+        if (authUser) {
+          authUsers.set(userId, authUser);
+        }
+      } catch (error) {
+        console.error(`Error fetching auth user ${userId}:`, error);
+      }
+    }
+
+    // Enrich and prepare export data
+    let enrichedUsers = profiles.map(profile => {
+      const authUser = authUsers.get(profile.user_id);
+      const subscriber = profile.subscribers?.[0];
+      const minutesBalance = profile.minutes_balance?.[0];
+      const grants = profile.admin_entitlement_grants || [];
+      const sessions = profile.interview_sessions || [];
+      
+      // Calculate entitlement status
+      const hasActiveSubscription = subscriber?.subscribed && (
+        !subscriber.subscription_end || 
+        new Date(subscriber.subscription_end) > new Date() ||
+        (subscriber.grace_period_end && new Date(subscriber.grace_period_end) > new Date())
+      );
+      
+      const activeGrant = grants.find(g => new Date(g.end_at_utc) > new Date());
+      
+      let entitlementStatus = 'Free Trial';
+      if (hasActiveSubscription) {
+        entitlementStatus = 'Full Prep (Subscription)';
+      } else if (activeGrant) {
+        entitlementStatus = 'Full Prep (Grant)';
+      }
+
+      // Calculate usage statistics
+      const lifetimeSeconds = sessions.reduce((sum, s) => sum + (s.session_duration_seconds || 0), 0);
+      const lifetimeMinutes = Math.round(lifetimeSeconds / 60 * 100) / 100;
+      
+      const freeSecondsUsed = minutesBalance?.session_seconds_used || 0;
+      const freeSecondsLimit = minutesBalance?.session_seconds_limit || 3600;
+      const freeMinutesRemaining = Math.round(Math.max(0, freeSecondsLimit - freeSecondsUsed) / 60 * 100) / 100;
+      
+      // Calculate grant remaining time
+      const grantRemainingSeconds = activeGrant ? 
+        Math.max(0, (new Date(activeGrant.end_at_utc).getTime() - Date.now()) / 1000) : 0;
+      const grantRemainingDays = Math.round(grantRemainingSeconds / 86400 * 10) / 10;
+      
+      // Calculate member age
+      const createdAt = authUser?.created_at || profile.created_at;
+      const memberAgeDays = createdAt ? 
+        Math.round((Date.now() - new Date(createdAt).getTime()) / (1000 * 60 * 60 * 24) * 10) / 10 : 0;
+      
+      // Last session
+      const lastSession = sessions.length > 0 ? 
+        sessions.reduce((latest, session) => 
+          new Date(session.created_at) > new Date(latest.created_at) ? session : latest
+        ) : null;
+
+      return {
+        user_id: profile.user_id,
+        email: authUser?.email || '',
+        name: profile.display_name || profile.legal_name || profile.preferred_name || 'No name',
+        entitlement_status: entitlementStatus,
+        subscription_status: subscriber?.subscribed ? 'Active' : 'None',
+        subscription_tier: subscriber?.subscription_tier || '',
+        subscription_end: subscriber?.subscription_end || '',
+        lifetime_minutes: lifetimeMinutes,
+        free_minutes_remaining: freeMinutesRemaining,
+        attorney_display_name: subscriber?.attorneys?.display_name || '',
+        attorney_firm: subscriber?.attorneys?.firm_name || '',
+        grant_remaining: activeGrant ? `${grantRemainingDays} days` : 'None',
+        grant_history_count: grants.length,
+        auth_methods: 'email', // Simplified
+        is_banned: profile.is_banned ? 'Yes' : 'No',
+        created_at: createdAt,
+        last_sign_in_at: authUser?.last_sign_in_at || '',
+        last_session_at: lastSession?.created_at || '',
+        member_age_days: memberAgeDays,
+        attorney_id: subscriber?.attorney_id
+      };
+    });
+
+    // Apply additional filters
+    if (statusFilter && statusFilter !== 'all') {
+      if (statusFilter === 'free_trial') {
+        enrichedUsers = enrichedUsers.filter(u => u.entitlement_status === 'Free Trial');
+      } else if (statusFilter === 'full_prep') {
+        enrichedUsers = enrichedUsers.filter(u => u.entitlement_status.includes('Full Prep'));
+      } else if (statusFilter === 'subscribed') {
+        enrichedUsers = enrichedUsers.filter(u => u.subscription_status === 'Active');
+      }
+    }
+
+    if (attorneyFilter && attorneyFilter !== 'all') {
+      enrichedUsers = enrichedUsers.filter(u => u.attorney_id === attorneyFilter);
     }
 
     // CSV headers
@@ -250,7 +260,7 @@ serve(async (req) => {
     // Create CSV content
     let csvContent = headers.join(',') + '\n';
     
-    for (const user of users) {
+    for (const user of enrichedUsers) {
       const row = [
         user.user_id,
         user.email,

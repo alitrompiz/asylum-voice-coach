@@ -79,184 +79,74 @@ serve(async (req) => {
       date_to: url.searchParams.get('date_to') || undefined,
     };
 
-    // Build the comprehensive user query with enriched data
-    let query = `
-      WITH user_enriched AS (
-        SELECT 
-          au.id as user_id,
-          au.email,
-          au.created_at,
-          au.last_sign_in_at,
-          au.app_metadata,
-          au.user_metadata,
-          p.display_name,
-          p.legal_name,
-          p.preferred_name,
-          p.is_banned,
-          p.avatar_url,
-          
-          -- Entitlement status
-          CASE 
-            WHEN s.subscribed = true AND (
-              s.subscription_end IS NULL OR 
-              s.subscription_end > now() OR
-              (s.grace_period_end IS NOT NULL AND s.grace_period_end > now())
-            ) THEN 'full_prep_subscription'
-            WHEN EXISTS (
-              SELECT 1 FROM admin_entitlement_grants aeg
-              WHERE aeg.user_id = au.id AND aeg.end_at_utc > now()
-            ) THEN 'full_prep_grant'
-            ELSE 'free_trial'
-          END as entitlement_status,
-          
-          -- Stripe information
-          s.stripe_customer_id,
-          s.subscribed,
-          s.subscription_tier,
-          s.subscription_end,
-          s.grace_period_end,
-          
-          -- Attorney information
-          a.display_name as attorney_display_name,
-          a.firm_name as attorney_firm,
-          s.attorney_id,
-          
-          -- Usage statistics
-          COALESCE(
-            (SELECT SUM(session_duration_seconds) 
-             FROM interview_sessions 
-             WHERE user_id = au.id), 0
-          ) as lifetime_session_seconds,
-          
-          mb.session_seconds_used,
-          mb.session_seconds_limit,
-          
-          -- Last session
-          (SELECT MAX(created_at) 
-           FROM interview_sessions 
-           WHERE user_id = au.id
-          ) as last_session_at,
-          
-          -- Grant information
-          (SELECT end_at_utc 
-           FROM admin_entitlement_grants 
-           WHERE user_id = au.id AND end_at_utc > now() 
-           ORDER BY end_at_utc DESC 
-           LIMIT 1
-          ) as grant_end_at,
-          
-          (SELECT COUNT(*) 
-           FROM admin_entitlement_grants 
-           WHERE user_id = au.id
-          ) as grant_history_count,
-          
-          -- Auth methods (simplified - could be expanded)
-          ARRAY(
-            SELECT DISTINCT am.provider 
-            FROM auth.identities am 
-            WHERE am.user_id = au.id
-          ) as auth_methods
-          
-        FROM auth.users au
-        LEFT JOIN profiles p ON p.user_id = au.id
-        LEFT JOIN subscribers s ON s.user_id = au.id
-        LEFT JOIN attorneys a ON a.id = s.attorney_id
-        LEFT JOIN minutes_balance mb ON mb.user_id = au.id
-      )
-      SELECT *,
-        -- Calculated fields
-        EXTRACT(EPOCH FROM (
-          CASE 
-            WHEN grant_end_at IS NOT NULL THEN grant_end_at - now()
-            ELSE INTERVAL '0'
-          END
-        )) as grant_remaining_seconds,
-        
-        GREATEST(0, session_seconds_limit - session_seconds_used) as free_seconds_remaining,
-        
-        EXTRACT(EPOCH FROM (now() - created_at)) / 86400 as member_age_days,
-        
-        CASE 
-          WHEN entitlement_status LIKE 'full_prep%' THEN
-            EXTRACT(EPOCH FROM (now() - COALESCE(
-              (SELECT MIN(created_at) FROM subscribers WHERE user_id = user_enriched.user_id AND subscribed = true),
-              (SELECT MIN(start_at_utc) FROM admin_entitlement_grants WHERE user_id = user_enriched.user_id),
-              now()
-            ))) / 86400
-          ELSE 0
-        END as paid_member_age_days
-        
-      FROM user_enriched
-      WHERE 1=1
-    `;
+    // Build and execute the enriched user query using Supabase client
+    let baseQuery = supabase
+      .from('profiles')
+      .select(`
+        user_id,
+        display_name,
+        legal_name,
+        preferred_name,
+        is_banned,
+        avatar_url,
+        created_at,
+        subscribers (
+          subscribed,
+          subscription_tier,
+          subscription_end,
+          grace_period_end,
+          stripe_customer_id,
+          attorney_id,
+          attorneys (
+            display_name,
+            firm_name
+          )
+        ),
+        minutes_balance (
+          session_seconds_used,
+          session_seconds_limit
+        ),
+        stories (
+          created_at
+        ),
+        interview_sessions (
+          session_duration_seconds,
+          created_at
+        ),
+        admin_entitlement_grants (
+          end_at_utc,
+          created_at
+        )
+      `);
 
-    const queryParams: any[] = [];
-    let paramIndex = 1;
-
-    // Add search filter
+    // Apply search filter
     if (params.search) {
-      query += ` AND (
-        LOWER(display_name) LIKE LOWER($${paramIndex}) OR 
-        LOWER(legal_name) LIKE LOWER($${paramIndex}) OR 
-        LOWER(preferred_name) LIKE LOWER($${paramIndex}) OR 
-        LOWER(email) LIKE LOWER($${paramIndex}) OR
-        LOWER(attorney_display_name) LIKE LOWER($${paramIndex}) OR
-        LOWER(attorney_firm) LIKE LOWER($${paramIndex})
-      )`;
-      queryParams.push(`%${params.search}%`);
-      paramIndex++;
+      baseQuery = baseQuery.or(
+        `display_name.ilike.%${params.search}%,` +
+        `legal_name.ilike.%${params.search}%,` +
+        `preferred_name.ilike.%${params.search}%`
+      );
     }
 
-    // Add status filter
+    // Apply status filter
     if (params.status_filter && params.status_filter !== 'all') {
-      if (params.status_filter === 'free_trial') {
-        query += ` AND entitlement_status = 'free_trial'`;
-      } else if (params.status_filter === 'full_prep') {
-        query += ` AND entitlement_status LIKE 'full_prep%'`;
-      } else if (params.status_filter === 'subscribed') {
-        query += ` AND subscribed = true`;
-      } else if (params.status_filter === 'banned') {
-        query += ` AND is_banned = true`;
+      if (params.status_filter === 'banned') {
+        baseQuery = baseQuery.eq('is_banned', true);
       }
+      // Other filters will be applied post-query
     }
 
-    // Add attorney filter
-    if (params.attorney_filter && params.attorney_filter !== 'all') {
-      query += ` AND attorney_id = $${paramIndex}`;
-      queryParams.push(params.attorney_filter);
-      paramIndex++;
-    }
-
-    // Add date range filter
-    if (params.date_from) {
-      query += ` AND created_at >= $${paramIndex}`;
-      queryParams.push(params.date_from);
-      paramIndex++;
-    }
-    if (params.date_to) {
-      query += ` AND created_at <= $${paramIndex}`;
-      queryParams.push(params.date_to);
-      paramIndex++;
-    }
-
-    // Add sorting
-    const sortColumn = params.sort_by === 'lifetime_minutes' ? 'lifetime_session_seconds' : 
-                      params.sort_by === 'member_age' ? 'member_age_days' :
-                      params.sort_by === 'last_active' ? 'last_session_at' :
-                      params.sort_by || 'created_at';
+    // Apply pagination
+    const from = ((params.page || 1) - 1) * (params.limit || 20);
+    const to = from + (params.limit || 20) - 1;
     
-    query += ` ORDER BY ${sortColumn} ${params.sort_order?.toUpperCase() || 'DESC'} NULLS LAST`;
+    baseQuery = baseQuery.range(from, to);
 
-    // Add pagination
-    const offset = ((params.page || 1) - 1) * (params.limit || 20);
-    query += ` LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
-    queryParams.push(params.limit || 20, offset);
+    // Apply sorting
+    const sortColumn = params.sort_by === 'created_at' ? 'created_at' : 'created_at';
+    baseQuery = baseQuery.order(sortColumn, { ascending: params.sort_order === 'asc' });
 
-    // Execute the query
-    const { data: users, error: queryError } = await supabase.rpc('exec_sql', {
-      sql: query,
-      params: queryParams
-    });
+    const { data: profiles, error: queryError, count } = await baseQuery;
 
     if (queryError) {
       console.error('Query error:', queryError);
@@ -266,64 +156,159 @@ serve(async (req) => {
       });
     }
 
-    // Get total count for pagination
-    let countQuery = `
-      SELECT COUNT(*) as total
-      FROM auth.users au
-      LEFT JOIN profiles p ON p.user_id = au.id
-      LEFT JOIN subscribers s ON s.user_id = au.id
-      LEFT JOIN attorneys a ON a.id = s.attorney_id
-      WHERE 1=1
-    `;
+    // Get auth users data
+    const userIds = profiles?.map(p => p.user_id) || [];
+    const authUsers = new Map();
+    
+    for (const userId of userIds) {
+      try {
+        const { data: authUser } = await supabase.auth.admin.getUserById(userId);
+        if (authUser) {
+          authUsers.set(userId, authUser);
+        }
+      } catch (error) {
+        console.error(`Error fetching auth user ${userId}:`, error);
+      }
+    }
 
-    // Apply the same filters for count
-    const countParams: any[] = [];
-    let countParamIndex = 1;
+    // Enrich the data
+    const enrichedUsers = profiles?.map(profile => {
+      const authUser = authUsers.get(profile.user_id);
+      const subscriber = profile.subscribers?.[0];
+      const minutesBalance = profile.minutes_balance?.[0];
+      const grants = profile.admin_entitlement_grants || [];
+      const sessions = profile.interview_sessions || [];
+      
+      // Calculate entitlement status
+      const hasActiveSubscription = subscriber?.subscribed && (
+        !subscriber.subscription_end || 
+        new Date(subscriber.subscription_end) > new Date() ||
+        (subscriber.grace_period_end && new Date(subscriber.grace_period_end) > new Date())
+      );
+      
+      const activeGrant = grants.find(g => new Date(g.end_at_utc) > new Date());
+      
+      let entitlementStatus = 'free_trial';
+      if (hasActiveSubscription) {
+        entitlementStatus = 'full_prep_subscription';
+      } else if (activeGrant) {
+        entitlementStatus = 'full_prep_grant';
+      }
 
-    if (params.search) {
-      countQuery += ` AND (
-        LOWER(p.display_name) LIKE LOWER($${countParamIndex}) OR 
-        LOWER(p.legal_name) LIKE LOWER($${countParamIndex}) OR 
-        LOWER(p.preferred_name) LIKE LOWER($${countParamIndex}) OR 
-        LOWER(au.email) LIKE LOWER($${countParamIndex}) OR
-        LOWER(a.display_name) LIKE LOWER($${countParamIndex}) OR
-        LOWER(a.firm_name) LIKE LOWER($${countParamIndex})
-      )`;
-      countParams.push(`%${params.search}%`);
-      countParamIndex++;
+      // Calculate usage statistics
+      const lifetimeSeconds = sessions.reduce((sum, s) => sum + (s.session_duration_seconds || 0), 0);
+      const freeSecondsUsed = minutesBalance?.session_seconds_used || 0;
+      const freeSecondsLimit = minutesBalance?.session_seconds_limit || 3600;
+      const freeSecondsRemaining = Math.max(0, freeSecondsLimit - freeSecondsUsed);
+      
+      // Calculate grant remaining time
+      const grantRemainingSeconds = activeGrant ? 
+        Math.max(0, (new Date(activeGrant.end_at_utc).getTime() - Date.now()) / 1000) : 0;
+      
+      // Calculate member age
+      const createdAt = authUser?.created_at || profile.created_at;
+      const memberAgeDays = createdAt ? 
+        (Date.now() - new Date(createdAt).getTime()) / (1000 * 60 * 60 * 24) : 0;
+      
+      // Last session
+      const lastSession = sessions.length > 0 ? 
+        sessions.reduce((latest, session) => 
+          new Date(session.created_at) > new Date(latest.created_at) ? session : latest
+        ) : null;
+
+      return {
+        user_id: profile.user_id,
+        email: authUser?.email || '',
+        display_name: profile.display_name || profile.legal_name || profile.preferred_name || 'No name',
+        is_banned: profile.is_banned || false,
+        created_at: createdAt,
+        last_sign_in_at: authUser?.last_sign_in_at,
+        
+        // Entitlement
+        entitlement_status: entitlementStatus,
+        
+        // Subscription
+        subscribed: subscriber?.subscribed || false,
+        subscription_tier: subscriber?.subscription_tier,
+        subscription_end: subscriber?.subscription_end,
+        grace_period_end: subscriber?.grace_period_end,
+        stripe_customer_id: subscriber?.stripe_customer_id,
+        
+        // Attorney
+        attorney_id: subscriber?.attorney_id,
+        attorney_display_name: subscriber?.attorneys?.display_name,
+        attorney_firm: subscriber?.attorneys?.firm_name,
+        
+        // Usage
+        lifetime_session_seconds: lifetimeSeconds,
+        session_seconds_used: freeSecondsUsed,
+        session_seconds_limit: freeSecondsLimit,
+        free_seconds_remaining: freeSecondsRemaining,
+        last_session_at: lastSession?.created_at,
+        
+        // Grants
+        grant_end_at: activeGrant?.end_at_utc,
+        grant_remaining_seconds: grantRemainingSeconds,
+        grant_history_count: grants.length,
+        
+        // Calculated fields
+        member_age_days: memberAgeDays,
+        
+        // Auth methods (simplified)
+        auth_methods: ['email'], // Default for now
+      };
+    }) || [];
+
+    // Apply additional filters that couldn't be done in the query
+    let filteredUsers = enrichedUsers;
+    
+    if (params.status_filter && params.status_filter !== 'all') {
+      if (params.status_filter === 'free_trial') {
+        filteredUsers = filteredUsers.filter(u => u.entitlement_status === 'free_trial');
+      } else if (params.status_filter === 'full_prep') {
+        filteredUsers = filteredUsers.filter(u => u.entitlement_status.includes('full_prep'));
+      } else if (params.status_filter === 'subscribed') {
+        filteredUsers = filteredUsers.filter(u => u.subscribed);
+      }
     }
 
     if (params.attorney_filter && params.attorney_filter !== 'all') {
-      countQuery += ` AND s.attorney_id = $${countParamIndex}`;
-      countParams.push(params.attorney_filter);
-      countParamIndex++;
+      filteredUsers = filteredUsers.filter(u => u.attorney_id === params.attorney_filter);
     }
 
-    if (params.date_from) {
-      countQuery += ` AND au.created_at >= $${countParamIndex}`;
-      countParams.push(params.date_from);
-      countParamIndex++;
+    // Apply sorting on calculated fields
+    if (params.sort_by && params.sort_by !== 'created_at') {
+      filteredUsers.sort((a, b) => {
+        let aVal = 0, bVal = 0;
+        
+        switch (params.sort_by) {
+          case 'lifetime_minutes':
+            aVal = a.lifetime_session_seconds / 60;
+            bVal = b.lifetime_session_seconds / 60;
+            break;
+          case 'member_age':
+            aVal = a.member_age_days;
+            bVal = b.member_age_days;
+            break;
+          case 'last_active':
+            aVal = a.last_session_at ? new Date(a.last_session_at).getTime() : 0;
+            bVal = b.last_session_at ? new Date(b.last_session_at).getTime() : 0;
+            break;
+          default:
+            return 0;
+        }
+        
+        return params.sort_order === 'asc' ? aVal - bVal : bVal - aVal;
+      });
     }
-    if (params.date_to) {
-      countQuery += ` AND au.created_at <= $${countParamIndex}`;
-      countParams.push(params.date_to);
-      countParamIndex++;
-    }
-
-    const { data: countResult } = await supabase.rpc('exec_sql', {
-      sql: countQuery,
-      params: countParams
-    });
-
-    const total = countResult?.[0]?.total || 0;
 
     return new Response(JSON.stringify({
-      users: users || [],
+      users: filteredUsers,
       pagination: {
         page: params.page || 1,
         limit: params.limit || 20,
-        total,
-        totalPages: Math.ceil(total / (params.limit || 20))
+        total: count || 0,
+        totalPages: Math.ceil((count || 0) / (params.limit || 20))
       }
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
