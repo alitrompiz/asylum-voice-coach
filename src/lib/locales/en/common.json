@@ -10,7 +10,13 @@
   "interview": {
     "start": "Start Interview",
     "areas_count": "{{count}} areas",
-    "select_areas": "Select at least one area of focus to begin"
+    "select_areas": "Select at least one area of focus to begin",
+    "press_to_talk": "Press to talk",
+    "recording_tap_to_stop": "Recording… Tap to stop",
+    "playing": "Playing…",
+    "mic_permission_needed": "Microphone permission needed to record.",
+    "upload_failed": "Upload failed. Tap to retry.",
+    "transcription_failed": "Couldn't transcribe. Tap to retry."
   },
   "language": {
     "title": "Interview Language",

@@ -4,13 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { MessageSquare, Mic, X, Pause, Play, Send, MicOff, Volume2, EyeOff, Eye, Captions, Type, Bug } from 'lucide-react';
+import { MessageSquare, Mic, X, Pause, Play, Send, MicOff, Volume2, EyeOff, Eye, Captions, Type, Bug, Loader2 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { usePersonaStore } from '@/stores/personaStore';
 import { usePersonas } from '@/hooks/usePersonas';
-import { useAudioRecording } from '@/hooks/useAudioRecording';
+import { useRecordingStateMachine } from '@/hooks/useRecordingStateMachine';
+import { useTTSStateMachine } from '@/hooks/useTTSStateMachine';
 import { useInterviewConversation } from '@/hooks/useInterviewConversation';
-import { useTextToSpeech } from '@/hooks/useTextToSpeech';
 import { useLanguagePreference } from '@/hooks/useLanguagePreference';
 import { Waveform } from '@/components/Waveform';
 import { cn } from '@/lib/utils';
@@ -19,8 +19,10 @@ import { ensureAudioContextReady } from '@/utils/audioContext';
 import { SessionEndDialog } from '@/components/SessionEndDialog';
 import { GeneratingFeedbackModal } from '@/components/GeneratingFeedbackModal';
 import { supabase } from '@/integrations/supabase/client';
+import { useTranslation } from 'react-i18next';
 
 export default function Interview() {
+  const { t } = useTranslation();
   const [isAiSpeaking, setIsAiSpeaking] = useState(false);
   const [showSubtitles, setShowSubtitles] = useState(false); // OFF by default per session
   const [isPaused, setIsPaused] = useState(false);
@@ -30,11 +32,11 @@ export default function Interview() {
   const [firstTTSStartTime, setFirstTTSStartTime] = useState<number | null>(null);
   const [showGeneratingFeedback, setShowGeneratingFeedback] = useState(false);
   const [showDebugPanel, setShowDebugPanel] = useState(false);
-  const [userTranscription, setUserTranscription] = useState('');
   const [audioBlocked, setAudioBlocked] = useState(false);
   const [audioActuallyPlaying, setAudioActuallyPlaying] = useState(false); // Track actual audio playback
   const [showEndConfirmation, setShowEndConfirmation] = useState(false); // Confirmation dialog before ending
   const [isEnding, setIsEnding] = useState(false); // Guard to prevent new TTS during cleanup
+  const [previousTranscript, setPreviousTranscript] = useState('');
   const isMobile = useIsMobile();
   const navigate = useNavigate();
 
@@ -45,16 +47,11 @@ export default function Interview() {
     isLoading: languageLoading
   } = useLanguagePreference();
 
-  // Audio recording and conversation hooks
-  const {
-    isRecording,
-    duration,
-    audioLevel,
-    error: recordingError,
-    startRecording,
-    stopRecording,
-    cancelRecording
-  } = useAudioRecording();
+  // Enhanced recording and TTS state machines
+  const recordingMachine = useRecordingStateMachine();
+  const ttsMachine = useTTSStateMachine();
+
+  // Conversation hooks
   const {
     messages,
     isProcessing,
@@ -65,15 +62,13 @@ export default function Interview() {
     initializeInterview,
     hasInitialized
   } = useInterviewConversation();
-  const {
-    speak,
-    stop: stopTTS,
-    isPlaying: isTTSPlaying,
-    isLoading: isTTSLoading,
-    debugAudio,
-    debugInfo,
-    currentRequestRef
-  } = useTextToSpeech();
+
+  // Extract values from state machines for compatibility
+  const isRecording = recordingMachine.state === 'recording';
+  const isTTSPlaying = ttsMachine.state === 'playing';
+  const duration = recordingMachine.duration;
+  const audioLevel = recordingMachine.audioLevel;
+  const userTranscription = recordingMachine.userTranscript;
 
   // Ref for managing press-to-talk
   const pressToTalkRef = useRef<boolean>(false);
@@ -106,6 +101,19 @@ export default function Interview() {
   // Track last spoken subtitle to prevent rapid repeated TTS calls
   const lastSpokenSubtitle = useRef<string>('');
 
+  // Handle user transcript persistence - cross-fade when new transcript arrives
+  useEffect(() => {
+    if (userTranscription && !userTranscription.includes('Transcribing') && !userTranscription.includes('Processing')) {
+      // This is a new user transcript - store previous one for potential cross-fade
+      if (previousTranscript && previousTranscript !== userTranscription) {
+        // Cross-fade transition (simplified - just replace for now)
+        setPreviousTranscript(userTranscription);
+      } else {
+        setPreviousTranscript(userTranscription);
+      }
+    }
+  }, [userTranscription, previousTranscript]);
+
   // Auto-play TTS when AI responds - with deduplication
   useEffect(() => {
     console.log('🎯 TTS Effect triggered:', {
@@ -137,8 +145,8 @@ export default function Interview() {
         console.warn('⚠️ AudioContext preparation failed:', err);
       });
 
-      // Use OpenAI voice directly (no mapping needed)
-      speak(currentSubtitle, {
+      // Use TTS state machine
+      ttsMachine.speak(currentSubtitle, {
         voice: selectedPersonaData.tts_voice,
         onStart: () => {
           console.log('✅ TTS STARTED - Request sent, loading audio...');
@@ -148,29 +156,26 @@ export default function Interview() {
             console.log('🕐 First TTS started - session timer begins');
           }
           setIsAiSpeaking(true);
-          // Don't set audioActuallyPlaying here - wait for actual playback
         },
         onEnd: () => {
           console.log('✅ TTS ENDED - Audio finished playing');
           setIsAiSpeaking(false);
-          setAudioActuallyPlaying(false); // Clear playback state
+          setAudioActuallyPlaying(false);
         },
         onError: error => {
           console.error('❌ TTS ERROR:', error);
           setIsAiSpeaking(false);
-          setAudioActuallyPlaying(false); // Clear playback state on error
+          setAudioActuallyPlaying(false);
 
           // Check if audio is blocked and show appropriate feedback
           if (error.message.includes('Audio blocked') || error.message.includes('user interaction')) {
             setAudioBlocked(true);
             console.log('⚠️ Audio blocked - user interaction required');
-          } else {
-            alert(`TTS Error: ${error.message}`);
           }
         },
         onAudioPlaying: () => {
           console.log('🔊 AUDIO ACTUALLY PLAYING - Subtitles can now show');
-          setAudioActuallyPlaying(true); // Only set when audio is audibly playing
+          setAudioActuallyPlaying(true);
         }
       });
     } else if (currentSubtitle === lastSpokenSubtitle.current) {
@@ -187,7 +192,7 @@ export default function Interview() {
         isSameAsLast: currentSubtitle === lastSpokenSubtitle.current
       });
     }
-  }, [currentSubtitle, selectedPersonaData?.tts_voice, speak, isProcessing, isTTSPlaying, isEnding]);
+  }, [currentSubtitle, selectedPersonaData?.tts_voice, ttsMachine, isProcessing, isTTSPlaying, isEnding]);
 
   // Handle touch events (primary for mobile)
   const handleTouch = async (e: React.TouchEvent) => {
@@ -202,9 +207,9 @@ export default function Interview() {
 
     // Stop TTS if playing
     if (isTTSPlaying) {
-      stopTTS();
+      ttsMachine.stop();
       setIsAiSpeaking(false);
-      setAudioActuallyPlaying(false); // Clear playback state when stopped
+      setAudioActuallyPlaying(false);
     }
 
     // Ensure AudioContext is ready before any audio operations
@@ -216,7 +221,7 @@ export default function Interview() {
       pressToTalkRef.current = true;
       try {
         console.log('Starting recording...');
-        await startRecording();
+        await recordingMachine.startRecording();
         setIsAiSpeaking(false);
         console.log('Recording started successfully');
       } catch (error) {
@@ -228,14 +233,10 @@ export default function Interview() {
       pressToTalkRef.current = false;
       try {
         console.log('Stopping recording...');
-        const recording = await stopRecording();
-        if (recording.duration > 0) {
+        const recording = await recordingMachine.stopRecording();
+        if (recording && recording.duration > 0) {
           console.log('Processing audio message...');
-          // Show transcription feedback
-          setUserTranscription('Transcribing your message...');
           await processAudioMessage(recording);
-          // Clear transcription after processing
-          setTimeout(() => setUserTranscription(''), 3000);
         }
       } catch (error) {
         console.error('Failed to stop recording:', error);
@@ -256,9 +257,9 @@ export default function Interview() {
 
     // Stop TTS if playing
     if (isTTSPlaying) {
-      stopTTS();
+      ttsMachine.stop();
       setIsAiSpeaking(false);
-      setAudioActuallyPlaying(false); // Clear playback state when stopped
+      setAudioActuallyPlaying(false);
     }
 
     // Ensure AudioContext is ready before any audio operations
@@ -270,7 +271,7 @@ export default function Interview() {
       pressToTalkRef.current = true;
       try {
         console.log('Starting recording...');
-        await startRecording();
+        await recordingMachine.startRecording();
         setIsAiSpeaking(false);
         console.log('Recording started successfully');
       } catch (error) {
@@ -282,14 +283,10 @@ export default function Interview() {
       pressToTalkRef.current = false;
       try {
         console.log('Stopping recording...');
-        const recording = await stopRecording();
-        if (recording.duration > 0) {
+        const recording = await recordingMachine.stopRecording();
+        if (recording && recording.duration > 0) {
           console.log('Processing audio message...');
-          // Show transcription feedback
-          setUserTranscription('Transcribing your message...');
           await processAudioMessage(recording);
-          // Clear transcription after processing
-          setTimeout(() => setUserTranscription(''), 3000);
         }
       } catch (error) {
         console.error('Failed to stop recording:', error);
@@ -309,14 +306,8 @@ export default function Interview() {
     setIsEnding(true);
     
     try {
-      // Stop TTS immediately and abort any ongoing requests
-      stopTTS();
-      
-      // Abort any ongoing TTS requests by setting currentRequestRef to null
-      if (currentRequestRef && currentRequestRef.current) {
-        console.log('🛑 Aborting TTS request:', currentRequestRef.current);
-        currentRequestRef.current = null;
-      }
+      // Stop TTS immediately using state machine
+      ttsMachine.stop();
       
       // Stop any audio element that might be playing
       const audioElement = document.getElementById('tts-audio') as HTMLAudioElement;
@@ -335,11 +326,6 @@ export default function Interview() {
         } catch (err) {
           console.warn('⚠️ Failed to suspend AudioContext:', err);
         }
-      }
-      
-      // Stop recording if active
-      if (isRecording) {
-        stopRecording();
       }
       
       // Clear all audio/subtitle state
@@ -417,29 +403,27 @@ export default function Interview() {
   };
   const handleTTSToggle = () => {
     if (isTTSPlaying) {
-      stopTTS();
+      ttsMachine.stop();
       setIsAiSpeaking(false);
-      setAudioActuallyPlaying(false); // Clear playback state
+      setAudioActuallyPlaying(false);
     } else if (currentSubtitle && !currentSubtitle.includes("Processing your message") && !currentSubtitle.includes("Transcribing your message") && selectedPersonaData?.tts_voice) {
-      // Use OpenAI voice directly (no mapping needed)
-      speak(currentSubtitle, {
+      ttsMachine.speak(currentSubtitle, {
         voice: selectedPersonaData.tts_voice,
         onStart: () => {
           setIsAiSpeaking(true);
-          // Don't set audioActuallyPlaying here - wait for actual playback
         },
         onEnd: () => {
           setIsAiSpeaking(false);
-          setAudioActuallyPlaying(false); // Clear playback state
+          setAudioActuallyPlaying(false);
         },
         onError: error => {
           console.error('TTS error:', error);
           setIsAiSpeaking(false);
-          setAudioActuallyPlaying(false); // Clear playback state on error
+          setAudioActuallyPlaying(false);
         },
         onAudioPlaying: () => {
           console.log('🔊 AUDIO ACTUALLY PLAYING - Subtitles can now show');
-          setAudioActuallyPlaying(true); // Only set when audio is audibly playing
+          setAudioActuallyPlaying(true);
         }
       });
     }
@@ -460,7 +444,7 @@ export default function Interview() {
         {showDebugPanel && <div className="absolute top-6 left-6 right-6 z-30 bg-black/70 backdrop-blur-sm rounded-lg p-3">
             <div className="text-xs text-white/80 space-y-1">
               <div><strong>Subtitle:</strong> {currentSubtitle?.substring(0, 100)}...</div>
-              <div><strong>TTS State:</strong> Playing: {isTTSPlaying}, Loading: {isTTSLoading}, AI Speaking: {isAiSpeaking}</div>
+              <div><strong>TTS State:</strong> Playing: {isTTSPlaying}, Loading: {ttsMachine.isLoading}, AI Speaking: {isAiSpeaking}</div>
               <div><strong>Recording:</strong> {isRecording ? 'Active' : 'Inactive'}, Processing: {isProcessing}</div>
               <div><strong>Persona:</strong> {selectedPersonaData?.name} ({selectedPersonaData?.tts_voice})</div>
               <div><strong>Language:</strong> {languageCode}</div>
@@ -472,8 +456,8 @@ export default function Interview() {
           </div>}
         
         {/* Debug Info Panel */}
-        {debugInfo && <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30 p-4 bg-black/90 backdrop-blur-sm rounded-lg text-xs font-mono text-white whitespace-pre-wrap max-w-sm max-h-60 overflow-y-auto border border-white/20">
-            {debugInfo}
+        {recordingMachine.error && <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30 p-4 bg-black/90 backdrop-blur-sm rounded-lg text-xs font-mono text-white whitespace-pre-wrap max-w-sm max-h-60 overflow-y-auto border border-white/20">
+            {recordingMachine.error}
           </div>}
 
         {/* App Name */}
@@ -587,7 +571,7 @@ export default function Interview() {
                           console.log('✅ AudioContext resumed');
                         }
                       }
-                      await speak('Testing audio playback on iOS device', {
+                      await ttsMachine.speak('Testing audio playback on iOS device', {
                         onStart: () => console.log('✅ Test TTS started'),
                         onEnd: () => console.log('✅ Test TTS completed'),
                         onError: e => console.error('❌ Test TTS failed:', e)
@@ -611,7 +595,7 @@ export default function Interview() {
                       🔁 Restart TTS
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => {
-                    const debugInfo = debugAudio();
+                    console.log('Recording state:', recordingMachine);
                     alert('Debug info in console and on screen');
                   }}>
                       🔍 Debug Audio
@@ -674,7 +658,7 @@ export default function Interview() {
                   <Mic className="w-6 h-6 md:w-8 md:h-8 text-white" />
                 </div>
                 <span className="text-white text-xs md:text-sm font-medium text-center leading-tight min-h-[2.5rem] flex items-center">
-                  {isRecording ? "Press to stop" : isProcessing ? "Processing..." : "Press to talk"}
+                  {recordingMachine.getButtonLabel()}
                 </span>
               </button>
             </div>

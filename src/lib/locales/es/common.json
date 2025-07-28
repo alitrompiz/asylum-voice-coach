@@ -10,7 +10,13 @@
   "interview": {
     "start": "Comenzar Entrevista",
     "areas_count": "{{count}} áreas",
-    "select_areas": "Selecciona al menos un área de enfoque para comenzar"
+    "select_areas": "Selecciona al menos un área de enfoque para comenzar",
+    "press_to_talk": "Toca para hablar",
+    "recording_tap_to_stop": "Grabando… toca para detener",
+    "playing": "Reproduciendo…",
+    "mic_permission_needed": "Se necesita permiso del micrófono para grabar.",
+    "upload_failed": "Falló la carga. Toca para reintentar.",
+    "transcription_failed": "No se pudo transcribir. Toca para reintentar."
   },
   "language": {
     "title": "Idioma de la Entrevista",
