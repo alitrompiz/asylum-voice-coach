@@ -284,6 +284,7 @@ export const StoryModal = ({
         .from('stories')
         .update({ 
           story_text: '',
+          file_path: null, // Also clear PDF file path when deleting
           updated_at: new Date().toISOString()
         })
         .eq('user_id', user.id)

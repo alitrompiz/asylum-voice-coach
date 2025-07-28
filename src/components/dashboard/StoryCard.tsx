@@ -35,10 +35,10 @@ export const StoryCard = () => {
     refetchOnMount: 'always', // Always refetch on mount
   });
 
-  // Compute story state: ONLY text content determines "loaded" status
+  // Compute story state: text OR PDF determines "loaded" status
   const hasText = typeof activeStory?.story_text === 'string' && activeStory.story_text.trim().length > 0;
   const hasPdf = !!activeStory?.file_path;
-  const hasStory = hasText; // Only text determines "loaded" state, not PDF
+  const hasStory = hasText || hasPdf; // Either text OR PDF shows "loaded"
 
   // Debug logging when enabled
   useEffect(() => {
