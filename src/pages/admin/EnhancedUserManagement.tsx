@@ -104,13 +104,23 @@ const UserManagement = () => {
       });
 
       const { data, error } = await supabase.functions.invoke('admin-users', {
-        body: null,
+        body: {
+          page: currentPage,
+          limit: 20,
+          search: searchTerm,
+          status_filter: statusFilter,
+          attorney_filter: attorneyFilter,
+          sort_by: sortBy,
+          sort_order: sortOrder,
+        },
         headers: {
           'Content-Type': 'application/json',
         },
       });
 
       if (error) throw error;
+      
+      console.log('✅ Admin users data received:', data);
       return data;
     },
     refetchInterval: 30000, // Refresh every 30 seconds
@@ -213,24 +223,19 @@ const UserManagement = () => {
   // Export CSV
   const exportMutation = useMutation({
     mutationFn: async () => {
-      const params = new URLSearchParams({
-        search: searchTerm,
-        status_filter: statusFilter,
-        attorney_filter: attorneyFilter,
+      const { data, error } = await supabase.functions.invoke('admin-users-export', {
+        body: {
+          search: searchTerm,
+          status_filter: statusFilter,
+          attorney_filter: attorneyFilter,
+        }
       });
 
-      const response = await fetch(
-        `https://atthfkcmknkcyfeumcrq.supabase.co/functions/v1/admin-users-export?${params}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-          },
-        }
-      );
-
-      if (!response.ok) throw new Error('Export failed');
+      if (error) throw error;
       
-      const blob = await response.blob();
+      // Convert the data to CSV and download
+      const csv = data.csv;
+      const blob = new Blob([csv], { type: 'text/csv' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;

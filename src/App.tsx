@@ -31,7 +31,7 @@ import ContactUsForm from "./components/ContactUsForm";
 // Admin pages
 import AdminLayout from "./pages/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
-import UserManagement from "./pages/admin/UserManagement";
+import EnhancedUserManagement from "./pages/admin/EnhancedUserManagement";
 import SkillsManagement from "./pages/admin/SkillsManagement";
 import PersonasManagement from "./pages/admin/PersonasManagement";
 import PromptsManagement from "./pages/admin/PromptsManagement";
@@ -73,7 +73,7 @@ const App = () => (
             {/* Admin routes - require admin role */}
             <Route path="/admin" element={<RequireAdminRole><AdminLayout /></RequireAdminRole>}>
               <Route index element={<AdminDashboard />} />
-              <Route path="users" element={<UserManagement />} />
+              <Route path="users" element={<EnhancedUserManagement />} />
               <Route path="skills" element={<SkillsManagement />} />
               <Route path="personas" element={<PersonasManagement />} />
               <Route path="prompts" element={<PromptsManagement />} />
