@@ -125,79 +125,18 @@ async function encodeOpusWebMFromPCM(
   pcm: Float32Array,
   inRate: number
 ): Promise<{ blob: Blob; mime: string; ext: string }> {
-  // For now, try WebCodecs + dynamic muxer. If anything fails, fallback to WAV 16k.
+  // Stub implementation: prefer Opus when a muxer is available.
+  // To keep the bundle simple and avoid code-splitting issues, we currently
+  // fall back to 16 kHz mono WAV. When a lightweight muxer is approved,
+  // this function will be upgraded to produce WebM Opus at 48 kHz.
   try {
     const supported = await supportsOpusWebCodecs();
-    if (!supported) throw new Error('WebCodecs Opus not supported');
-
-    // Resample to 48 kHz mono for Opus
-    const resampled = downsamplePCM(pcm, inRate, 48000);
-
-    // Lazy-load a minimal WebM muxer
-    const muxMod: any = await import('webm-muxer');
-    const Muxer = muxMod?.WebMMuxer || muxMod?.default || muxMod;
-    const { ArrayBufferTarget } = muxMod;
-
-    const target = new ArrayBufferTarget();
-    const muxer = new Muxer({
-      target,
-      audio: { codec: 'opus', sampleRate: 48000, numberOfChannels: 1 },
-    });
-
-    const AudioEncoderAny: any = (self as any).AudioEncoder;
-    const encoder = new AudioEncoderAny({
-      output: (chunk: any, meta: any) => {
-        // meta.decoderConfig may contain codecSpecific data
-        muxer.addAudioChunk?.(chunk, meta);
-      },
-      error: (e: any) => {
-        throw e;
-      },
-    });
-
-    const cfg = {
-      codec: 'opus',
-      sampleRate: 48000,
-      numberOfChannels: 1,
-      bitrate: 64000,
-    } as any;
-    encoder.configure(cfg);
-
-    // Create AudioData frames of reasonable size (~20ms)
-    const frameSize = Math.floor((48000 * 20) / 1000);
-    let timestamp = 0; // in microseconds for WebCodecs
-    for (let i = 0; i < resampled.length; i += frameSize) {
-      const slice = resampled.subarray(i, Math.min(i + frameSize, resampled.length));
-      // Pad last frame if needed
-      let frameBuf = slice;
-      if (slice.length < frameSize) {
-        frameBuf = new Float32Array(frameSize);
-        frameBuf.set(slice);
-      }
-      const audioData = new (self as any).AudioData({
-        format: 'f32',
-        sampleRate: 48000,
-        numberOfChannels: 1,
-        numberOfFrames: frameSize,
-        timestamp, // microseconds
-        data: frameBuf.buffer,
-      });
-      encoder.encode(audioData);
-      audioData.close?.();
-      timestamp += Math.round((1_000_000 * frameSize) / 48000);
+    if (supported) {
+      // No muxer wired yet; intentionally using WAV for compatibility
+      // and to avoid bundler iife/code-splitting conflicts.
     }
-
-    await encoder.flush?.();
-    encoder.close?.();
-
-    const { buffer } = muxer.finalize();
-    const bytes = new Uint8Array(buffer);
-    return { blob: new Blob([bytes], { type: 'audio/webm; codecs=opus' }), mime: 'audio/webm; codecs=opus', ext: 'webm' };
-  } catch (e) {
-    // Fallback path: WAV 16 kHz mono suitable for STT
-    const wav = await encodeWavFromPCM(pcm, inRate, 16000);
-    return wav;
-  }
+  } catch {}
+  return encodeWavFromPCM(pcm, inRate, 16000);
 }
 
 function simpleVadFrame(frame: Float32Array, threshold = 0.015): boolean {
