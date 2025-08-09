@@ -2,17 +2,16 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Play, Shield } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { UserScoreCard } from '@/components/UserScoreCard';
-import { PersonaCarousel } from '@/components/PersonaCarousel';
 import { LanguageSelector } from '@/components/LanguageSelector';
-import { SkillsScroller } from '@/components/SkillsScroller';
 import { HamburgerMenu } from '@/components/HamburgerMenu';
-import { StoryCard } from '@/components/dashboard/StoryCard';
-import { SubscriptionCard } from '@/components/dashboard/SubscriptionCard';
+const PersonaCarousel = lazy(() => import('@/components/PersonaCarousel').then(m => ({ default: m.PersonaCarousel })));
+const SkillsScroller = lazy(() => import('@/components/SkillsScroller').then(m => ({ default: m.SkillsScroller })));
+const StoryCard = lazy(() => import('@/components/dashboard/StoryCard').then(m => ({ default: m.StoryCard })));
+const SubscriptionCard = lazy(() => import('@/components/dashboard/SubscriptionCard').then(m => ({ default: m.SubscriptionCard }))));
 import { useSkillsStore } from '@/stores/personaStore';
 import { useAdminAccess } from '@/hooks/useAdminAccess';
 import { useTranslation } from 'react-i18next';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, lazy, Suspense } from 'react';
 import { ensureAudioContextReady } from '@/utils/audioContext';
 import { GeneralFeedbackModal } from '@/components/GeneralFeedbackModal';
 export default function Dashboard() {
@@ -77,8 +76,12 @@ export default function Dashboard() {
 
         {/* New Dashboard Cards - Asylum story (35%) left, Free Trial (65%) right */}
         <div className="grid grid-cols-[35%_65%] gap-3 mb-4">
-          <StoryCard />
-          <SubscriptionCard />
+          <Suspense fallback={null}>
+            <StoryCard />
+          </Suspense>
+          <Suspense fallback={null}>
+            <SubscriptionCard />
+          </Suspense>
         </div>
 
         {/* Language Picker - Moved below cards */}
@@ -87,11 +90,15 @@ export default function Dashboard() {
         </div>
 
         <div className="mb-3">
-          <PersonaCarousel />
+          <Suspense fallback={null}>
+            <PersonaCarousel />
+          </Suspense>
         </div>
 
         <div className="mb-3 -mt-2">
-          <SkillsScroller />
+          <Suspense fallback={null}>
+            <SkillsScroller />
+          </Suspense>
         </div>
       </div>
 
