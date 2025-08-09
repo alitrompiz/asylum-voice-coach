@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
-import { wrap, Remote } from 'comlink';
+import { wrap, Remote, transfer } from 'comlink';
 import type { AudioWorkerAPI } from '@/workers/audioWorker';
 
 export interface AudioRecordingResult {
