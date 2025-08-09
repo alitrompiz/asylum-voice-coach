@@ -175,6 +175,27 @@ export type Database = {
           },
         ]
       }
+      edge_rate_limits: {
+        Row: {
+          count: number
+          route: string
+          subject: string
+          window_start: string
+        }
+        Insert: {
+          count?: number
+          route: string
+          subject: string
+          window_start: string
+        }
+        Update: {
+          count?: number
+          route?: string
+          subject?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
       feedback: {
         Row: {
           created_at: string
@@ -856,6 +877,15 @@ export type Database = {
       backfill_missing_profiles: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      check_and_increment_rate_limit: {
+        Args: {
+          p_route: string
+          p_subject: string
+          p_limit: number
+          p_window_seconds: number
+        }
+        Returns: boolean
       }
       exec_admin_user_query: {
         Args: { query_text: string; query_params?: Json }

@@ -2,9 +2,24 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.51.0";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+const parseAllowedOrigins = () => (Deno.env.get('ALLOWED_ORIGINS') || '')
+  .split(',')
+  .map(o => o.trim())
+  .filter(Boolean);
+
+const getOrigin = (req: Request) => req.headers.get('Origin') || '';
+
+const buildCors = (req: Request) => {
+  const origin = getOrigin(req);
+  const list = parseAllowedOrigins();
+  const allowed = origin === '' || list.includes(origin);
+  const headers: Record<string, string> = {
+    'Access-Control-Allow-Origin': allowed && origin ? origin : '',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Vary': 'Origin',
+  };
+  return { headers, allowed };
 };
 
 // Template engine for replacing prompt variables
@@ -21,21 +36,47 @@ function processPromptTemplate(template: string, variables: Record<string, any>)
 }
 
 serve(async (req) => {
+  const { headers: corsHeaders, allowed: originAllowed } = buildCors(req);
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
+  if (!originAllowed) {
+    return new Response(JSON.stringify({ error: 'Origin not allowed' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+  }
 
   try {
-    const { messages, personaId, language = 'en', skills = [], sessionId } = await req.json();
-    
-    if (!messages || !Array.isArray(messages)) {
-      throw new Error('Messages array is required');
+    const body = await req.json();
+    const messages = body?.messages;
+    const personaId = body?.personaId;
+    const language: string = body?.language ?? 'en';
+    const skills: string[] = Array.isArray(body?.skills) ? body.skills : [];
+    const sessionId = body?.sessionId;
+
+    // Input validation
+    if (!Array.isArray(messages) || messages.length === 0) {
+      return new Response(JSON.stringify({ error: 'Messages array is required' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+    }
+    if (messages.length > 30) {
+      return new Response(JSON.stringify({ error: 'Too many messages (max 30)' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+    }
+    let totalLen = 0;
+    for (const m of messages) {
+      if (!m || (m.role !== 'user' && m.role !== 'assistant') || typeof m.text !== 'string') {
+        return new Response(JSON.stringify({ error: 'Invalid message format' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+      }
+      if (m.text.length > 2000) {
+        return new Response(JSON.stringify({ error: 'Message too long (max 2000 chars)' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+      }
+      totalLen += m.text.length;
+    }
+    if (totalLen > 8000) {
+      return new Response(JSON.stringify({ error: 'Conversation too long (max 8000 chars)' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
     }
 
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openaiApiKey) {
-      throw new Error('OpenAI API key not configured');
+      throw new Error('OPENAI_API_KEY not configured');
     }
 
     // Get auth user
@@ -46,15 +87,30 @@ serve(async (req) => {
     );
 
     // Get user ID from auth header if needed
-    let userId = null;
+    let userId: string | null = null;
     if (authHeader?.startsWith('Bearer ')) {
       const token = authHeader.substring(7);
       try {
         const { data: { user } } = await supabase.auth.getUser(token);
-        userId = user?.id;
+        userId = user?.id ?? null;
       } catch (error) {
-        console.log('Auth error:', error);
+        console.log('Auth error:', error?.message || 'unknown');
       }
+    }
+
+    // Apply rate limiting (20/min)
+    const ip = req.headers.get('x-real-ip') ?? (req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown');
+    const subject = userId ?? ip;
+    const { data: allowed, error: rlErr } = await supabase.rpc('check_and_increment_rate_limit', {
+      p_route: 'interview-ai',
+      p_subject: subject,
+      p_limit: 20,
+      p_window_seconds: 60,
+    });
+    if (rlErr) console.error('Rate limit RPC error:', rlErr);
+    if (allowed === false) {
+      const window = 60; const now = Math.floor(Date.now() / 1000); const retry = window - (now % window);
+      return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Retry-After': String(retry) } });
     }
 
     // Fetch user context data
