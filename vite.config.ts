@@ -12,14 +12,14 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     react(),
-    (mode === 'development' || process.env.ANALYZE) && componentTagger(),
-    (mode === 'development' || process.env.ANALYZE) && visualizer({
+    ...(mode === 'development' ? [componentTagger()] : []),
+    ...((mode === 'development' || !!process.env.ANALYZE) ? [visualizer({
       open: !!process.env.ANALYZE,
       gzipSize: true,
       brotliSize: true,
       filename: 'stats.html'
-    }),
-  ].filter(Boolean),
+    })] : []),
+  ],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),

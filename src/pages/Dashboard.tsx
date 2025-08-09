@@ -1,17 +1,17 @@
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Play, Shield } from 'lucide-react';
+import { useEffect, useState, lazy, Suspense } from 'react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { LanguageSelector } from '@/components/LanguageSelector';
 import { HamburgerMenu } from '@/components/HamburgerMenu';
 const PersonaCarousel = lazy(() => import('@/components/PersonaCarousel').then(m => ({ default: m.PersonaCarousel })));
 const SkillsScroller = lazy(() => import('@/components/SkillsScroller').then(m => ({ default: m.SkillsScroller })));
 const StoryCard = lazy(() => import('@/components/dashboard/StoryCard').then(m => ({ default: m.StoryCard })));
-const SubscriptionCard = lazy(() => import('@/components/dashboard/SubscriptionCard').then(m => ({ default: m.SubscriptionCard }))));
+const SubscriptionCard = lazy(() => import('@/components/dashboard/SubscriptionCard').then(m => ({ default: m.SubscriptionCard })));
 import { useSkillsStore } from '@/stores/personaStore';
 import { useAdminAccess } from '@/hooks/useAdminAccess';
 import { useTranslation } from 'react-i18next';
-import { useEffect, useState, lazy, Suspense } from 'react';
 import { ensureAudioContextReady } from '@/utils/audioContext';
 import { GeneralFeedbackModal } from '@/components/GeneralFeedbackModal';
 export default function Dashboard() {
