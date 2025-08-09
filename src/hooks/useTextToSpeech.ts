@@ -1,5 +1,6 @@
-
 import { useState, useRef, useCallback, useEffect } from 'react';
+import { wrap, Remote } from 'comlink';
+import type { AudioWorkerAPI } from '@/workers/audioWorker';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguagePreference } from './useLanguagePreference';
 import { ensureAudioContextReady, getOrCreateAudioElement, playAudioWithContext } from '@/utils/audioContext';
@@ -19,6 +20,15 @@ export const useTextToSpeech = () => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const currentRequestRef = useRef<string | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
+  const currentObjectUrlRef = useRef<string | null>(null);
+  const workerRef = useRef<Remote<AudioWorkerAPI> | null>(null);
+  const getWorker = () => {
+    if (!workerRef.current) {
+      const worker = new Worker(new URL('../workers/audioWorker.ts', import.meta.url), { type: 'module' });
+      workerRef.current = (wrap as unknown as <T>(w: Worker) => Remote<T>)(worker) as Remote<AudioWorkerAPI>;
+    }
+    return workerRef.current!;
+  };
   const { language, getVoiceForTTS, languageCode } = useLanguagePreference();
 
   // Detect iOS
@@ -104,6 +114,10 @@ export const useTextToSpeech = () => {
         audioRef.current.currentTime = 0;
         audioRef.current = null;
       }
+      if (currentObjectUrlRef.current) {
+        URL.revokeObjectURL(currentObjectUrlRef.current);
+        currentObjectUrlRef.current = null;
+      }
       setIsPlaying(false);
       setIsLoading(false);
     }
@@ -160,12 +174,15 @@ export const useTextToSpeech = () => {
           const audio = getOrCreateAudioElement();
           audioRef.current = audio;
 
-          // Use worker to decode base64 into bytes and create an object URL
-          const { getMediaWorker } = await import('@/lib/mediaWorkerClient');
-          const worker = getMediaWorker();
+          const worker = getWorker();
           const bytes = await worker.base64ToUint8(data.audioContent);
           const blob = new Blob([bytes], { type: 'audio/mpeg' });
+          if (currentObjectUrlRef.current) {
+            URL.revokeObjectURL(currentObjectUrlRef.current);
+            currentObjectUrlRef.current = null;
+          }
           const audioSrc = URL.createObjectURL(blob);
+          currentObjectUrlRef.current = audioSrc;
 
           console.log('🔊 Playing audio with persistent element');
 
@@ -175,6 +192,10 @@ export const useTextToSpeech = () => {
             if (currentRequestRef.current === requestId) {
               setIsPlaying(false);
               audioRef.current = null;
+              if (currentObjectUrlRef.current) {
+                URL.revokeObjectURL(currentObjectUrlRef.current);
+                currentObjectUrlRef.current = null;
+              }
               options.onEnd?.();
             }
           };
@@ -185,6 +206,10 @@ export const useTextToSpeech = () => {
               setIsLoading(false);
               setIsPlaying(false);
               audioRef.current = null;
+              if (currentObjectUrlRef.current) {
+                URL.revokeObjectURL(currentObjectUrlRef.current);
+                currentObjectUrlRef.current = null;
+              }
               options.onError?.(new Error(`Audio playback failed: ${e.message || audio.error?.message || 'Unknown error'}`));
             }
           };
@@ -264,6 +289,10 @@ export const useTextToSpeech = () => {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
       audioRef.current = null;
+    }
+    if (currentObjectUrlRef.current) {
+      URL.revokeObjectURL(currentObjectUrlRef.current);
+      currentObjectUrlRef.current = null;
     }
     setIsPlaying(false);
     setIsLoading(false);

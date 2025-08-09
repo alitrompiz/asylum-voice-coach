@@ -1,4 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
+import { wrap, Remote } from 'comlink';
+import type { AudioWorkerAPI } from '@/workers/audioWorker';
 
 export interface AudioRecordingResult {
   audioBlob: Blob;
@@ -19,6 +21,17 @@ export const useAudioRecording = () => {
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animationFrameRef = useRef<number | null>(null);
+  const processorRef = useRef<ScriptProcessorNode | null>(null);
+  const pcmFramesRef = useRef<Float32Array[] | null>(null);
+  const inputSampleRateRef = useRef<number | null>(null);
+  const workerRef = useRef<Remote<AudioWorkerAPI> | null>(null);
+  const getWorker = () => {
+    if (!workerRef.current) {
+      const worker = new Worker(new URL('../workers/audioWorker.ts', import.meta.url), { type: 'module' });
+      workerRef.current = wrap<AudioWorkerAPI>(worker);
+    }
+    return workerRef.current!;
+  };
 
   const startRecording = useCallback(async () => {
     try {
@@ -76,6 +89,24 @@ export const useAudioRecording = () => {
       
       const source = audioContextRef.current.createMediaStreamSource(stream);
       source.connect(analyserRef.current);
+
+      // Capture PCM frames for worker-side VAD (no UI changes)
+      processorRef.current = audioContextRef.current.createScriptProcessor(4096, 1, 1);
+      processorRef.current.onaudioprocess = (e) => {
+        const input = e.inputBuffer.getChannelData(0);
+        const copy = new Float32Array(input.length);
+        copy.set(input);
+        try {
+          const worker = getWorker();
+          // Fire-and-forget VAD computation
+          void worker.simpleVadFrame(copy);
+        } catch (err) {
+          // ignore worker errors
+        }
+      };
+      source.connect(processorRef.current);
+      // Ensure processor runs
+      processorRef.current.connect(audioContextRef.current.destination);
       
       // Start audio level monitoring
       const monitorAudioLevel = () => {
