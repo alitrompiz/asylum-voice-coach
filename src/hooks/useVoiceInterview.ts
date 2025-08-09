@@ -108,17 +108,7 @@ export const useVoiceInterview = (options: UseVoiceInterviewOptions = {}): UseVo
     }, 60000); // 1 minute
   }, [decrementMinutes]);
   
-  // Convert blob to base64
-  const blobToBase64 = (blob: Blob): Promise<string> => {
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64 = (reader.result as string).split(',')[1];
-        resolve(base64);
-      };
-      reader.readAsDataURL(blob);
-    });
-  };
+  // Worker-based base64 conversion will be used instead
   
   // Process audio with Whisper
   const processAudio = useCallback(async (audioBlob: Blob) => {
@@ -126,7 +116,9 @@ export const useVoiceInterview = (options: UseVoiceInterviewOptions = {}): UseVo
       setIsProcessing(true);
       setError(null);
       
-      const base64Audio = await blobToBase64(audioBlob);
+      const { getMediaWorker } = await import('@/lib/mediaWorkerClient');
+      const worker = getMediaWorker();
+      const base64Audio = await worker.blobToBase64(audioBlob);
       
       // Track voice-to-text call
       const whisperStartTime = Date.now();

@@ -165,17 +165,10 @@ export const useAudioRecording = () => {
 
           console.log('Final audio blob type:', mimeType, 'size:', finalBlob.size);
           
-          // Convert to base64 for API
-          const base64Audio = await new Promise<string>((resolve) => {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-              const base64 = reader.result as string;
-              // Remove data URL prefix
-              const base64Data = base64.split(',')[1];
-              resolve(base64Data);
-            };
-            reader.readAsDataURL(finalBlob);
-          });
+          // Convert to base64 for API (offloaded to worker)
+          const { getMediaWorker } = await import('@/lib/mediaWorkerClient');
+          const worker = getMediaWorker();
+          const base64Audio = await worker.blobToBase64(finalBlob);
 
           const result: AudioRecordingResult = {
             audioBlob: finalBlob,

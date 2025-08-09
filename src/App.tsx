@@ -10,6 +10,7 @@ import { RequireAdminRole } from "@/components/RequireAdminRole";
 import { LanguageProvider } from "@/components/LanguageProvider";
 import '@/lib/i18n';
 import { Suspense, lazy } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 // Import pages (lazy-loaded)
 const Index = lazy(() => import("./pages/Index"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -42,52 +43,78 @@ const SessionLimitsManagement = lazy(() => import("./pages/admin/SessionLimitsMa
 
 const queryClient = new QueryClient();
 
+const PageSkeleton = () => (
+  <div className="p-6 space-y-4">
+    <div className="h-8 w-1/3"><Skeleton className="h-8 w-full" /></div>
+    <Skeleton className="h-40 w-full" />
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <Skeleton className="h-32 w-full" />
+      <Skeleton className="h-32 w-full" />
+      <Skeleton className="h-32 w-full" />
+    </div>
+  </div>
+);
+
+const LandingSkeleton = () => (
+  <div className="p-6 space-y-4">
+    <Skeleton className="h-10 w-2/3" />
+    <Skeleton className="h-6 w-1/2" />
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <Skeleton className="h-32 w-full" />
+      <Skeleton className="h-32 w-full" />
+      <Skeleton className="h-32 w-full" />
+    </div>
+  </div>
+);
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        {/* Public routes without AuthProvider to avoid Supabase init on landing */}
+        <Suspense fallback={<LandingSkeleton />}>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </Suspense>
+
+        {/* Routes that require auth/i18n providers */}
         <AuthProvider>
           <LanguageProvider>
-            <Suspense fallback={null}>
-              <Routes>
-              <Route path="/" element={<Index />} />
-              
+            <Routes>
               {/* Auth routes */}
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/auth/login" element={<Auth />} />
-              <Route path="/auth/signup" element={<Auth />} />
-              <Route path="/auth/register" element={<Auth />} />
-              <Route path="/auth/forgot-password" element={<ForgotPassword />} />
-              <Route path="/auth/reset-password" element={<ResetPassword />} />
-              <Route path="/auth/verify" element={<Verify />} />
+              <Route path="/auth" element={<Suspense fallback={<PageSkeleton />}><Auth /></Suspense>} />
+              <Route path="/auth/login" element={<Suspense fallback={<PageSkeleton />}><Auth /></Suspense>} />
+              <Route path="/auth/signup" element={<Suspense fallback={<PageSkeleton />}><Auth /></Suspense>} />
+              <Route path="/auth/register" element={<Suspense fallback={<PageSkeleton />}><Auth /></Suspense>} />
+              <Route path="/auth/forgot-password" element={<Suspense fallback={<PageSkeleton />}><ForgotPassword /></Suspense>} />
+              <Route path="/auth/reset-password" element={<Suspense fallback={<PageSkeleton />}><ResetPassword /></Suspense>} />
+              <Route path="/auth/verify" element={<Suspense fallback={<PageSkeleton />}><Verify /></Suspense>} />
               
               {/* Protected routes */}
-              <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
-              <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-              <Route path="/interview" element={<ProtectedRoute><Interview /></ProtectedRoute>} />
-              <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-              <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-              <Route path="/settings/contact" element={<ProtectedRoute><ContactUsForm /></ProtectedRoute>} />
+              <Route path="/onboarding" element={<ProtectedRoute><Suspense fallback={<PageSkeleton />}><Onboarding /></Suspense></ProtectedRoute>} />
+              <Route path="/dashboard" element={<ProtectedRoute><Suspense fallback={<PageSkeleton />}><Dashboard /></Suspense></ProtectedRoute>} />
+              <Route path="/interview" element={<ProtectedRoute><Suspense fallback={<PageSkeleton />}><Interview /></Suspense></ProtectedRoute>} />
+              <Route path="/profile" element={<ProtectedRoute><Suspense fallback={<PageSkeleton />}><Profile /></Suspense></ProtectedRoute>} />
+              <Route path="/settings" element={<ProtectedRoute><Suspense fallback={<PageSkeleton />}><Settings /></Suspense></ProtectedRoute>} />
+              <Route path="/settings/contact" element={<ProtectedRoute><Suspense fallback={<PageSkeleton />}><ContactUsForm /></Suspense></ProtectedRoute>} />
               
               {/* Admin routes - require admin role */}
-              <Route path="/admin" element={<RequireAdminRole><AdminLayout /></RequireAdminRole>}>
-                <Route index element={<AdminDashboard />} />
-                <Route path="users" element={<EnhancedUserManagement />} />
-                <Route path="skills" element={<SkillsManagement />} />
-                <Route path="personas" element={<PersonasManagement />} />
-                <Route path="prompts" element={<PromptsManagement />} />
-                <Route path="roles" element={<RoleManagement />} />
-                <Route path="usage" element={<UsageAnalytics />} />
-                <Route path="phrases" element={<PhrasesManagement />} />
-                <Route path="session-limits" element={<SessionLimitsManagement />} />
+              <Route path="/admin" element={<RequireAdminRole><Suspense fallback={<PageSkeleton />}><AdminLayout /></Suspense></RequireAdminRole>}>
+                <Route index element={<Suspense fallback={<PageSkeleton />}><AdminDashboard /></Suspense>} />
+                <Route path="users" element={<Suspense fallback={<PageSkeleton />}><EnhancedUserManagement /></Suspense>} />
+                <Route path="skills" element={<Suspense fallback={<PageSkeleton />}><SkillsManagement /></Suspense>} />
+                <Route path="personas" element={<Suspense fallback={<PageSkeleton />}><PersonasManagement /></Suspense>} />
+                <Route path="prompts" element={<Suspense fallback={<PageSkeleton />}><PromptsManagement /></Suspense>} />
+                <Route path="roles" element={<Suspense fallback={<PageSkeleton />}><RoleManagement /></Suspense>} />
+                <Route path="usage" element={<Suspense fallback={<PageSkeleton />}><UsageAnalytics /></Suspense>} />
+                <Route path="phrases" element={<Suspense fallback={<PageSkeleton />}><PhrasesManagement /></Suspense>} />
+                <Route path="session-limits" element={<Suspense fallback={<PageSkeleton />}><SessionLimitsManagement /></Suspense>} />
               </Route>
-              
-              {/* 404 catch-all route */}
-              <Route path="*" element={<NotFound />} />
-              </Routes>
-            </Suspense>
+            </Routes>
           </LanguageProvider>
         </AuthProvider>
       </BrowserRouter>
