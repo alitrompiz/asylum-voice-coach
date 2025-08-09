@@ -144,17 +144,21 @@ async function encodeOpusWebMFromPCM(
   pcm: Float32Array,
   inRate: number
 ): Promise<{ blob: Blob; mime: string; ext: string }> {
-  // Stub implementation: prefer Opus when a muxer is available.
-  // To keep the bundle simple and avoid code-splitting issues, we currently
-  // fall back to 16 kHz mono WAV. When a lightweight muxer is approved,
-  // this function will be upgraded to produce WebM Opus at 48 kHz.
+  // Dynamically import a separate encoder module (WASM-backed in future).
   try {
-    const supported = await supportsOpusWebCodecs();
-    if (supported) {
-      // No muxer wired yet; intentionally using WAV for compatibility
-      // and to avoid bundler iife/code-splitting conflicts.
-    }
-  } catch {}
+    performance.mark?.('aw:opus-import:start');
+    const mod = await import('./audioWorker.opus');
+    performance.mark?.('aw:opus-import:end');
+    performance.measure?.('aw:opus-import', 'aw:opus-import:start', 'aw:opus-import:end');
+
+    performance.mark?.('aw:opus-encode:start');
+    const res = await mod.encodeOggOpus(pcm, inRate);
+    performance.mark?.('aw:opus-encode:end');
+    performance.measure?.('aw:opus-encode', 'aw:opus-encode:start', 'aw:opus-encode:end');
+    return res;
+  } catch (e) {
+    // Fallback path: WAV 16 kHz mono suitable for STT
+  }
   return encodeWavFromPCM(pcm, inRate, 16000);
 }
 

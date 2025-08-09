@@ -26,9 +26,11 @@ export const useAudioRecording = () => {
   const pcmFramesRef = useRef<Float32Array[] | null>(null);
   const inputSampleRateRef = useRef<number | null>(null);
   const workerRef = useRef<Remote<AudioWorkerAPI> | null>(null);
+  const workerInstanceRef = useRef<Worker | null>(null);
   const getWorker = () => {
     if (!workerRef.current) {
       const worker = new Worker(new URL('../workers/audioWorker.ts', import.meta.url), { type: 'module' });
+      workerInstanceRef.current = worker;
       workerRef.current = wrap<AudioWorkerAPI>(worker);
     }
     return workerRef.current!;
@@ -87,6 +89,8 @@ export const useAudioRecording = () => {
       analyserRef.current = audioContextRef.current.createAnalyser();
       analyserRef.current.fftSize = 256;
       analyserRef.current.smoothingTimeConstant = 0.8;
+      inputSampleRateRef.current = audioContextRef.current.sampleRate;
+      pcmFramesRef.current = [];
       
       const source = audioContextRef.current.createMediaStreamSource(stream);
       source.connect(analyserRef.current);
@@ -95,12 +99,15 @@ export const useAudioRecording = () => {
       processorRef.current = audioContextRef.current.createScriptProcessor(4096, 1, 1);
       processorRef.current.onaudioprocess = (e) => {
         const input = e.inputBuffer.getChannelData(0);
-        const copy = new Float32Array(input.length);
-        copy.set(input);
+        const frame = new Float32Array(input.length);
+        frame.set(input);
+        pcmFramesRef.current?.push(frame);
         try {
           const worker = getWorker();
-          // Fire-and-forget VAD computation with transferable
-          void worker.simpleVadFrame(transfer(copy, [copy.buffer]));
+          // Fire-and-forget VAD computation with transferable using a separate copy
+          const vadFrame = new Float32Array(input.length);
+          vadFrame.set(input);
+          void worker.simpleVadFrame(transfer(vadFrame, [vadFrame.buffer]));
         } catch (err) {
           // ignore worker errors
         }
@@ -171,37 +178,52 @@ export const useAudioRecording = () => {
             streamRef.current = null;
           }
 
-          // Create blob from chunks - use wav if possible, otherwise keep original
-          const originalBlob = new Blob(chunksRef.current);
-          let finalBlob;
-          let mimeType = 'audio/wav';
+          // Encode from captured PCM frames using worker (prefer Opus when available)
+          const frames = pcmFramesRef.current || [];
+          const inRate = inputSampleRateRef.current || 44100;
+          performance.mark?.('rec:concat:start');
+          let total = 0;
+          for (const f of frames) total += f.length;
+          const pcm = new Float32Array(total);
+          let off = 0;
+          for (const f of frames) { pcm.set(f, off); off += f.length; }
+          performance.mark?.('rec:concat:end');
+          performance.measure?.('rec:concat', 'rec:concat:start', 'rec:concat:end');
 
-          // Try to create a WAV blob, fallback to original if not supported
-          if (chunksRef.current.length > 0 && chunksRef.current[0].type) {
-            const originalType = chunksRef.current[0].type;
-            console.log('Original audio type:', originalType);
-            
-            // If it's already a supported format, use it
-            if (originalType.includes('wav') || originalType.includes('mp4') || 
-                originalType.includes('mpeg') || originalType.includes('ogg')) {
-              finalBlob = originalBlob;
-              mimeType = originalType;
-            } else {
-              // For webm, we'll send it but update the edge function to handle it
-              finalBlob = originalBlob;
-              mimeType = originalType;
-            }
-          } else {
-            finalBlob = originalBlob;
-          }
+          const fmt = pickAudioFormat();
+          const audioWorker = getWorker();
+          performance.mark?.('rec:encode:start');
+          const enc = (fmt.ext === 'ogg' || fmt.ext === 'webm')
+            ? await audioWorker.encodeOpusWebMFromPCM(transfer(pcm, [pcm.buffer]), inRate)
+            : await audioWorker.encodeWavFromPCM(transfer(pcm, [pcm.buffer]), inRate, 16000);
+          performance.mark?.('rec:encode:end');
+          performance.measure?.('rec:encode', 'rec:encode:start', 'rec:encode:end');
 
+          const finalBlob = enc.blob;
+          const mimeType = enc.mime;
           console.log('Final audio blob type:', mimeType, 'size:', finalBlob.size);
+
+          // Clean up analysis nodes
+          if (processorRef.current) {
+            try { processorRef.current.disconnect(); } catch {}
+            processorRef.current.onaudioprocess = null as any;
+            processorRef.current = null;
+          }
+          if (analyserRef.current) {
+            try { analyserRef.current.disconnect(); } catch {}
+            analyserRef.current = null;
+          }
+          if (audioContextRef.current) {
+            try { await audioContextRef.current.close(); } catch {}
+            audioContextRef.current = null;
+          }
+          pcmFramesRef.current = null;
           
           // Convert to base64 for API (offloaded to worker)
           performance.mark?.('rec:base64:start');
           const { getMediaWorker } = await import('@/lib/mediaWorkerClient');
-          const worker = getMediaWorker();
-          const base64Audio = await worker.blobToBase64(finalBlob);
+          const mediaWorker = getMediaWorker();
+          const base64Audio = await mediaWorker.blobToBase64(finalBlob);
           performance.mark?.('rec:base64:end');
           performance.measure?.('rec:base64', 'rec:base64:start', 'rec:base64:end');
 
@@ -255,6 +277,16 @@ export const useAudioRecording = () => {
       }
     }
   }, [isRecording]);
+
+  useEffect(() => {
+    return () => {
+      try { workerRef.current?.dispose?.(); } catch {}
+      if (workerInstanceRef.current) {
+        try { workerInstanceRef.current.terminate(); } catch {}
+        workerInstanceRef.current = null;
+      }
+    };
+  }, []);
 
   return {
     isRecording,
