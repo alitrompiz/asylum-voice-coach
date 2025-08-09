@@ -144,21 +144,13 @@ async function encodeOpusWebMFromPCM(
   pcm: Float32Array,
   inRate: number
 ): Promise<{ blob: Blob; mime: string; ext: string }> {
-  // Dynamically import a separate encoder module (WASM-backed in future).
+  // Stub: keep worker single-chunk; no dynamic import to avoid code-splitting issues.
   try {
-    performance.mark?.('aw:opus-import:start');
-    const mod = await import('./audioWorker.opus');
-    performance.mark?.('aw:opus-import:end');
-    performance.measure?.('aw:opus-import', 'aw:opus-import:start', 'aw:opus-import:end');
-
-    performance.mark?.('aw:opus-encode:start');
-    const res = await mod.encodeOggOpus(pcm, inRate);
-    performance.mark?.('aw:opus-encode:end');
-    performance.measure?.('aw:opus-encode', 'aw:opus-encode:start', 'aw:opus-encode:end');
-    return res;
-  } catch (e) {
-    // Fallback path: WAV 16 kHz mono suitable for STT
-  }
+    const supported = await supportsOpusWebCodecs();
+    if (supported) {
+      // Future: enable Opus path with a lightweight muxer or WASM encoder.
+    }
+  } catch {}
   return encodeWavFromPCM(pcm, inRate, 16000);
 }
 
