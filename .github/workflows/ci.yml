@@ -1,0 +1,94 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  build_and_test:
+    name: Build, Test, Bundle Budget
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Build
+        run: npm run build
+      - name: Run unit tests (vitest)
+        run: npx vitest run --reporter=dot
+      - name: Check bundle size budget (first-load JS)
+        run: node scripts/check-bundle-budget.mjs 350
+
+  npm_audit:
+    name: npm audit --production
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install production dependencies only
+        run: npm ci --omit=dev
+      - name: Run npm audit (production)
+        run: npm audit --production --audit-level=high
+
+  secret_scan:
+    name: Secret Scanning (Gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        with:
+          args: --no-git --redact --report-format sarif --report-path gitleaks.sarif
+      - name: Upload SARIF to GitHub Code Scanning
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: gitleaks.sarif
+
+  lighthouse_pr:
+    name: Lighthouse CI (PR only)
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Run Lighthouse CI
+        env:
+          LH_PORT: 4173
+        run: node scripts/lighthouse-ci.mjs
+      - name: Upload Lighthouse artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-report
+          path: |
+            lh-report.html
+            lh-report.json
+          if-no-files-found: warn

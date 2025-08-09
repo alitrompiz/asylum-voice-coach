@@ -39,8 +39,8 @@ async function main() {
   try {
     await waitForServer(url);
     console.log('Running Lighthouse (desktop preset)...');
-    await run('npx', ['lighthouse', url, '--preset=desktop', '--output=html', '--output-path=./lh-report.html', '--quiet']);
-    console.log('Lighthouse report saved to ./lh-report.html');
+    await run('npx', ['lighthouse', url, '--preset=desktop', '--output=html', '--output=json', '--output-path=./lh-report', '--quiet']);
+    console.log('Lighthouse reports saved to ./lh-report.html and ./lh-report.json');
   } finally {
     preview.kill('SIGTERM');
   }
