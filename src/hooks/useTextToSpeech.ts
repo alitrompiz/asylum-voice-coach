@@ -135,6 +135,7 @@ export const useTextToSpeech = () => {
         languageCode
       });
 
+      performance.mark?.('tts:invoke:start');
       const { data, error } = await supabase.functions.invoke('text-to-speech', {
         body: {
           text,
@@ -142,6 +143,8 @@ export const useTextToSpeech = () => {
           language: languageCode,
         },
       });
+      performance.mark?.('tts:invoke:end');
+      performance.measure?.('tts:invoke', 'tts:invoke:start', 'tts:invoke:end');
       
       console.log('📨 TTS API Response:', { 
         hasData: !!data, 
@@ -175,8 +178,11 @@ export const useTextToSpeech = () => {
           audioRef.current = audio;
 
           const worker = getWorker();
+          performance.mark?.('tts:decode:start');
           const bytes = await worker.base64ToUint8(data.audioContent);
           const blob = new Blob([bytes], { type: 'audio/mpeg' });
+          performance.mark?.('tts:decode:end');
+          performance.measure?.('tts:decode', 'tts:decode:start', 'tts:decode:end');
           if (currentObjectUrlRef.current) {
             URL.revokeObjectURL(currentObjectUrlRef.current);
             currentObjectUrlRef.current = null;
@@ -225,11 +231,23 @@ export const useTextToSpeech = () => {
           audio.removeEventListener('ended', cleanup);
           audio.removeEventListener('error', handleError);
           audio.removeEventListener('playing', handlePlaying);
+          // (no canplaythrough removal needed here)
           
           // Add fresh event listeners
           audio.addEventListener('ended', cleanup, { once: true });
           audio.addEventListener('error', handleError, { once: true });
           audio.addEventListener('playing', handlePlaying, { once: true }); // Listen for actual playback
+          // Also schedule a conservative URL revoke after canplaythrough + timeout safety
+          audio.addEventListener('canplaythrough', () => {
+            const url = currentObjectUrlRef.current;
+            if (!url) return;
+            setTimeout(() => {
+              if (currentObjectUrlRef.current === url) {
+                try { URL.revokeObjectURL(url); } catch {}
+                if (currentObjectUrlRef.current === url) currentObjectUrlRef.current = null;
+              }
+            }, 15000);
+          }, { once: true });
 
           // Use the utility function for consistent playback
           await playAudioWithContext(audioSrc);
@@ -291,7 +309,7 @@ export const useTextToSpeech = () => {
       audioRef.current = null;
     }
     if (currentObjectUrlRef.current) {
-      URL.revokeObjectURL(currentObjectUrlRef.current);
+      try { URL.revokeObjectURL(currentObjectUrlRef.current); } catch {}
       currentObjectUrlRef.current = null;
     }
     setIsPlaying(false);

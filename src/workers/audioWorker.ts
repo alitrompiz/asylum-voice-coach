@@ -20,8 +20,16 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
 }
 
 async function blobToBase64(blob: Blob): Promise<string> {
+  try {
+    performance.mark('aw:blobToBase64:start');
+  } catch {}
   const buffer = await blob.arrayBuffer();
-  return arrayBufferToBase64(buffer);
+  const out = arrayBufferToBase64(buffer);
+  try {
+    performance.mark('aw:blobToBase64:end');
+    performance.measure('aw:blobToBase64', 'aw:blobToBase64:start', 'aw:blobToBase64:end');
+  } catch {}
+  return out;
 }
 
 // DSP: downsample Float32 PCM using linear interpolation
@@ -99,9 +107,20 @@ async function encodeWavFromPCM(
   inRate: number,
   outRate = 16000
 ): Promise<{ blob: Blob; mime: string; ext: string }> {
+  try { performance.mark('aw:encode:start'); } catch {}
+  try { performance.mark('aw:downsample:start'); } catch {}
   const ds = downsamplePCM(pcm, inRate, outRate);
+  try {
+    performance.mark('aw:downsample:end');
+    performance.measure('aw:downsample', 'aw:downsample:start', 'aw:downsample:end');
+  } catch {}
   const wavBytes = encodeWav(ds, outRate);
-  return { blob: new Blob([wavBytes], { type: 'audio/wav' }), mime: 'audio/wav', ext: 'wav' };
+  const blob = new Blob([wavBytes], { type: 'audio/wav' });
+  try {
+    performance.mark('aw:encode:end');
+    performance.measure('aw:encode', 'aw:encode:start', 'aw:encode:end');
+  } catch {}
+  return { blob, mime: 'audio/wav', ext: 'wav' };
 }
 
 // Optional: WebCodecs-based Opus (WebM) encoding. Fallbacks to WAV if unsupported.

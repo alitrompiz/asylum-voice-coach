@@ -1,6 +1,7 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { wrap, Remote, transfer } from 'comlink';
 import type { AudioWorkerAPI } from '@/workers/audioWorker';
+import { pickAudioFormat } from '@/lib/audio/formats';
 
 export interface AudioRecordingResult {
   audioBlob: Blob;
@@ -98,8 +99,8 @@ export const useAudioRecording = () => {
         copy.set(input);
         try {
           const worker = getWorker();
-          // Fire-and-forget VAD computation
-          void worker.simpleVadFrame(copy);
+          // Fire-and-forget VAD computation with transferable
+          void worker.simpleVadFrame(transfer(copy, [copy.buffer]));
         } catch (err) {
           // ignore worker errors
         }
@@ -197,9 +198,12 @@ export const useAudioRecording = () => {
           console.log('Final audio blob type:', mimeType, 'size:', finalBlob.size);
           
           // Convert to base64 for API (offloaded to worker)
+          performance.mark?.('rec:base64:start');
           const { getMediaWorker } = await import('@/lib/mediaWorkerClient');
           const worker = getMediaWorker();
           const base64Audio = await worker.blobToBase64(finalBlob);
+          performance.mark?.('rec:base64:end');
+          performance.measure?.('rec:base64', 'rec:base64:start', 'rec:base64:end');
 
           const result: AudioRecordingResult = {
             audioBlob: finalBlob,
@@ -262,3 +266,48 @@ export const useAudioRecording = () => {
     cancelRecording
   };
 };
+
+// Dev-only quick stress test to verify encoding and cleanup without UI hooks
+if (import.meta.env.DEV) {
+  (globalThis as any).__audioEncodeSelfTest = async () => {
+    try {
+      const worker = (await (async () => {
+        const w = new Worker(new URL('../workers/audioWorker.ts', import.meta.url), { type: 'module' });
+        const { wrap } = await import('comlink');
+        return (wrap as any)(w) as import('comlink').Remote<import('@/workers/audioWorker').AudioWorkerAPI>;
+      })());
+
+      const clips = 10;
+      const sr = 44100;
+      const length = 2048;
+      const urls: string[] = [];
+      const getMem = () => (performance as any).memory?.usedJSHeapSize || 0;
+      const mem0 = getMem();
+
+      for (let c = 0; c < clips; c++) {
+        const pcm = new Float32Array(length);
+        for (let i = 0; i < length; i++) pcm[i] = Math.sin((2 * Math.PI * i) / 64) * 0.25;
+        const res = await worker.encodeWavFromPCM(pcm, sr, 16000);
+        const url = URL.createObjectURL(res.blob);
+        urls.push(url);
+        // Simulate quick revoke after load
+        setTimeout(() => {
+          URL.revokeObjectURL(url);
+        }, 100);
+      }
+
+      const mem1 = getMem();
+      const growth = mem0 ? ((mem1 - mem0) / mem0) * 100 : 0;
+      console.log(`[DEV] audio self test: heap growth ~${growth.toFixed(2)}%`);
+      if (growth > 5) console.warn('[DEV] memory growth exceeded 5%');
+
+      // Mid-encode cancel simulation: start an encode and immediately resolve by ignoring result
+      const pcm = new Float32Array(length);
+      const pending = worker.encodeWavFromPCM(pcm, sr, 16000);
+      // simulate cancel: forget the promise; no side effects expected
+      void pending;
+    } catch (e) {
+      console.warn('[DEV] audio self test error', e);
+    }
+  };
+}
