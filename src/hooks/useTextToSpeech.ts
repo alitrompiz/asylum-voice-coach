@@ -160,8 +160,12 @@ export const useTextToSpeech = () => {
           const audio = getOrCreateAudioElement();
           audioRef.current = audio;
 
-          // Create data URL for audio content
-          const audioSrc = `data:audio/mpeg;base64,${data.audioContent}`;
+          // Use worker to decode base64 into bytes and create an object URL
+          const { getMediaWorker } = await import('@/lib/mediaWorkerClient');
+          const worker = getMediaWorker();
+          const bytes = await worker.base64ToUint8(data.audioContent);
+          const blob = new Blob([bytes], { type: 'audio/mpeg' });
+          const audioSrc = URL.createObjectURL(blob);
 
           console.log('🔊 Playing audio with persistent element');
 

@@ -4,13 +4,10 @@ import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Mic, Shield, Globe, Clock } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 
 const Index = () => {
   const navigate = useNavigate();
-  const { user, loading } = useAuth();
-
   useEffect(() => {
     // Check for error parameters in URL hash (from failed verification)
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
@@ -28,12 +25,26 @@ const Index = () => {
       return;
     }
 
-    // If user is authenticated after email verification, redirect to dashboard
-    if (!loading && user) {
-      toast.success('Email verified successfully! Welcome to AsylumPrep.');
-      navigate('/dashboard');
+    // Defer auth check to avoid blocking initial paint
+    const startCheck = async () => {
+      try {
+        const { supabase } = await import('@/integrations/supabase/client');
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          toast.success('Welcome back!');
+          navigate('/dashboard');
+        }
+      } catch (e) {
+        // ignore
+      }
+    };
+
+    if ('requestIdleCallback' in window) {
+      (window as any).requestIdleCallback(startCheck);
+    } else {
+      setTimeout(startCheck, 0);
     }
-  }, [user, loading, navigate]);
+  }, [navigate]);
 
   return (
     <div className="min-h-screen bg-background">
