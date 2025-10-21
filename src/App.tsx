@@ -40,6 +40,7 @@ const RoleManagement = lazy(() => import("./pages/admin/RoleManagement"));
 const UsageAnalytics = lazy(() => import("./pages/admin/UsageAnalytics"));
 const PhrasesManagement = lazy(() => import("./pages/admin/PhrasesManagement"));
 const SessionLimitsManagement = lazy(() => import("./pages/admin/SessionLimitsManagement"));
+const TestStoriesManagement = lazy(() => import("./pages/admin/TestStoriesManagement"));
 
 const queryClient = new QueryClient();
 
@@ -108,6 +109,7 @@ const App = () => (
                   <Route path="usage" element={<UsageAnalytics />} />
                   <Route path="phrases" element={<PhrasesManagement />} />
                   <Route path="session-limits" element={<SessionLimitsManagement />} />
+                  <Route path="test-stories" element={<TestStoriesManagement />} />
                 </Route>
                 
                 {/* 404 catch-all */}

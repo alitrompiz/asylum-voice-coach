@@ -307,5 +307,27 @@
     "vietnam": "Vietnam",
     "yemen": "Yemen",
     "zimbabwe": "Zimbabwe"
+  },
+  "test_stories": {
+    "title": "Choose a Practice Story",
+    "subtitle": "Select a sample asylum case to practice with",
+    "guest_explanation": "These are realistic sample cases for practice. Regular users can upload their real I-589 form or write their own story.",
+    "category_political": "Political Opinion",
+    "category_race": "Race",
+    "category_religion": "Religion",
+    "category_gender": "Gender",
+    "category_nationality": "Nationality",
+    "category_social_group": "Social Group",
+    "view_full_story": "Read Full Story",
+    "select_story": "Select This Story",
+    "selected_badge": "Using Practice Story",
+    "signup_to_save": "Sign up to save your real asylum story",
+    "admin_title": "Test Stories Management",
+    "admin_subtitle": "Manage practice stories for guest users",
+    "edit_story": "Edit Test Story",
+    "create_story": "Create Test Story",
+    "delete_confirm": "Are you sure you want to delete this test story?",
+    "story_saved": "Test story saved successfully",
+    "story_deleted": "Test story deleted successfully"
   }
 }

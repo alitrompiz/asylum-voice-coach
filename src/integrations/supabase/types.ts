@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -811,6 +811,45 @@ export type Database = {
           },
         ]
       }
+      test_stories: {
+        Row: {
+          category: string
+          country_origin: string
+          created_at: string | null
+          display_order: number
+          full_story_text: string
+          id: string
+          is_active: boolean
+          summary: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          category: string
+          country_origin: string
+          created_at?: string | null
+          display_order?: number
+          full_story_text: string
+          id?: string
+          is_active?: boolean
+          summary: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string
+          country_origin?: string
+          created_at?: string | null
+          display_order?: number
+          full_story_text?: string
+          id?: string
+          is_active?: boolean
+          summary?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       transcripts: {
         Row: {
           content: string
@@ -880,58 +919,58 @@ export type Database = {
       }
       check_and_increment_rate_limit: {
         Args: {
+          p_limit: number
           p_route: string
           p_subject: string
-          p_limit: number
           p_window_seconds: number
         }
         Returns: boolean
       }
       exec_admin_user_query: {
-        Args: { query_text: string; query_params?: Json }
+        Args: { query_params?: Json; query_text: string }
         Returns: Json
       }
       get_active_prompt_by_type: {
         Args: { p_type: string }
         Returns: {
-          id: string
-          name: string
           content: string
-          description: string
-          prompt_type: Database["public"]["Enums"]["prompt_type"]
-          is_active: boolean
-          version: number
           created_at: string
+          description: string
+          id: string
+          is_active: boolean
+          name: string
+          prompt_type: Database["public"]["Enums"]["prompt_type"]
           updated_at: string
+          version: number
         }[]
       }
       get_admin_stats: {
         Args: Record<PropertyKey, never>
         Returns: {
           active_users_7d: number
+          avg_minutes_per_user: number
           minutes_used_today: number
           total_users: number
-          avg_minutes_per_user: number
         }[]
       }
       get_all_users_admin: {
         Args: {
+          page_limit?: number
+          page_offset?: number
           search_term?: string
           status_filter?: string
-          page_offset?: number
-          page_limit?: number
         }
         Returns: {
-          user_id: string
-          email: string
+          created_at: string
           display_name: string
-          is_banned: boolean
+          email: string
           entitlement_status: string
-          subscription_status: string
           has_active_grant: boolean
           has_active_subscription: boolean
-          created_at: string
+          is_banned: boolean
+          subscription_status: string
           total_count: number
+          user_id: string
         }[]
       }
       get_current_user_role: {
@@ -944,9 +983,9 @@ export type Database = {
       }
       grant_full_prep_access: {
         Args: {
+          grant_reason?: string
           target_user_id: string
           weeks_to_grant?: number
-          grant_reason?: string
         }
         Returns: undefined
       }
@@ -956,8 +995,8 @@ export type Database = {
       }
       has_role: {
         Args: {
-          _user_id: string
           _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
         }
         Returns: boolean
       }
@@ -970,7 +1009,7 @@ export type Database = {
         Returns: undefined
       }
       revoke_full_prep_access: {
-        Args: { target_user_id: string; revoke_reason?: string }
+        Args: { revoke_reason?: string; target_user_id: string }
         Returns: undefined
       }
       set_active_story: {

@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import { Users, Brain, UserCheck, MessageSquare, BarChart3, Shield, ArrowLeft, MessageCircle, Settings } from 'lucide-react';
+import { Users, Brain, UserCheck, MessageSquare, BarChart3, Shield, ArrowLeft, MessageCircle, Settings, BookOpen } from 'lucide-react';
 import {
   Sidebar,
   SidebarContent,
@@ -53,6 +53,11 @@ const adminItems = [
     title: 'Session Limits',
     url: '/admin/session-limits',
     icon: Settings,
+  },
+  {
+    title: 'Test Stories',
+    url: '/admin/test-stories',
+    icon: BookOpen,
   },
 ];
 
