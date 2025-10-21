@@ -23,7 +23,7 @@ export default function Auth() {
   const [success, setSuccess] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const { signIn, user } = useAuth();
+  const { signIn, user, createGuestSession } = useAuth();
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -117,7 +117,7 @@ export default function Auth() {
   };
 
   const handleGuestAccess = () => {
-    // TODO: Implement guest session creation
+    createGuestSession('Guest User');
     navigate('/dashboard');
   };
 

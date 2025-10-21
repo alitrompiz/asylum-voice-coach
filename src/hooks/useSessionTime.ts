@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
+import { useGuestSession } from '@/hooks/useGuestSession';
 
 interface SessionTimeData {
   session_seconds_used: number;
@@ -10,10 +11,11 @@ interface SessionTimeData {
 }
 
 export const useSessionTime = () => {
-  const { user } = useAuth();
+  const { user, isGuest } = useAuth();
   const { isFreeTier } = useSubscription();
   const queryClient = useQueryClient();
   const [sessionStartTime, setSessionStartTime] = useState<number | null>(null);
+  const { guestData, updateSessionTime: updateGuestTime, remainingSeconds: guestRemainingSeconds } = useGuestSession();
 
   // Query to get session time data
   const { data: sessionTime, isLoading } = useQuery({
@@ -66,16 +68,25 @@ export const useSessionTime = () => {
   });
 
   // Calculate remaining time
-  const remainingSeconds = isFreeTier 
-    ? Math.max(0, (sessionTime?.session_seconds_limit || 600) - (sessionTime?.session_seconds_used || 0))
-    : Infinity; // Unlimited for full tier
+  const remainingSeconds = isGuest
+    ? guestRemainingSeconds
+    : isFreeTier 
+      ? Math.max(0, (sessionTime?.session_seconds_limit || 600) - (sessionTime?.session_seconds_used || 0))
+      : Infinity; // Unlimited for full tier
   
-  const remainingMinutes = isFreeTier 
-    ? Math.floor(remainingSeconds / 60)
-    : Infinity;
+  const remainingMinutes = isGuest
+    ? Math.floor(guestRemainingSeconds / 60)
+    : isFreeTier 
+      ? Math.floor(remainingSeconds / 60)
+      : Infinity;
 
-  const hasTimeRemaining = isFreeTier ? remainingSeconds > 0 : true;
-  const isTimeExhausted = isFreeTier ? remainingSeconds <= 0 : false;
+  const hasTimeRemaining = isGuest 
+    ? guestRemainingSeconds > 0 
+    : isFreeTier ? remainingSeconds > 0 : true;
+    
+  const isTimeExhausted = isGuest
+    ? guestRemainingSeconds <= 0
+    : isFreeTier ? remainingSeconds <= 0 : false;
 
   // Start session tracking
   const startSession = () => {
@@ -86,11 +97,17 @@ export const useSessionTime = () => {
 
   // End session and update used time
   const endSession = async () => {
-    if (sessionStartTime && isFreeTier) {
+    if (sessionStartTime) {
       const sessionDuration = Math.floor((Date.now() - sessionStartTime) / 1000);
-      const newUsedSeconds = (sessionTime?.session_seconds_used || 0) + sessionDuration;
       
-      await updateSessionTime.mutateAsync(newUsedSeconds);
+      if (isGuest) {
+        const newUsedSeconds = (guestData?.sessionSecondsUsed || 0) + sessionDuration;
+        updateGuestTime(newUsedSeconds);
+      } else if (isFreeTier) {
+        const newUsedSeconds = (sessionTime?.session_seconds_used || 0) + sessionDuration;
+        await updateSessionTime.mutateAsync(newUsedSeconds);
+      }
+      
       setSessionStartTime(null);
     }
   };
@@ -101,14 +118,23 @@ export const useSessionTime = () => {
     return Math.floor((Date.now() - sessionStartTime) / 1000);
   };
 
-  // Check if session should be stopped (for free tier)
+  // Check if session should be stopped (for free tier and guests)
   const shouldStopSession = () => {
-    if (!isFreeTier || !sessionStartTime) return false;
+    if (!sessionStartTime) return false;
     
     const currentSessionDuration = getCurrentSessionDuration();
-    const totalUsedSeconds = (sessionTime?.session_seconds_used || 0) + currentSessionDuration;
     
-    return totalUsedSeconds >= (sessionTime?.session_seconds_limit || 600);
+    if (isGuest) {
+      const totalUsedSeconds = (guestData?.sessionSecondsUsed || 0) + currentSessionDuration;
+      return totalUsedSeconds >= (guestData?.sessionSecondsLimit || 1800);
+    }
+    
+    if (isFreeTier) {
+      const totalUsedSeconds = (sessionTime?.session_seconds_used || 0) + currentSessionDuration;
+      return totalUsedSeconds >= (sessionTime?.session_seconds_limit || 600);
+    }
+    
+    return false;
   };
 
   return {

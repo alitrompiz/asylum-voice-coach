@@ -1,11 +1,15 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { useGuestSession } from './useGuestSession';
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  isGuest: boolean;
+  guestName: string | null;
+  createGuestSession: (name?: string) => void;
   signUp: (email: string, password: string) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signInWithOAuth: (provider: 'google' | 'apple') => Promise<{ error: any }>;
@@ -27,6 +31,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const { isGuest, guestData, createGuestSession: createGuest, clearGuestSession } = useGuestSession();
 
   useEffect(() => {
     // Set up auth state listener
@@ -73,6 +78,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signOut = async () => {
     await supabase.auth.signOut();
+    clearGuestSession();
+  };
+  
+  const handleCreateGuestSession = (name?: string) => {
+    createGuest(name);
   };
 
   const signInWithOAuth = async (provider: 'google' | 'apple') => {
@@ -100,6 +110,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     user,
     session,
     loading,
+    isGuest,
+    guestName: guestData?.guestName || null,
+    createGuestSession: handleCreateGuestSession,
     signUp,
     signIn,
     signInWithOAuth,
