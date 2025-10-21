@@ -180,7 +180,7 @@ export const useTextToSpeech = () => {
           const worker = getWorker();
           performance.mark?.('tts:decode:start');
           const bytes = await worker.base64ToUint8(data.audioContent);
-          const blob = new Blob([bytes], { type: 'audio/mpeg' });
+          const blob = new Blob([new Uint8Array(bytes)], { type: 'audio/mpeg' });
           performance.mark?.('tts:decode:end');
           performance.measure?.('tts:decode', 'tts:decode:start', 'tts:decode:end');
           if (currentObjectUrlRef.current) {

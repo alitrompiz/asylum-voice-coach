@@ -115,7 +115,7 @@ async function encodeWavFromPCM(
     performance.measure('aw:downsample', 'aw:downsample:start', 'aw:downsample:end');
   } catch {}
   const wavBytes = encodeWav(ds, outRate);
-  const blob = new Blob([wavBytes], { type: 'audio/wav' });
+  const blob = new Blob([new Uint8Array(wavBytes)], { type: 'audio/wav' });
   try {
     performance.mark('aw:encode:end');
     performance.measure('aw:encode', 'aw:encode:start', 'aw:encode:end');
