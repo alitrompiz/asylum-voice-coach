@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
-import { Loader2, Mail } from 'lucide-react';
+import { Loader2, Mail, TestTube2 } from 'lucide-react';
 import { SocialLoginButtons } from './SocialLoginButtons';
 
 type AuthMode = 'login' | 'signup';
@@ -116,6 +116,11 @@ export default function Auth() {
     }
   };
 
+  const handleGuestAccess = () => {
+    // TODO: Implement guest session creation
+    navigate('/dashboard');
+  };
+
   if (success) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -167,6 +172,29 @@ export default function Auth() {
         </CardHeader>
         <CardContent>
           <div className="space-y-6">
+            {/* Guest Access Button - Prominent */}
+            <Button 
+              onClick={handleGuestAccess}
+              size="lg"
+              variant="secondary"
+              className="w-full text-base font-semibold"
+              disabled={isLoading}
+            >
+              <TestTube2 className="mr-2 h-5 w-5" />
+              Test AsylumPrep without email
+            </Button>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <Separator className="w-full" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">
+                  Or create an account
+                </span>
+              </div>
+            </div>
+
             {/* Social Login Buttons */}
             <SocialLoginButtons 
               onGoogleClick={() => handleSocialLogin('google')}
