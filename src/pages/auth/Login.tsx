@@ -54,15 +54,9 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Welcome Back</CardTitle>
-          <CardDescription>
-            Sign in to your AsylumPrep account
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900">
+      <Card className="w-full max-w-md bg-gray-900/50 border-gray-800">
+        <CardContent className="pt-6">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             {error && (
               <Alert variant="destructive">
@@ -71,13 +65,14 @@ export default function Login() {
             )}
             
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="text-gray-200">Email</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="Enter your email"
+                placeholder="Email"
                 {...register('email')}
                 disabled={isLoading}
+                className="bg-gray-800/50 border-gray-700 text-white placeholder:text-gray-500"
               />
               {errors.email && (
                 <p className="text-sm text-destructive">{errors.email.message}</p>
@@ -85,13 +80,14 @@ export default function Login() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password" className="text-gray-200">Password</Label>
               <Input
                 id="password"
                 type="password"
-                placeholder="Enter your password"
+                placeholder="Password"
                 {...register('password')}
                 disabled={isLoading}
+                className="bg-gray-800/50 border-gray-700 text-white placeholder:text-gray-500"
               />
               {errors.password && (
                 <p className="text-sm text-destructive">{errors.password.message}</p>
@@ -106,7 +102,7 @@ export default function Login() {
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Signing in...
+                  ...
                 </>
               ) : (
                 'Sign In'
@@ -114,19 +110,16 @@ export default function Login() {
             </Button>
           </form>
 
-          <div className="mt-4 space-y-2 text-center text-sm">
+          <div className="mt-6 flex justify-between text-sm">
             <Link 
               to="/auth/forgot-password" 
-              className="text-primary hover:underline block"
+              className="text-gray-400 hover:text-gray-200"
             >
-              Forgot your password?
+              Forgot password?
             </Link>
-            <div>
-              Don't have an account?{' '}
-              <Link to="/auth/signup" className="text-primary hover:underline">
-                Sign up
-              </Link>
-            </div>
+            <Link to="/auth/signup" className="text-gray-400 hover:text-gray-200">
+              Sign up
+            </Link>
           </div>
         </CardContent>
       </Card>
