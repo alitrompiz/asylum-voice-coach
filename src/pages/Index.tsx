@@ -64,8 +64,31 @@ const Index = () => {
 
   return (
     <main className="min-h-screen bg-background">
+      {/* Navigation Bar */}
+      <nav className="fixed top-0 left-0 right-0 z-50 backdrop-blur-lg bg-white/80 dark:bg-gray-900/80 border-b border-gray-200/20">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            {/* Logo/Brand */}
+            <div className="flex items-center gap-2">
+              <span className="text-2xl font-display font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+                AsylumPrep
+              </span>
+            </div>
+            
+            {/* Login Button */}
+            <Button 
+              variant="outline" 
+              onClick={() => navigate('/auth')}
+              className="border-primary text-primary hover:bg-primary hover:text-white"
+            >
+              Login
+            </Button>
+          </div>
+        </div>
+      </nav>
+
       {/* Hero Section with Gradient Background */}
-      <div className="relative overflow-hidden">
+      <div className="relative overflow-hidden pt-20">
         {/* Animated Gradient Background */}
         <div className="absolute inset-0 bg-gradient-brand opacity-100" 
              style={{ backgroundSize: '200% 200%' }}>
