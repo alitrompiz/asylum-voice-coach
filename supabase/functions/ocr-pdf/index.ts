@@ -45,17 +45,22 @@ async function processOCRJob(jobId: string): Promise<void> {
     
     // Get Azure credentials
     const azureKey = Deno.env.get('AZURE_DOCUMENT_INTELLIGENCE_KEY');
-    const azureEndpoint = Deno.env.get('AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT');
+    let azureEndpoint = Deno.env.get('AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT');
     
     if (!azureKey || !azureEndpoint) {
       throw new Error('Azure credentials not configured');
     }
     
+    // Remove trailing slash from endpoint if present
+    azureEndpoint = azureEndpoint.replace(/\/$/, '');
+    
+    console.log('Azure endpoint:', azureEndpoint);
+    
     // Process with Azure
     const arrayBuffer = await fileData.arrayBuffer();
     const analyzeUrl = `${azureEndpoint}/formrecognizer/documentModels/prebuilt-read:analyze?api-version=2023-07-31`;
     
-    console.log('Submitting to Azure...');
+    console.log('Submitting to Azure URL:', analyzeUrl);
     const analyzeResponse = await fetch(analyzeUrl, {
       method: 'POST',
       headers: {
