@@ -59,13 +59,17 @@ const PageSkeleton = () => (
 );
 
 const LandingSkeleton = () => (
-  <div className="p-6 space-y-4">
-    <Skeleton className="h-10 w-2/3" />
-    <Skeleton className="h-6 w-1/2" />
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <Skeleton className="h-32 w-full" />
-      <Skeleton className="h-32 w-full" />
-      <Skeleton className="h-32 w-full" />
+  <div className="min-h-screen bg-background flex items-center justify-center p-6">
+    <div className="space-y-6 w-full max-w-4xl">
+      <div className="text-center space-y-4">
+        <Skeleton className="h-12 w-3/4 mx-auto bg-muted" />
+        <Skeleton className="h-6 w-1/2 mx-auto bg-muted" />
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
+        <Skeleton className="h-64 w-full bg-muted" />
+        <Skeleton className="h-64 w-full bg-muted" />
+        <Skeleton className="h-64 w-full bg-muted" />
+      </div>
     </div>
   </div>
 );
@@ -129,7 +133,7 @@ const App = () => (
         <BrowserRouter>
           <AuthProvider>
             <LanguageProvider>
-              <Suspense fallback={<PageSkeleton />}>
+              <Suspense fallback={<LandingSkeleton />}>
                 <Routes>
                   {/* Public routes */}
                   <Route path="/" element={<Index />} />

@@ -17,21 +17,33 @@ export const useHomePageContent = () => {
   return useQuery({
     queryKey: ['home-page-content'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('home_page_content')
-        .select('*');
-      
-      if (error) throw error;
-      
-      // Transform array to object for easy access
-      const content = data.reduce((acc, item) => ({
-        ...acc,
-        [item.section_key]: item.content
-      }), {} as Record<string, string>);
-      
-      return { ...fallbackContent, ...content } as HomePageContent;
+      try {
+        const { data, error } = await supabase
+          .from('home_page_content')
+          .select('*');
+        
+        if (error) {
+          console.error('[useHomePageContent] Supabase error:', error);
+          // Return fallback content on error
+          return fallbackContent;
+        }
+        
+        // Transform array to object for easy access
+        const content = data.reduce((acc, item) => ({
+          ...acc,
+          [item.section_key]: item.content
+        }), {} as Record<string, string>);
+        
+        return { ...fallbackContent, ...content } as HomePageContent;
+      } catch (error) {
+        console.error('[useHomePageContent] Unexpected error:', error);
+        // Always return fallback content to prevent blank screens
+        return fallbackContent;
+      }
     },
     staleTime: 30 * 1000, // 30 seconds - allows quick reflection of admin changes
     placeholderData: fallbackContent,
+    retry: 2, // Retry failed requests twice
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
   });
 };

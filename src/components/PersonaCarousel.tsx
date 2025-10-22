@@ -23,6 +23,7 @@ interface Persona {
 }
 interface PersonaCarouselProps {
   onSelect?: (personaId: string) => void;
+  onError?: (error: Error) => void;
 }
 const usePersonas = () => {
   return useQuery({
@@ -42,7 +43,8 @@ const usePersonas = () => {
   });
 };
 export const PersonaCarousel = ({
-  onSelect
+  onSelect,
+  onError
 }: PersonaCarouselProps) => {
   const {
     t
@@ -114,7 +116,18 @@ export const PersonaCarousel = ({
       disabledNames: personas.filter(p => !isPersonaAccessible(p)).map(p => p.name)
     });
   }
-  if (error || !personas || personas.length === 0) {
+  if (error) {
+    // Notify parent component of error
+    if (onError && error instanceof Error) {
+      onError(error);
+    }
+    return <div>
+        <h3 className="text-lg font-semibold mb-2 text-white">{t('personas.title')}</h3>
+        <p className="text-gray-400">{error instanceof Error ? error.message : t('personas.no_officers')}</p>
+      </div>;
+  }
+  
+  if (!personas || personas.length === 0) {
     return <div>
         <h3 className="text-lg font-semibold mb-2 text-white">{t('personas.title')}</h3>
         <p className="text-gray-400">{t('personas.no_officers')}</p>

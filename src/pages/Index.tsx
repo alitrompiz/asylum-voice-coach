@@ -1,23 +1,50 @@
 import { useNavigate } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { useHomePageContent } from '@/hooks/useHomePageContent';
 import { PersonaCarousel } from '@/components/PersonaCarousel';
 import { useAuth } from '@/hooks/useAuth';
 import { usePersonaStore } from '@/stores/personaStore';
+import { Skeleton } from '@/components/ui/skeleton';
 const Index = () => {
   const navigate = useNavigate();
   const {
     user,
-    createGuestSession
+    createGuestSession,
+    loading: authLoading
   } = useAuth();
   const {
     setSelectedPersona
   } = usePersonaStore();
   const {
-    data: content
+    data: content,
+    isLoading: contentLoading,
+    error: contentError
   } = useHomePageContent();
+  const [carouselError, setCarouselError] = useState<Error | null>(null);
+
+  // Show loading state while auth is initializing
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="space-y-4 w-full max-w-2xl px-4">
+          <Skeleton className="h-12 w-3/4 mx-auto" />
+          <Skeleton className="h-6 w-1/2 mx-auto" />
+          <div className="grid grid-cols-3 gap-4 mt-8">
+            <Skeleton className="h-48 w-full" />
+            <Skeleton className="h-48 w-full" />
+            <Skeleton className="h-48 w-full" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Log content errors for debugging
+  if (contentError) {
+    console.error('[Index] Failed to load home page content:', contentError);
+  }
   useEffect(() => {
     // Check for error parameters in URL hash (from failed verification)
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
@@ -49,14 +76,21 @@ const Index = () => {
           toast.success('Welcome back!');
           navigate('/dashboard');
         }
-      } catch (e) {
-        // ignore
+      } catch (error) {
+        console.error('[Index] Auth check failed:', error);
+        // Silently fail - don't block the page from loading
       }
     };
-    if ('requestIdleCallback' in window) {
-      (window as any).requestIdleCallback(startCheck);
-    } else {
-      setTimeout(startCheck, 0);
+    
+    // Browser-compatible idle callback
+    try {
+      if ('requestIdleCallback' in window) {
+        (window as any).requestIdleCallback(startCheck);
+      } else {
+        setTimeout(startCheck, 0);
+      }
+    } catch (error) {
+      console.error('[Index] Failed to schedule auth check:', error);
     }
   }, [navigate]);
   const handleOfficerSelect = (personaId: string) => {
@@ -165,7 +199,25 @@ const Index = () => {
               Select an AI officer to practice with and get personalized feedback on your performance
             </p>
           </div>
-          <PersonaCarousel onSelect={handleOfficerSelect} />
+          {carouselError ? (
+            <div className="text-center py-12">
+              <p className="text-destructive mb-4">Failed to load interview officers</p>
+              <Button onClick={() => {
+                setCarouselError(null);
+                window.location.reload();
+              }}>
+                Retry
+              </Button>
+            </div>
+          ) : (
+            <PersonaCarousel 
+              onSelect={handleOfficerSelect}
+              onError={(error) => {
+                console.error('[Index] PersonaCarousel error:', error);
+                setCarouselError(error);
+              }}
+            />
+          )}
         </div>
       </div>
 
