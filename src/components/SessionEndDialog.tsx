@@ -4,6 +4,7 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { SessionFeedbackModal } from '@/components/SessionFeedbackModal';
+import { GuestSignUpPrompt } from '@/components/GuestSignUpPrompt';
 import { supabase } from '@/integrations/supabase/client';
 
 interface SessionEndDialogProps {
@@ -11,6 +12,7 @@ interface SessionEndDialogProps {
   onOpenChange: (open: boolean) => void;
   sessionDuration: number; // in seconds
   onFeedbackRequest: () => Promise<void>;
+  isGuest?: boolean;
   sessionData?: {
     transcript?: string;
     personaId?: string;
@@ -31,6 +33,7 @@ export function SessionEndDialog({
   onOpenChange, 
   sessionDuration, 
   onFeedbackRequest,
+  isGuest = false,
   sessionData 
 }: SessionEndDialogProps) {
   const [isProcessingFeedback, setIsProcessingFeedback] = useState(false);
@@ -132,6 +135,17 @@ export function SessionEndDialog({
     onOpenChange(false);
     navigate('/dashboard');
   };
+
+  // Show guest sign-up prompt for guest users
+  if (isGuest) {
+    return (
+      <GuestSignUpPrompt 
+        open={open}
+        onOpenChange={onOpenChange}
+        sessionDuration={sessionDuration}
+      />
+    );
+  }
 
   return (
     <>

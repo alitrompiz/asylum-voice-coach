@@ -12,7 +12,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { Loader2, Mail, TestTube2 } from 'lucide-react';
-import { SocialLoginButtons } from './SocialLoginButtons';
 
 type AuthMode = 'login' | 'signup';
 
@@ -94,28 +93,6 @@ export default function Auth() {
     }
   };
 
-  const handleSocialLogin = async (provider: 'google' | 'apple') => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider,
-        options: {
-          redirectTo: `${window.location.origin}/dashboard`,
-        },
-      });
-
-      if (error) {
-        setError(error.message);
-      }
-    } catch (err) {
-      setError('An unexpected error occurred. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const handleGuestAccess = () => {
     createGuestSession('Guest User');
     navigate('/dashboard');
@@ -183,24 +160,6 @@ export default function Auth() {
               <TestTube2 className="mr-2 h-5 w-5" />
               Test AsylumPrep without email
             </Button>
-
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <Separator className="w-full" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">
-                  Or create an account
-                </span>
-              </div>
-            </div>
-
-            {/* Social Login Buttons */}
-            <SocialLoginButtons 
-              onGoogleClick={() => handleSocialLogin('google')}
-              isLoading={isLoading}
-              showApple={false}
-            />
 
             <div className="relative">
               <div className="absolute inset-0 flex items-center">

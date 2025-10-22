@@ -20,9 +20,11 @@ import { SessionEndDialog } from '@/components/SessionEndDialog';
 import { GeneratingFeedbackModal } from '@/components/GeneratingFeedbackModal';
 import { supabase } from '@/integrations/supabase/client';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function Interview() {
   const { t } = useTranslation();
+  const { isGuest } = useAuth();
   const [isAiSpeaking, setIsAiSpeaking] = useState(false);
   const [showSubtitles, setShowSubtitles] = useState(false); // OFF by default per session
   const [isPaused, setIsPaused] = useState(false);
@@ -671,6 +673,7 @@ export default function Interview() {
         open={showSessionEnd}
         onOpenChange={setShowSessionEnd}
         sessionDuration={getSessionDuration()}
+        isGuest={isGuest}
         onFeedbackRequest={() => {
           setShowSessionEnd(false);
           setShowGeneratingFeedback(true);

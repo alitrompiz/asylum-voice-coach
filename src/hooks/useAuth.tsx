@@ -12,7 +12,6 @@ interface AuthContextType {
   createGuestSession: (name?: string) => void;
   signUp: (email: string, password: string) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signInWithOAuth: (provider: 'google' | 'apple') => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: any }>;
 }
@@ -92,17 +91,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     createGuest(name);
   };
 
-  const signInWithOAuth = async (provider: 'google' | 'apple') => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider,
-      options: {
-        redirectTo: `${window.location.origin}/dashboard`,
-      },
-    });
-    
-    return { error };
-  };
-
   const resetPassword = async (email: string) => {
     const redirectUrl = `${window.location.origin}/auth/reset-password`;
     
@@ -122,7 +110,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     createGuestSession: handleCreateGuestSession,
     signUp,
     signIn,
-    signInWithOAuth,
     signOut,
     resetPassword
   };
