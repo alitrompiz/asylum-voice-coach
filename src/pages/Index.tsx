@@ -102,16 +102,20 @@ const Index = () => {
         <div className="relative z-10 container mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-32">
           <div className="text-center max-w-5xl mx-auto">
             {/* Main Headline */}
-            <h1 className="font-display text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-extrabold mb-6 leading-tight">
+            <h1 className="font-display text-3xl sm:text-3xl md:text-4xl lg:text-4xl font-extrabold mb-6 leading-tight">
               <span className="bg-gradient-to-r from-white via-blue-50 to-white bg-clip-text text-transparent drop-shadow-lg">
                 {content?.hero_h1 || 'Welcome to AsylumPrep'}
               </span>
             </h1>
             
-            {/* Subheadline */}
-            <p className="text-xl sm:text-2xl md:text-3xl text-blue-50 max-w-3xl mx-auto mb-10 leading-relaxed font-medium drop-shadow-md">
-              {content?.hero_p1 || 'Practice your interview with our AI-powered coaching system'}
-            </p>
+            {/* Subheadline with bullet points */}
+            <ul className="text-sm sm:text-sm md:text-base text-blue-50 max-w-3xl mx-auto mb-10 leading-relaxed font-medium drop-shadow-md list-disc list-inside space-y-2 text-left">
+              <li>Simulate real USCIS interviews</li>
+              <li>Answer authentic questions tailored to your I-589 story</li>
+              <li>Get AI-powered feedback trained by attorneys and asylum officers</li>
+              <li>Find inconsistencies before they do</li>
+              <li>Build the confidence you need to tell your story — and get your asylum granted</li>
+            </ul>
             
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
@@ -138,12 +142,6 @@ const Index = () => {
                   <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                 </svg>
                 <span className="font-semibold">4.9/5 Rating</span>
-              </div>
-              <div className="flex items-center gap-2 backdrop-blur-sm bg-white/10 px-4 py-2 rounded-full">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-                <span className="font-semibold">10,000+ Users</span>
               </div>
               <div className="flex items-center gap-2 backdrop-blur-sm bg-white/10 px-4 py-2 rounded-full">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
