@@ -1,4 +1,3 @@
-
 import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
@@ -7,18 +6,23 @@ import { useHomePageContent } from '@/hooks/useHomePageContent';
 import { PersonaCarousel } from '@/components/PersonaCarousel';
 import { useAuth } from '@/hooks/useAuth';
 import { usePersonaStore } from '@/stores/personaStore';
-
 const Index = () => {
   const navigate = useNavigate();
-  const { user, createGuestSession } = useAuth();
-  const { setSelectedPersona } = usePersonaStore();
-  const { data: content } = useHomePageContent();
+  const {
+    user,
+    createGuestSession
+  } = useAuth();
+  const {
+    setSelectedPersona
+  } = usePersonaStore();
+  const {
+    data: content
+  } = useHomePageContent();
   useEffect(() => {
     // Check for error parameters in URL hash (from failed verification)
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
     const error = hashParams.get('error');
     const errorDescription = hashParams.get('error_description');
-    
     if (error) {
       if (error === 'access_denied' && errorDescription?.includes('expired')) {
         toast.error('Email verification link has expired. Please request a new one.');
@@ -33,8 +37,14 @@ const Index = () => {
     // Defer auth check to avoid blocking initial paint
     const startCheck = async () => {
       try {
-        const { supabase } = await import('@/integrations/supabase/client');
-        const { data: { session } } = await supabase.auth.getSession();
+        const {
+          supabase
+        } = await import('@/integrations/supabase/client');
+        const {
+          data: {
+            session
+          }
+        } = await supabase.auth.getSession();
         if (session?.user) {
           toast.success('Welcome back!');
           navigate('/dashboard');
@@ -43,14 +53,12 @@ const Index = () => {
         // ignore
       }
     };
-
     if ('requestIdleCallback' in window) {
       (window as any).requestIdleCallback(startCheck);
     } else {
       setTimeout(startCheck, 0);
     }
   }, [navigate]);
-
   const handleOfficerSelect = (personaId: string) => {
     setSelectedPersona(personaId);
     if (user) {
@@ -61,9 +69,7 @@ const Index = () => {
       navigate('/onboarding');
     }
   };
-
-  return (
-    <main className="min-h-screen bg-background">
+  return <main className="min-h-screen bg-background">
       {/* Navigation Bar */}
       <nav className="fixed top-0 left-0 right-0 z-50 backdrop-blur-lg bg-white/80 dark:bg-gray-900/80 border-b border-gray-200/20">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -76,11 +82,7 @@ const Index = () => {
             </div>
             
             {/* Login Button */}
-            <Button 
-              variant="outline" 
-              onClick={() => navigate('/auth')}
-              className="border-primary text-primary hover:bg-primary hover:text-white"
-            >
+            <Button variant="outline" onClick={() => navigate('/auth')} className="border-primary text-primary hover:bg-primary hover:text-white">
               Login
             </Button>
           </div>
@@ -90,8 +92,9 @@ const Index = () => {
       {/* Hero Section with Gradient Background */}
       <div className="relative overflow-hidden pt-20">
         {/* Animated Gradient Background */}
-        <div className="absolute inset-0 bg-gradient-brand opacity-100" 
-             style={{ backgroundSize: '200% 200%' }}>
+        <div className="absolute inset-0 bg-gradient-brand opacity-100" style={{
+        backgroundSize: '200% 200%'
+      }}>
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.1),transparent_50%)]" />
         </div>
         
@@ -102,14 +105,14 @@ const Index = () => {
         <div className="relative z-10 container mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-32">
           <div className="text-center max-w-5xl mx-auto">
             {/* Main Headline */}
-            <h1 className="font-display text-4xl sm:text-4xl md:text-5xl lg:text-5xl font-extrabold mb-6 leading-tight">
+            <h1 className="font-display text-4xl sm:text-4xl md:text-5xl font-extrabold mb-6 leading-tight lg:text-7xl">
               <span className="bg-gradient-to-r from-white via-blue-50 to-white bg-clip-text text-transparent drop-shadow-lg">
                 {content?.hero_h1 || 'Welcome to AsylumPrep'}
               </span>
             </h1>
             
             {/* Subheadline with bullet points */}
-            <ul className="text-sm sm:text-sm md:text-base text-blue-50 max-w-3xl mx-auto mb-10 leading-relaxed font-medium drop-shadow-md list-disc list-inside space-y-2 text-left">
+            <ul className="text-sm sm:text-sm md:text-base text-blue-50 max-w-3xl mx-auto mb-10 leading-relaxed font-medium drop-shadow-md list-disc list-inside space-y-2 text-left rounded-sm">
               <li>Simulate real USCIS interviews</li>
               <li>Answer authentic questions tailored to your I-589 story</li>
               <li>Get AI-powered feedback trained by attorneys and asylum officers</li>
@@ -119,15 +122,12 @@ const Index = () => {
             
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
-              <Button 
-                size="xl" 
-                variant="brand"
-                className="bg-white text-primary hover:bg-blue-50 hover:text-primary-hover shadow-2xl group"
-                onClick={() => {
-                  const carousel = document.getElementById('persona-carousel');
-                  carousel?.scrollIntoView({ behavior: 'smooth' });
-                }}
-              >
+              <Button size="xl" variant="brand" className="bg-white text-primary hover:bg-blue-50 hover:text-primary-hover shadow-2xl group" onClick={() => {
+              const carousel = document.getElementById('persona-carousel');
+              carousel?.scrollIntoView({
+                behavior: 'smooth'
+              });
+            }}>
                 <span className="font-bold">Start Practicing Free</span>
                 <svg className="w-5 h-5 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
@@ -175,8 +175,6 @@ const Index = () => {
           <p className="text-muted-foreground">© 2024 AsylumPrep. All rights reserved.</p>
         </div>
       </footer>
-    </main>
-  );
+    </main>;
 };
-
 export default Index;
