@@ -219,7 +219,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
             <div className="space-y-6">
               <div className="text-center mb-8">
                 <h2 className="text-3xl font-bold text-white mb-2">
-                  {t('onboarding.step1_title')}
+                  Asylum Story
                 </h2>
                 <p className="text-gray-300">
                   {t('onboarding.step1_subtitle')}
@@ -236,13 +236,12 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                     <Upload className="w-12 h-12 text-primary mb-4 mx-auto" />
                     <h3 className="text-lg font-semibold text-white text-center mb-2">
                       {t('onboarding.upload_i589')}
-                      <span className="ml-2 text-xs bg-primary text-white px-2 py-1 rounded">
+                      <br />
+                      <br />
+                      <span className="text-xs bg-primary text-white px-2 py-1 rounded">
                         Recommended
                       </span>
                     </h3>
-                    <p className="text-sm text-gray-400 text-center">
-                      Upload your I-589 form for best results
-                    </p>
                   </Card>
 
                   {/* Paste Story Option */}
@@ -254,9 +253,6 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                     <h3 className="text-lg font-semibold text-white text-center mb-2">
                       {t('onboarding.paste_story')}
                     </h3>
-                    <p className="text-sm text-gray-400 text-center">
-                      Write or paste your asylum story
-                    </p>
                   </Card>
 
                   {/* Mock Story Option */}
@@ -267,10 +263,8 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                     <BookOpen className="w-12 h-12 text-primary mb-4 mx-auto" />
                     <h3 className="text-lg font-semibold text-white text-center mb-2">
                       {t('onboarding.select_mock')}
+                      <br />
                     </h3>
-                    <p className="text-sm text-gray-400 text-center">
-                      Use a sample story for testing
-                    </p>
                   </Card>
                 </div>
               )}
