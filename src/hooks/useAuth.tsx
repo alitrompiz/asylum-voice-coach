@@ -34,9 +34,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const { isGuest, guestData, createGuestSession: createGuest, clearGuestSession } = useGuestSession();
 
   useEffect(() => {
+    console.log('[AuthProvider] Initializing auth state');
+    
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        console.log('[AuthProvider] Auth state changed:', event, session?.user?.email || 'no user');
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
@@ -45,8 +48,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('[AuthProvider] Initial session loaded:', session?.user?.email || 'no user');
       setSession(session);
       setUser(session?.user ?? null);
+      setLoading(false);
+    }).catch(error => {
+      console.error('[AuthProvider] Failed to get initial session:', error);
       setLoading(false);
     });
 

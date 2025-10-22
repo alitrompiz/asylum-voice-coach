@@ -9,7 +9,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { RequireAdminRole } from "@/components/RequireAdminRole";
 import { LanguageProvider } from "@/components/LanguageProvider";
 import '@/lib/i18n';
-import { Suspense, lazy } from "react";
+import { Suspense, lazy, Component, ErrorInfo, ReactNode } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 // Import pages (lazy-loaded)
 const Index = lazy(() => import("./pages/Index"));
@@ -68,59 +68,111 @@ const LandingSkeleton = () => (
   </div>
 );
 
+// Error Boundary Component
+class ErrorBoundary extends Component<
+  { children: ReactNode },
+  { hasError: boolean; error: Error | null }
+> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error('App Error Boundary caught an error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-background p-4">
+          <div className="max-w-md w-full bg-card border border-border rounded-lg p-6 space-y-4">
+            <h1 className="text-2xl font-bold text-destructive">Something went wrong</h1>
+            <p className="text-muted-foreground">
+              The application encountered an error. Please try refreshing the page.
+            </p>
+            <details className="text-sm">
+              <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
+                Error details
+              </summary>
+              <pre className="mt-2 p-2 bg-muted rounded text-xs overflow-auto">
+                {this.state.error?.toString()}
+              </pre>
+            </details>
+            <button
+              onClick={() => window.location.reload()}
+              className="w-full bg-primary text-primary-foreground px-4 py-2 rounded hover:bg-primary/90"
+            >
+              Reload Page
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
-          <LanguageProvider>
-            <Suspense fallback={<PageSkeleton />}>
-              <Routes>
-                {/* Public routes */}
-                <Route path="/" element={<Index />} />
-                
-                {/* Auth routes */}
-                <Route path="/auth" element={<Auth />} />
-                <Route path="/auth/login" element={<Auth />} />
-                <Route path="/auth/signup" element={<Auth />} />
-                <Route path="/auth/register" element={<Auth />} />
-                <Route path="/auth/forgot-password" element={<ForgotPassword />} />
-                <Route path="/auth/reset-password" element={<ResetPassword />} />
-                <Route path="/auth/verify" element={<Verify />} />
-                
-                {/* Protected routes */}
-                <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
-                <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-                <Route path="/interview" element={<ProtectedRoute><Interview /></ProtectedRoute>} />
-                <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-                <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-                <Route path="/settings/contact" element={<ProtectedRoute><ContactUsForm /></ProtectedRoute>} />
-                
-                {/* Admin routes - require admin role */}
-                <Route path="/admin" element={<RequireAdminRole><AdminLayout /></RequireAdminRole>}>
-                  <Route index element={<AdminDashboard />} />
-                  <Route path="users" element={<EnhancedUserManagement />} />
-                  <Route path="skills" element={<SkillsManagement />} />
-                  <Route path="personas" element={<PersonasManagement />} />
-                  <Route path="prompts" element={<PromptsManagement />} />
-                  <Route path="roles" element={<RoleManagement />} />
-                  <Route path="usage" element={<UsageAnalytics />} />
-                  <Route path="phrases" element={<PhrasesManagement />} />
-                  <Route path="session-limits" element={<SessionLimitsManagement />} />
-                  <Route path="test-stories" element={<TestStoriesManagement />} />
-                </Route>
-                
-                {/* 404 catch-all */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </Suspense>
-          </LanguageProvider>
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+  <ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AuthProvider>
+            <LanguageProvider>
+              <Suspense fallback={<PageSkeleton />}>
+                <Routes>
+                  {/* Public routes */}
+                  <Route path="/" element={<Index />} />
+                  
+                  {/* Auth routes */}
+                  <Route path="/auth" element={<Auth />} />
+                  <Route path="/auth/login" element={<Auth />} />
+                  <Route path="/auth/signup" element={<Auth />} />
+                  <Route path="/auth/register" element={<Auth />} />
+                  <Route path="/auth/forgot-password" element={<ForgotPassword />} />
+                  <Route path="/auth/reset-password" element={<ResetPassword />} />
+                  <Route path="/auth/verify" element={<Verify />} />
+                  
+                  {/* Protected routes */}
+                  <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
+                  <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                  <Route path="/interview" element={<ProtectedRoute><Interview /></ProtectedRoute>} />
+                  <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+                  <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+                  <Route path="/settings/contact" element={<ProtectedRoute><ContactUsForm /></ProtectedRoute>} />
+                  
+                  {/* Admin routes - require admin role */}
+                  <Route path="/admin" element={<RequireAdminRole><AdminLayout /></RequireAdminRole>}>
+                    <Route index element={<AdminDashboard />} />
+                    <Route path="users" element={<EnhancedUserManagement />} />
+                    <Route path="skills" element={<SkillsManagement />} />
+                    <Route path="personas" element={<PersonasManagement />} />
+                    <Route path="prompts" element={<PromptsManagement />} />
+                    <Route path="roles" element={<RoleManagement />} />
+                    <Route path="usage" element={<UsageAnalytics />} />
+                    <Route path="phrases" element={<PhrasesManagement />} />
+                    <Route path="session-limits" element={<SessionLimitsManagement />} />
+                    <Route path="test-stories" element={<TestStoriesManagement />} />
+                  </Route>
+                  
+                  {/* 404 catch-all */}
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </Suspense>
+            </LanguageProvider>
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 export default App;

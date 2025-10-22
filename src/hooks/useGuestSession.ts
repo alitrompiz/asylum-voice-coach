@@ -17,59 +17,89 @@ export const useGuestSession = () => {
 
   // Load from localStorage on mount
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      try {
-        const data = JSON.parse(stored) as GuestSessionData;
-        // Check if expired
-        if (new Date(data.expiresAt) > new Date()) {
-          setGuestData(data);
-        } else {
+    console.log('[useGuestSession] Initializing guest session hook');
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      console.log('[useGuestSession] Stored session data:', stored ? 'Found' : 'Not found');
+      
+      if (stored) {
+        try {
+          const data = JSON.parse(stored) as GuestSessionData;
+          // Check if expired
+          if (new Date(data.expiresAt) > new Date()) {
+            console.log('[useGuestSession] Valid guest session loaded:', data.guestName);
+            setGuestData(data);
+          } else {
+            console.log('[useGuestSession] Guest session expired, removing');
+            localStorage.removeItem(STORAGE_KEY);
+          }
+        } catch (parseError) {
+          console.error('[useGuestSession] Failed to parse guest session:', parseError);
           localStorage.removeItem(STORAGE_KEY);
         }
-      } catch (error) {
-        console.error('Failed to parse guest session:', error);
-        localStorage.removeItem(STORAGE_KEY);
       }
+    } catch (error) {
+      console.error('[useGuestSession] localStorage access error:', error);
+      // If localStorage is blocked/unavailable, continue without guest session
     }
   }, []);
 
   const createGuestSession = (name: string = 'Guest User') => {
-    const now = new Date();
-    const expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24 hours
-    
-    const sessionData: GuestSessionData = {
-      guestToken: crypto.randomUUID(),
-      guestName: name,
-      sessionSecondsUsed: 0,
-      sessionSecondsLimit: 1800, // 30 minutes
-      createdAt: now.toISOString(),
-      expiresAt: expiresAt.toISOString(),
-    };
+    console.log('[useGuestSession] Creating new guest session for:', name);
+    try {
+      const now = new Date();
+      const expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24 hours
+      
+      const sessionData: GuestSessionData = {
+        guestToken: crypto.randomUUID(),
+        guestName: name,
+        sessionSecondsUsed: 0,
+        sessionSecondsLimit: 1800, // 30 minutes
+        createdAt: now.toISOString(),
+        expiresAt: expiresAt.toISOString(),
+      };
 
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(sessionData));
-    setGuestData(sessionData);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(sessionData));
+      setGuestData(sessionData);
+      console.log('[useGuestSession] Guest session created successfully');
+    } catch (error) {
+      console.error('[useGuestSession] Failed to create guest session:', error);
+      // Continue without guest session if localStorage fails
+    }
   };
 
   const updateSessionTime = (secondsUsed: number) => {
     if (!guestData) return;
     
-    const updated = { ...guestData, sessionSecondsUsed: secondsUsed };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-    setGuestData(updated);
+    try {
+      const updated = { ...guestData, sessionSecondsUsed: secondsUsed };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      setGuestData(updated);
+    } catch (error) {
+      console.error('[useGuestSession] Failed to update session time:', error);
+    }
   };
 
   const setTestStory = (testStoryId: string) => {
     if (!guestData) return;
     
-    const updated = { ...guestData, selectedTestStoryId: testStoryId };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-    setGuestData(updated);
+    try {
+      const updated = { ...guestData, selectedTestStoryId: testStoryId };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      setGuestData(updated);
+    } catch (error) {
+      console.error('[useGuestSession] Failed to set test story:', error);
+    }
   };
 
   const clearGuestSession = () => {
-    localStorage.removeItem(STORAGE_KEY);
-    setGuestData(null);
+    console.log('[useGuestSession] Clearing guest session');
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+      setGuestData(null);
+    } catch (error) {
+      console.error('[useGuestSession] Failed to clear guest session:', error);
+    }
   };
 
   const isValid = guestData && new Date(guestData.expiresAt) > new Date();
