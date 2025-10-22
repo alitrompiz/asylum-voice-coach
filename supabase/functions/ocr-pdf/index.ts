@@ -210,9 +210,7 @@ Deno.serve(async (req) => {
       }
     }
     
-    if (!userId) {
-      throw new Error('Authentication required');
-    }
+    console.log('User ID:', userId || 'GUEST');
     
     // Create OCR job using service role
     const { data: job, error: jobError } = await supabase
