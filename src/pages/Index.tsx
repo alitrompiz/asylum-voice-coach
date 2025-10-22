@@ -66,23 +66,13 @@ const Index = () => {
     <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900">
       <div className="max-w-4xl mx-auto px-4 py-12">
         {/* Hero Section */}
-        <section className="text-center mb-16">
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 text-white">
+        <section className="text-center mb-12">
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4 text-white">
             {content?.hero_h1}
           </h1>
-          <p className="text-lg md:text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
+          <p className="text-lg md:text-xl text-gray-300 max-w-2xl mx-auto">
             {content?.hero_p1}
           </p>
-          {!user && (
-            <Button 
-              size="lg" 
-              variant="outline"
-              onClick={() => navigate('/auth')}
-              className="bg-white/10 text-white border-white/20 hover:bg-white/20"
-            >
-              Test AsylumPrep without email
-            </Button>
-          )}
         </section>
 
         {/* Officer Picker Section */}
