@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -92,46 +92,40 @@ export default function Verify() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <CardTitle className="flex items-center justify-center gap-2">
-            {verificationStatus === 'loading' && <Loader2 className="w-5 h-5 animate-spin" />}
-            {verificationStatus === 'success' && <CheckCircle className="w-5 h-5 text-green-500" />}
-            {verificationStatus === 'error' && <XCircle className="w-5 h-5 text-red-500" />}
-            Email Verification
-          </CardTitle>
-          <CardDescription>
-            {verificationStatus === 'loading' && 'Verifying your email...'}
-            {verificationStatus === 'success' && 'Your email has been verified successfully!'}
-            {verificationStatus === 'error' && 'Email verification failed'}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {verificationStatus === 'success' && (
-            <div className="text-center">
-              <p className="text-sm text-muted-foreground mb-4">
-                You will be redirected to your dashboard shortly.
-              </p>
-              <Button onClick={() => navigate('/dashboard')}>
-                Go to Dashboard
-              </Button>
-            </div>
-          )}
-          
-          {verificationStatus === 'error' && (
-            <div className="text-center space-y-4">
-              <p className="text-sm text-red-500">{error}</p>
-              <div className="space-y-2">
-                <Button onClick={handleResendVerification} variant="outline" className="w-full">
-                  Resend Verification Email
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 p-4">
+      <Card className="w-full max-w-md bg-gray-900/50 border-gray-800">
+        <CardContent className="pt-6">
+          <div className="flex flex-col items-center space-y-4">
+            {verificationStatus === 'loading' && (
+              <>
+                <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                <p className="text-gray-200 text-center">Verifying...</p>
+              </>
+            )}
+            {verificationStatus === 'success' && (
+              <>
+                <CheckCircle className="h-12 w-12 text-green-500" />
+                <p className="text-gray-200 text-center">Verified</p>
+                <Button onClick={() => navigate('/dashboard')} className="w-full">
+                  Go to Dashboard
                 </Button>
-                <Button onClick={() => navigate('/auth/login')} variant="ghost" className="w-full">
-                  Back to Login
-                </Button>
-              </div>
-            </div>
-          )}
+              </>
+            )}
+            {verificationStatus === 'error' && (
+              <>
+                <XCircle className="h-12 w-12 text-red-500" />
+                <p className="text-gray-200 text-center mb-2">{error}</p>
+                <div className="flex flex-col space-y-2 w-full">
+                  <Button onClick={handleResendVerification} className="w-full">
+                    Resend
+                  </Button>
+                  <Button onClick={() => navigate('/auth/login')} variant="outline" className="w-full">
+                    Back to Login
+                  </Button>
+                </div>
+              </>
+            )}
+          </div>
         </CardContent>
       </Card>
     </div>

@@ -8,10 +8,9 @@ import { loginSchema, signupSchema, LoginFormData, SignupFormData } from '@/lib/
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Separator } from '@/components/ui/separator';
-import { Loader2, Mail, TestTube2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
 type AuthMode = 'login' | 'signup';
 
@@ -100,33 +99,21 @@ export default function Auth() {
 
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <div className="flex items-center justify-center mb-4">
-              <Mail className="h-12 w-12 text-primary" />
-            </div>
-            <CardTitle className="text-center">Check your email</CardTitle>
-            <CardDescription className="text-center">
-              We've sent you a verification link. Please check your email and click the link to complete your registration.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground text-center">
-                Once you click the verification link in your email, you'll be automatically signed in.
-              </p>
-              <Button 
-                variant="outline" 
-                className="w-full"
-                onClick={() => {
-                  setSuccess(false);
-                  setMode('login');
-                }}
-              >
-                Back to Sign In
-              </Button>
-            </div>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 p-4">
+        <Card className="w-full max-w-md bg-gray-900/50 border-gray-800">
+          <CardContent className="pt-6">
+            <p className="text-gray-200 text-center mb-4">
+              Check your email for the verification link.
+            </p>
+            <Button
+              onClick={() => {
+                setSuccess(false);
+                setMode('login');
+              }}
+              className="w-full"
+            >
+              Back to Sign In
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -134,197 +121,100 @@ export default function Auth() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle className="text-center">
-            {mode === 'login' ? 'Welcome Back' : 'Create Account'}
-          </CardTitle>
-          <CardDescription className="text-center">
-            {mode === 'login' 
-              ? 'Sign in to your AsylumPrep account' 
-              : 'Sign up for AsylumPrep to start your interview preparation'
-            }
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-6">
-            {/* Guest Access Button - Prominent */}
-            <Button 
-              onClick={handleGuestAccess}
-              size="lg"
-              variant="secondary"
-              className="w-full text-base font-semibold"
-              disabled={isLoading}
-            >
-              <TestTube2 className="mr-2 h-5 w-5" />
-              Test AsylumPrep without email
-            </Button>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 p-4">
+      <Card className="w-full max-w-md bg-gray-900/50 border-gray-800">
+        <CardContent className="pt-6">
+          {error && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
 
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <Separator className="w-full" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">
-                  Or continue with email
-                </span>
-              </div>
+          <form onSubmit={mode === 'login' ? loginForm.handleSubmit(onLoginSubmit) : signupForm.handleSubmit(onSignupSubmit)} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-gray-200">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="Email"
+                {...(mode === 'login' ? loginForm.register('email') : signupForm.register('email'))}
+                disabled={isLoading}
+                className="bg-gray-800/50 border-gray-700 text-white placeholder:text-gray-500"
+              />
+              {(mode === 'login' ? loginForm.formState.errors.email : signupForm.formState.errors.email) && (
+                <p className="text-sm text-destructive">
+                  {(mode === 'login' ? loginForm.formState.errors.email : signupForm.formState.errors.email)?.message}
+                </p>
+              )}
             </div>
 
-            {/* Error Alert */}
-            {error && (
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-
-            {/* Email Form */}
-            {mode === 'login' ? (
-              <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="Enter your email"
-                    {...loginForm.register('email')}
-                    disabled={isLoading}
-                  />
-                  {loginForm.formState.errors.email && (
-                    <p className="text-sm text-destructive">
-                      {loginForm.formState.errors.email.message}
-                    </p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="Enter your password"
-                    {...loginForm.register('password')}
-                    disabled={isLoading}
-                  />
-                  {loginForm.formState.errors.password && (
-                    <p className="text-sm text-destructive">
-                      {loginForm.formState.errors.password.message}
-                    </p>
-                  )}
-                </div>
-
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Signing in...
-                    </>
-                  ) : (
-                    'Sign In'
-                  )}
-                </Button>
-              </form>
-            ) : (
-              <form onSubmit={signupForm.handleSubmit(onSignupSubmit)} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="Enter your email"
-                    {...signupForm.register('email')}
-                    disabled={isLoading}
-                  />
-                  {signupForm.formState.errors.email && (
-                    <p className="text-sm text-destructive">
-                      {signupForm.formState.errors.email.message}
-                    </p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="Enter your password"
-                    {...signupForm.register('password')}
-                    disabled={isLoading}
-                  />
-                  {signupForm.formState.errors.password && (
-                    <p className="text-sm text-destructive">
-                      {signupForm.formState.errors.password.message}
-                    </p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">Confirm Password</Label>
-                  <Input
-                    id="confirmPassword"
-                    type="password"
-                    placeholder="Confirm your password"
-                    {...signupForm.register('confirmPassword')}
-                    disabled={isLoading}
-                  />
-                  {signupForm.formState.errors.confirmPassword && (
-                    <p className="text-sm text-destructive">
-                      {signupForm.formState.errors.confirmPassword.message}
-                    </p>
-                  )}
-                </div>
-
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Creating Account...
-                    </>
-                  ) : (
-                    'Create Account'
-                  )}
-                </Button>
-              </form>
-            )}
-
-            {/* Footer Links */}
-            <div className="space-y-4 text-center text-sm">
-              {mode === 'login' && (
-                <Link 
-                  to="/auth/forgot-password" 
-                  className="text-primary hover:underline block"
-                >
-                  Forgot your password?
-                </Link>
+            <div className="space-y-2">
+              <Label htmlFor="password" className="text-gray-200">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="Password"
+                {...(mode === 'login' ? loginForm.register('password') : signupForm.register('password'))}
+                disabled={isLoading}
+                className="bg-gray-800/50 border-gray-700 text-white placeholder:text-gray-500"
+              />
+              {(mode === 'login' ? loginForm.formState.errors.password : signupForm.formState.errors.password) && (
+                <p className="text-sm text-destructive">
+                  {(mode === 'login' ? loginForm.formState.errors.password : signupForm.formState.errors.password)?.message}
+                </p>
               )}
-              
-              <div>
-                {mode === 'login' ? (
-                  <>
-                    Don't have an account?{' '}
-                    <button
-                      type="button"
-                      onClick={() => setMode('signup')}
-                      className="text-primary hover:underline"
-                    >
-                      Sign up
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    Already have an account?{' '}
-                    <button
-                      type="button"
-                      onClick={() => setMode('login')}
-                      className="text-primary hover:underline"
-                    >
-                      Sign in
-                    </button>
-                  </>
+            </div>
+
+            {mode === 'signup' && (
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword" className="text-gray-200">Confirm Password</Label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  placeholder="Confirm Password"
+                  {...signupForm.register('confirmPassword')}
+                  disabled={isLoading}
+                  className="bg-gray-800/50 border-gray-700 text-white placeholder:text-gray-500"
+                />
+                {signupForm.formState.errors.confirmPassword && (
+                  <p className="text-sm text-destructive">
+                    {signupForm.formState.errors.confirmPassword.message}
+                  </p>
                 )}
               </div>
-            </div>
+            )}
+
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ...
+                </>
+              ) : (
+                mode === 'login' ? 'Sign In' : 'Create Account'
+              )}
+            </Button>
+
+            {mode === 'login' && (
+              <div className="text-center">
+                <Link 
+                  to="/auth/forgot-password" 
+                  className="text-sm text-gray-400 hover:text-gray-200"
+                >
+                  Forgot password?
+                </Link>
+              </div>
+            )}
+          </form>
+
+          <div className="mt-6 text-center text-sm">
+            <Button
+              variant="link"
+              className="p-0 h-auto font-normal text-gray-400 hover:text-gray-200"
+              onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}
+            >
+              {mode === 'login' ? 'Sign up' : 'Sign in'}
+            </Button>
           </div>
         </CardContent>
       </Card>
