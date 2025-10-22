@@ -157,7 +157,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
 
   const canProceedFromStep1 = () => {
     if (storyOption === 'upload') return hasStoryData;
-    if (storyOption === 'paste') return firstName && lastName && storyText.length >= 100;
+    if (storyOption === 'paste') return firstName.trim() && lastName.trim() && storyText.trim().length >= 100;
     if (storyOption === 'mock') return hasStoryData;
     return hasStoryData; // Allow proceeding if already has story from before
   };
@@ -464,10 +464,11 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
               onClick={handleNext}
               disabled={
                 (currentStep === 1 && !canProceedFromStep1()) ||
-                (currentStep === 2 && !canProceedFromStep2())
+                (currentStep === 2 && !canProceedFromStep2()) ||
+                isLoading
               }
             >
-              {t('onboarding.next')}
+              {isLoading ? 'Saving...' : t('onboarding.next')}
               <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           </div>

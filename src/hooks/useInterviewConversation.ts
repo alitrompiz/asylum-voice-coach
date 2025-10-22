@@ -5,6 +5,8 @@ import { supabase } from '@/lib/supabase';
 import { usePersonaStore } from '@/stores/personaStore';
 import { useLanguagePreference } from '@/hooks/useLanguagePreference';
 import { AudioRecordingResult } from './useAudioRecording';
+import { useAuth } from '@/hooks/useAuth';
+import { useGuestSession } from '@/hooks/useGuestSession';
 
 export interface ConversationMessage {
   id: string;
@@ -22,6 +24,8 @@ export const useInterviewConversation = (setUserTranscript?: (transcript: string
   const { toast } = useToast();
   const { selectedPersona } = usePersonaStore();
   const { languageCode } = useLanguagePreference();
+  const { user } = useAuth();
+  const { guestData } = useGuestSession();
   const sessionIdRef = useRef<string | null>(null);
 
   // Initialize session ID
@@ -102,14 +106,27 @@ export const useInterviewConversation = (setUserTranscript?: (transcript: string
     try {
       console.log('Sending to AI with language:', languageCode);
       
+      // Include guest story data if user is a guest
+      const requestBody: any = {
+        messages: conversationMessages,
+        personaId: selectedPersona,
+        language: languageCode || 'en',
+        skills: [], // Could be passed as props if needed
+        sessionId: sessionIdRef.current
+      };
+
+      // Add guest story data for unauthenticated users
+      if (!user && guestData) {
+        requestBody.guestStoryData = {
+          storyText: guestData.storyText,
+          firstName: guestData.storyFirstName,
+          lastName: guestData.storyLastName
+        };
+        console.log('Including guest story data in AI request');
+      }
+      
       const { data, error } = await supabase.functions.invoke('interview-ai', {
-        body: {
-          messages: conversationMessages,
-          personaId: selectedPersona,
-          language: languageCode || 'en',
-          skills: [], // Could be passed as props if needed
-          sessionId: sessionIdRef.current
-        }
+        body: requestBody
       });
 
       if (error) {

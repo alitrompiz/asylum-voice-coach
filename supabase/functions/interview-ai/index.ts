@@ -52,6 +52,7 @@ serve(async (req) => {
     const language: string = body?.language ?? 'en';
     const skills: string[] = Array.isArray(body?.skills) ? body.skills : [];
     const sessionId = body?.sessionId;
+    const guestStoryData = body?.guestStoryData; // { storyText, firstName, lastName }
 
     // Input validation
     if (!Array.isArray(messages) || messages.length === 0) {
@@ -134,7 +135,19 @@ serve(async (req) => {
       userContext = {
         profile,
         userStory: stories?.[0]?.story_text || 'No story provided',
-        storyTitle: stories?.[0]?.title || 'Untitled'
+        storyTitle: stories?.[0]?.title || 'Untitled',
+        firstName: profile?.preferred_name || profile?.legal_name || 'Applicant',
+        lastName: profile?.last_name || ''
+      };
+    } else if (guestStoryData) {
+      // Use guest story data for unauthenticated users
+      console.log('Using guest story data for interview');
+      userContext = {
+        profile: null,
+        userStory: guestStoryData.storyText || 'No story provided',
+        storyTitle: 'Guest Story',
+        firstName: guestStoryData.firstName || 'Applicant',
+        lastName: guestStoryData.lastName || ''
       };
     }
 
@@ -193,6 +206,8 @@ serve(async (req) => {
       user_story: userContext.userStory || 'No story provided',
       focus_areas: focusAreasInstructions,
       language: language || 'English',
+      first_name: userContext.firstName || 'Applicant',
+      last_name: userContext.lastName || '',
       // Backwards compatibility
       country_of_persecution: userContext.profile?.country_of_feared_persecution || 'Not specified',
       skills_selected: skills.length > 0 ? skills.join(', ') : 'General interview skills',
