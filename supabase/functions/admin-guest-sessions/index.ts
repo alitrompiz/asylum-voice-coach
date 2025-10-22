@@ -66,8 +66,8 @@ serve(async (req) => {
       .from('guest_sessions')
       .select(`
         *,
-        selected_test_story:test_stories(title, category),
-        selected_persona:personas(name, mood)
+        selected_test_story:test_stories!selected_test_story_id(title, category),
+        selected_persona:personas!selected_persona_id(name, mood)
       `, { count: 'exact' });
 
     // Apply filters

@@ -70,9 +70,9 @@ export default function GuestSessionsManagement() {
       if (dateFrom) params.append('dateFrom', dateFrom);
       if (dateTo) params.append('dateTo', dateTo);
 
-      const { data, error } = await supabase.functions.invoke('admin-guest-sessions', {
-        body: { params: params.toString() }
-      });
+      const { data, error } = await supabase.functions.invoke(
+        `admin-guest-sessions?${params.toString()}`
+      );
 
       if (error) throw error;
 
@@ -82,7 +82,7 @@ export default function GuestSessionsManagement() {
       console.error('Error loading guest sessions:', error);
       toast({
         title: 'Error',
-        description: 'Failed to load guest sessions',
+        description: error instanceof Error ? error.message : 'Failed to load guest sessions',
         variant: 'destructive',
       });
     } finally {
