@@ -76,33 +76,57 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
 
   const handleOcrCompletion = async (job: any) => {
     try {
-      if (!job.result?.story_id) {
-        console.error('No story ID in OCR job result');
-        return;
+      // Handle authenticated user (story_id in result)
+      if (job.result?.story_id) {
+        // The story was already created by the OCR function, just fetch it
+        const { data: storyData, error: storyError } = await supabase
+          .from('stories')
+          .select('*')
+          .eq('id', job.result.story_id)
+          .single();
+
+        if (storyError) {
+          console.error('Error fetching completed story:', storyError);
+          throw storyError;
+        }
+
+        toast({
+          title: "Success",
+          description: `PDF processed successfully! Extracted ${job.result.pages_processed || 'multiple'} pages.`,
+        });
+
+        onStoryAdded?.({ ...storyData, source_type: storyData.source_type as 'pdf' | 'text' });
+        // Emit story change event for dashboard cache invalidation
+        window.dispatchEvent(new CustomEvent('storyChanged'));
+        loadExistingStories();
+        setCurrentJobId(null);
+      } 
+      // Handle guest user (text in result)
+      else if (job.result?.text) {
+        console.log('Guest OCR completion - using text from result');
+        
+        const guestStory: Story = {
+          id: 'guest-local',
+          title: `OCR Story - ${job.file_name}`,
+          story_text: job.result.text,
+          source_type: 'pdf',
+          file_path: undefined,
+          user_id: 'guest',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+
+        toast({
+          title: "Success",
+          description: `PDF processed successfully! Extracted ${job.result.pages_processed || 'multiple'} pages.`,
+        });
+
+        onStoryAdded?.(guestStory);
+        setCurrentJobId(null);
+      } else {
+        console.error('Invalid OCR job result:', job.result);
+        throw new Error('Invalid OCR result format');
       }
-
-      // The story was already created by the OCR function, just fetch it
-      const { data: storyData, error: storyError } = await supabase
-        .from('stories')
-        .select('*')
-        .eq('id', job.result.story_id)
-        .single();
-
-      if (storyError) {
-        console.error('Error fetching completed story:', storyError);
-        throw storyError;
-      }
-
-      toast({
-        title: "Success",
-        description: `PDF processed successfully! Extracted ${job.result.pages_processed || 'multiple'} pages.`,
-      });
-
-      onStoryAdded?.({ ...storyData, source_type: storyData.source_type as 'pdf' | 'text' });
-      // Emit story change event for dashboard cache invalidation
-      window.dispatchEvent(new CustomEvent('storyChanged'));
-      loadExistingStories();
-      setCurrentJobId(null);
     } catch (error) {
       console.error('Error handling OCR completion:', error);
       toast({

@@ -13,52 +13,107 @@ interface OcrJob {
 export const useOcrJob = (jobId: string | null) => {
   const [job, setJob] = useState<OcrJob | null>(null);
   const [loading, setLoading] = useState(false);
+  const [isGuest, setIsGuest] = useState<boolean | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const pollJob = async (id: string) => {
-    try {
-      console.log(`[OCR_POLL] Polling job ${id}...`);
-      
-      const { data, error } = await supabase
-        .from('ocr_jobs')
-        .select('*')
-        .eq('id', id)
-        .maybeSingle();
+  // Detect if user is guest
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setIsGuest(!user);
+    };
+    checkAuth();
+  }, []);
 
-      if (error) {
-        console.error(`[OCR_POLL] Error fetching job ${id}:`, error);
-        throw error;
-      }
+  const pollJob = async (id: string) => {
+    if (isGuest === null) return null;
+
+    try {
+      console.log(`[OCR_POLL] Polling job ${id} (guest: ${isGuest})...`);
       
-      if (!data) {
-        console.warn(`[OCR_POLL] Job ${id} not found in database`);
-        return null;
-      }
-      
-      console.log(`[OCR_POLL] Job ${id} status: ${data.status}, progress: ${data.progress}`);
-      
-      const jobData = {
-        id: data.id,
-        status: data.status as 'pending' | 'processing' | 'completed' | 'failed',
-        progress: data.progress || 0,
-        result: data.result,
-        error_message: data.error_message,
-        file_name: data.file_name
-      };
-      
-      setJob(jobData);
-      
-      // Stop polling if job is completed or failed
-      if (data.status === 'completed' || data.status === 'failed') {
-        console.log(`[OCR_POLL] Job ${id} finished with status: ${data.status}`);
-        if (intervalRef.current) {
-          clearInterval(intervalRef.current);
-          intervalRef.current = null;
+      if (isGuest) {
+        // Guest: poll via edge function (service role bypasses RLS)
+        const { data, error } = await supabase.functions.invoke('get-ocr-job', {
+          body: { jobId: id }
+        });
+
+        if (error) {
+          console.error(`[OCR_POLL] Error fetching job ${id} via function:`, error);
+          throw error;
         }
-        setLoading(false);
+
+        if (!data) {
+          console.warn(`[OCR_POLL] Job ${id} not found`);
+          return null;
+        }
+
+        console.log(`[OCR_POLL] Job ${id} status: ${data.status}, progress: ${data.progress}`);
+
+        const jobData = {
+          id: data.id,
+          status: data.status as 'pending' | 'processing' | 'completed' | 'failed',
+          progress: data.progress || 0,
+          result: data.result,
+          error_message: data.error_message,
+          file_name: data.file_name
+        };
+
+        setJob(jobData);
+
+        // Stop polling if job is completed or failed
+        if (data.status === 'completed' || data.status === 'failed') {
+          console.log(`[OCR_POLL] Job ${id} finished with status: ${data.status}`);
+          if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
+          }
+          setLoading(false);
+        }
+
+        return data;
+      } else {
+        // Authenticated: poll via database
+        const { data, error } = await supabase
+          .from('ocr_jobs')
+          .select('*')
+          .eq('id', id)
+          .maybeSingle();
+
+        if (error) {
+          console.error(`[OCR_POLL] Error fetching job ${id}:`, error);
+          throw error;
+        }
+        
+        if (!data) {
+          console.warn(`[OCR_POLL] Job ${id} not found in database`);
+          return null;
+        }
+        
+        console.log(`[OCR_POLL] Job ${id} status: ${data.status}, progress: ${data.progress}`);
+        
+        const jobData = {
+          id: data.id,
+          status: data.status as 'pending' | 'processing' | 'completed' | 'failed',
+          progress: data.progress || 0,
+          result: data.result,
+          error_message: data.error_message,
+          file_name: data.file_name
+        };
+        
+        setJob(jobData);
+        
+        // Stop polling if job is completed or failed
+        if (data.status === 'completed' || data.status === 'failed') {
+          console.log(`[OCR_POLL] Job ${id} finished with status: ${data.status}`);
+          if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
+          }
+          setLoading(false);
+        }
+        
+        return data;
       }
-      
-      return data;
     } catch (error) {
       console.error(`[OCR_POLL] Error polling job ${id}:`, error);
       if (intervalRef.current) {
@@ -97,7 +152,7 @@ export const useOcrJob = (jobId: string | null) => {
   };
 
   useEffect(() => {
-    if (jobId) {
+    if (jobId && isGuest !== null) {
       startPolling(jobId);
     } else {
       stopPolling();
@@ -105,7 +160,7 @@ export const useOcrJob = (jobId: string | null) => {
     }
 
     return () => stopPolling();
-  }, [jobId]);
+  }, [jobId, isGuest]);
 
   return {
     job,

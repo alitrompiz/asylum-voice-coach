@@ -131,44 +131,64 @@ async function processOCRJob(jobId: string): Promise<void> {
     console.log('Extracted text length:', finalText.length);
     console.log('Pages processed:', analyzeResult?.pages?.length || 0);
     
-    // Create story directly using service role (bypass RLS)
-    const { data: story, error: storyError } = await supabase
-      .from('stories')
-      .insert({
-        user_id: job.user_id,
-        title: `OCR Story - ${job.file_name}`,
-        story_text: finalText,
-        source_type: 'pdf',
-        file_path: job.file_path,
-        detected_sections: {
-          total_pages: analyzeResult?.pages?.length || 0,
-          azure_model: 'prebuilt-read'
-        }
-      })
-      .select()
-      .single();
-    
-    if (storyError) {
-      console.error('Story creation error:', storyError);
-      throw new Error('Failed to save story');
+    // Handle authenticated vs guest users differently
+    if (job.user_id) {
+      // Authenticated user: create story in database
+      const { data: story, error: storyError } = await supabase
+        .from('stories')
+        .insert({
+          user_id: job.user_id,
+          title: `OCR Story - ${job.file_name}`,
+          story_text: finalText,
+          source_type: 'pdf',
+          file_path: job.file_path,
+          detected_sections: {
+            total_pages: analyzeResult?.pages?.length || 0,
+            azure_model: 'prebuilt-read'
+          }
+        })
+        .select()
+        .single();
+      
+      if (storyError) {
+        console.error('Story creation error:', storyError);
+        throw new Error('Failed to save story');
+      }
+      
+      console.log('Story created:', story.id);
+      
+      // Update job with story_id
+      await supabase
+        .from('ocr_jobs')
+        .update({
+          status: 'completed',
+          progress: 100,
+          completed_at: new Date().toISOString(),
+          result: {
+            story_id: story.id,
+            text_length: finalText.length,
+            pages_processed: analyzeResult?.pages?.length || 0
+          }
+        })
+        .eq('id', jobId);
+    } else {
+      // Guest user: store text directly in job result (no story record)
+      console.log('Guest upload - storing text in job result');
+      
+      await supabase
+        .from('ocr_jobs')
+        .update({
+          status: 'completed',
+          progress: 100,
+          completed_at: new Date().toISOString(),
+          result: {
+            text: finalText,
+            text_length: finalText.length,
+            pages_processed: analyzeResult?.pages?.length || 0
+          }
+        })
+        .eq('id', jobId);
     }
-    
-    console.log('Story created:', story.id);
-    
-    // Update job status to completed using service role
-    await supabase
-      .from('ocr_jobs')
-      .update({
-        status: 'completed',
-        progress: 100,
-        completed_at: new Date().toISOString(),
-        result: {
-          story_id: story.id,
-          text_length: finalText.length,
-          pages_processed: analyzeResult?.pages?.length || 0
-        }
-      })
-      .eq('id', jobId);
     
     console.log('OCR job completed successfully');
     
@@ -226,7 +246,8 @@ Deno.serve(async (req) => {
     
     if (jobError) {
       console.error('Job creation error:', jobError);
-      throw new Error('Failed to create OCR job');
+      console.error('Job error details:', JSON.stringify(jobError, null, 2));
+      throw new Error(`Failed to create OCR job: ${jobError.message || 'Unknown error'}`);
     }
     
     console.log('Created job:', job.id);
