@@ -434,6 +434,8 @@ export type Database = {
       }
       profiles: {
         Row: {
+          active_story_id: string | null
+          active_test_story_id: string | null
           asylum_office_filed: string | null
           avatar_url: string | null
           country_of_feared_persecution: string | null
@@ -452,6 +454,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          active_story_id?: string | null
+          active_test_story_id?: string | null
           asylum_office_filed?: string | null
           avatar_url?: string | null
           country_of_feared_persecution?: string | null
@@ -470,6 +474,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          active_story_id?: string | null
+          active_test_story_id?: string | null
           asylum_office_filed?: string | null
           avatar_url?: string | null
           country_of_feared_persecution?: string | null
@@ -487,7 +493,22 @@ export type Database = {
           updated_at?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_active_story_id_fkey"
+            columns: ["active_story_id"]
+            isOneToOne: false
+            referencedRelation: "stories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_active_test_story_id_fkey"
+            columns: ["active_test_story_id"]
+            isOneToOne: false
+            referencedRelation: "test_stories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       prompt_usage_logs: {
         Row: {

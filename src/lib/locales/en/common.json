@@ -86,13 +86,32 @@
     "error": "Error"
   },
   "onboarding": {
-    "title": "Welcome to AsylumPrep",
+    "title": "Get Ready for Your Interview",
+    "step1_title": "Choose Your Story",
+    "step1_subtitle": "How would you like to provide your asylum story?",
+    "upload_i589": "Upload I-589 (Best interview quality)",
+    "paste_story": "Paste Your Story (Good)",
+    "select_mock": "Select a Mock Story (For testing)",
+    "step2_title": "Select Areas of Improvement",
+    "step2_subtitle": "Choose at least one area the AI should focus on during your interview",
+    "step3_title": "Practice Language",
+    "step3_message": "It's best to practice your interview in English, but if you plan to bring a translator, you may choose to practice in another language below.",
+    "start_interview": "Start Interview",
     "subtitle": "Let's get you started with a quick setup",
     "progress": "Step {{current}} of {{total}}",
     "next": "Next",
     "back": "Back",
     "skip": "Skip & Finish Later",
     "finish": "Complete Setup",
+    "validation": {
+      "select_story": "Please select or upload a story",
+      "select_skills": "Please select at least one area of improvement",
+      "first_name_required": "First and last name are required",
+      "last_name_required": "Last name is required",
+      "story_too_short": "Story must be at least 100 characters",
+      "story_too_long": "Story must be less than 10,000 characters",
+      "complete_all_steps": "Please complete all steps before starting"
+    },
     "legal_name": {
       "title": "Legal Information",
       "subtitle": "Please provide your legal name information",

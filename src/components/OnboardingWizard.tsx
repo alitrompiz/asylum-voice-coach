@@ -1,513 +1,428 @@
 import { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { useTranslation } from 'react-i18next';
-import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
-
+import { useTranslation } from 'react-i18next';
+import { useAuth } from '@/hooks/useAuth';
+import { useLanguagePreference } from '@/hooks/useLanguagePreference';
+import { useSkillsStore } from '@/stores/personaStore';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Progress } from '@/components/ui/progress';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { CalendarIcon, ChevronLeft, ChevronRight, Globe, Bell, Check } from 'lucide-react';
-import { cn } from '@/lib/utils';
-
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
+import { Textarea } from '@/components/ui/textarea';
+import { LanguageSelector } from '@/components/LanguageSelector';
+import { SkillsScroller } from '@/components/SkillsScroller';
+import { GuestTestStorySelector } from '@/components/story/GuestTestStorySelector';
+import { StoryUploader } from '@/components/StoryUploader';
+import { Upload, FileText, BookOpen, ArrowLeft, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
 
-const COUNTRIES = [
-  'afghanistan', 'albania', 'algeria', 'angola', 'argentina', 'armenia', 'australia', 'austria', 'azerbaijan',
-  'bahrain', 'bangladesh', 'belarus', 'belgium', 'bolivia', 'bosnia_herzegovina', 'brazil', 'bulgaria', 'burma',
-  'cameroon', 'canada', 'chile', 'china', 'colombia', 'congo', 'cuba', 'czech_republic', 'denmark', 'ecuador',
-  'egypt', 'el_salvador', 'eritrea', 'estonia', 'ethiopia', 'france', 'georgia', 'germany', 'ghana', 'greece',
-  'guatemala', 'guinea', 'haiti', 'honduras', 'hungary', 'india', 'indonesia', 'iran', 'iraq', 'italy',
-  'ivory_coast', 'jamaica', 'jordan', 'kazakhstan', 'kenya', 'kosovo', 'kyrgyzstan', 'laos', 'latvia',
-  'lebanon', 'liberia', 'libya', 'lithuania', 'mexico', 'moldova', 'morocco', 'nepal', 'nicaragua',
-  'nigeria', 'north_korea', 'pakistan', 'palestine', 'peru', 'philippines', 'poland', 'romania', 'russia',
-  'rwanda', 'senegal', 'serbia', 'sierra_leone', 'somalia', 'south_africa', 'south_korea', 'sri_lanka',
-  'sudan', 'syria', 'tajikistan', 'thailand', 'turkey', 'turkmenistan', 'ukraine', 'uzbekistan',
-  'venezuela', 'vietnam', 'yemen', 'zimbabwe'
-];
+type StoryOption = 'upload' | 'paste' | 'mock' | null;
 
-const LANGUAGES = [
-  { code: 'en', name: 'English' },
-  { code: 'es', name: 'Español' },
-  { code: 'ht', name: 'Kreyòl Ayisyen' },
-  { code: 'uk', name: 'Українська' },
-  { code: 'zh', name: '中文' },
-];
+interface OnboardingWizardProps {
+  onComplete?: () => void;
+}
 
-const onboardingSchema = z.object({
-  legalName: z.string().min(1, 'validation.required'),
-  preferredName: z.string().optional(),
-  countryOfFearedPersecution: z.string().min(1, 'validation.required'),
-  asylumOfficeFiled: z.string().min(1, 'validation.required'),
-  dateFiled: z.date({ required_error: 'validation.required' }),
-  interviewDate: z.date().optional(),
-  notificationsOptedIn: z.boolean().default(false),
-});
-
-type OnboardingFormData = z.infer<typeof onboardingSchema>;
-
-export default function OnboardingWizard() {
-  const { t, i18n } = useTranslation();
+export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, isGuest } = useAuth();
+  const { languageCode } = useLanguagePreference();
+  const { skillsSelected } = useSkillsStore();
+
   const [currentStep, setCurrentStep] = useState(1);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [storyOption, setStoryOption] = useState<StoryOption>(null);
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [storyText, setStoryText] = useState('');
+  const [selectedTestStoryId, setSelectedTestStoryId] = useState<string | null>(null);
+  const [hasStoryData, setHasStoryData] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const totalSteps = 6;
-  const progressPercentage = (currentStep / totalSteps) * 100;
+  const progressPercentage = (currentStep / 3) * 100;
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    setValue,
-    watch,
-    trigger,
-  } = useForm<OnboardingFormData>({
-    resolver: zodResolver(onboardingSchema),
-  });
+  // Check if user already has story data
+  useEffect(() => {
+    const checkExistingStory = async () => {
+      if (!user || isGuest) return;
 
-  const watchedValues = watch();
+      const { data: stories } = await supabase
+        .from('stories')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .limit(1);
 
-  // Language switcher
-  const handleLanguageChange = (languageCode: string) => {
-    i18n.changeLanguage(languageCode);
+      if (stories && stories.length > 0) {
+        setHasStoryData(true);
+      }
+    };
+
+    checkExistingStory();
+  }, [user, isGuest]);
+
+  const handleStoryOptionSelect = (option: StoryOption) => {
+    setStoryOption(option);
   };
 
-  // Navigation handlers
-  const nextStep = async () => {
-    const fieldsToValidate = getFieldsForStep(currentStep);
-    const isStepValid = await trigger(fieldsToValidate);
-    
-    if (isStepValid) {
-      setCurrentStep(prev => Math.min(prev + 1, totalSteps));
+  const handlePasteStorySave = async () => {
+    if (!firstName.trim() || !lastName.trim()) {
+      toast.error(t('onboarding.validation.first_name_required'));
+      return;
     }
-  };
 
-  const prevStep = () => {
-    setCurrentStep(prev => Math.max(prev - 1, 1));
-  };
-
-  const skipOnboarding = async () => {
-    await saveOnboardingData('skipped');
-    navigate('/dashboard');
-  };
-
-  const getFieldsForStep = (step: number): (keyof OnboardingFormData)[] => {
-    switch (step) {
-      case 1: return ['legalName'];
-      case 2: return ['countryOfFearedPersecution'];
-      case 3: return ['asylumOfficeFiled'];
-      case 4: return ['dateFiled'];
-      case 5: return [];
-      case 6: return [];
-      default: return [];
+    if (storyText.length < 100) {
+      toast.error(t('onboarding.validation.story_too_short'));
+      return;
     }
-  };
 
-  const saveOnboardingData = async (status: 'completed' | 'skipped' | 'in_progress') => {
-    if (!user) return;
+    if (storyText.length > 10000) {
+      toast.error(t('onboarding.validation.story_too_long'));
+      return;
+    }
 
-    setLoading(true);
-    setError(null);
-
+    setIsLoading(true);
     try {
       const { error } = await supabase
-        .from('profiles')
-        .upsert({
-          user_id: user.id,
-          legal_name: watchedValues.legalName,
-          preferred_name: watchedValues.preferredName,
-          country_of_feared_persecution: watchedValues.countryOfFearedPersecution,
-          asylum_office_filed: watchedValues.asylumOfficeFiled,
-          date_filed: watchedValues.dateFiled?.toISOString().split('T')[0],
-          interview_date: watchedValues.interviewDate?.toISOString().split('T')[0],
-          notifications_opted_in: watchedValues.notificationsOptedIn,
-          onboarding_status: status,
-          language_preference: i18n.language,
+        .from('stories')
+        .insert({
+          user_id: user?.id,
+          story_text: storyText,
+          source_type: 'text',
+          is_active: true,
+          metadata: { first_name: firstName, last_name: lastName }
         });
 
       if (error) throw error;
 
-      toast.success(
-        status === 'completed' ? 'Onboarding completed successfully!' : 'Progress saved!'
-      );
-    } catch (err: any) {
-      setError(err.message);
-      toast.error('Failed to save onboarding data');
+      setHasStoryData(true);
+      toast.success('Story saved successfully');
+      setCurrentStep(2);
+    } catch (error) {
+      console.error('Error saving story:', error);
+      toast.error('Failed to save story');
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
-  const onSubmit = async (data: OnboardingFormData) => {
-    await saveOnboardingData('completed');
-    navigate('/dashboard');
+  const handleTestStorySelect = async (story: any) => {
+    setSelectedTestStoryId(story.id);
+    setHasStoryData(true);
+
+    if (user && !isGuest) {
+      try {
+        await supabase
+          .from('profiles')
+          .update({ active_test_story_id: story.id })
+          .eq('user_id', user.id);
+      } catch (error) {
+        console.error('Error saving test story selection:', error);
+      }
+    }
+
+    toast.success('Mock story selected');
+    setCurrentStep(2);
   };
 
-  const renderStep = () => {
-    switch (currentStep) {
-      case 1:
-        return (
-          <div className="space-y-6">
-            <div className="text-center">
-              <h2 className="text-2xl font-bold">{t('onboarding.legal_name.title')}</h2>
-              <p className="text-muted-foreground mt-2">{t('onboarding.legal_name.subtitle')}</p>
-            </div>
-            
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="legalName">{t('onboarding.legal_name.legal_name_label')}</Label>
-                <Input
-                  id="legalName"
-                  {...register('legalName')}
-                  placeholder={t('onboarding.legal_name.legal_name_placeholder')}
-                  className="mt-1"
-                />
-                {errors.legalName && (
-                  <p className="text-sm text-destructive mt-1">{t(errors.legalName.message!)}</p>
-                )}
-              </div>
-              
-              <div>
-                <Label htmlFor="preferredName">{t('onboarding.legal_name.preferred_name_label')}</Label>
-                <Input
-                  id="preferredName"
-                  {...register('preferredName')}
-                  placeholder={t('onboarding.legal_name.preferred_name_placeholder')}
-                  className="mt-1"
-                />
-              </div>
-            </div>
-          </div>
-        );
+  const handleStoryUploadComplete = (story: any) => {
+    setHasStoryData(true);
+    toast.success('Story uploaded successfully');
+    setCurrentStep(2);
+  };
 
-      case 2:
-        return (
-          <div className="space-y-6">
-            <div className="text-center">
-              <h2 className="text-2xl font-bold">{t('onboarding.country.title')}</h2>
-              <p className="text-muted-foreground mt-2">{t('onboarding.country.subtitle')}</p>
-            </div>
-            
-            <div>
-              <Label>{t('onboarding.country.country_label')}</Label>
-              <Select
-                value={watchedValues.countryOfFearedPersecution}
-                onValueChange={(value) => setValue('countryOfFearedPersecution', value)}
-              >
-                <SelectTrigger className="mt-1">
-                  <SelectValue placeholder={t('onboarding.country.country_placeholder')} />
-                </SelectTrigger>
-                <SelectContent>
-                  {COUNTRIES.map((country) => (
-                    <SelectItem key={country} value={country}>
-                      {t(`countries.${country}`, country)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.countryOfFearedPersecution && (
-                <p className="text-sm text-destructive mt-1">{t(errors.countryOfFearedPersecution.message!)}</p>
-              )}
-            </div>
-          </div>
-        );
+  const canProceedFromStep1 = () => {
+    if (storyOption === 'upload') return hasStoryData;
+    if (storyOption === 'paste') return firstName && lastName && storyText.length >= 100;
+    if (storyOption === 'mock') return hasStoryData;
+    return hasStoryData; // Allow proceeding if already has story from before
+  };
 
-      case 3:
-        return (
-          <div className="space-y-6">
-            <div className="text-center">
-              <h2 className="text-2xl font-bold">{t('onboarding.asylum_office.title')}</h2>
-              <p className="text-muted-foreground mt-2">{t('onboarding.asylum_office.subtitle')}</p>
-            </div>
-            
-            <div>
-              <Label htmlFor="asylumOfficeFiled">{t('onboarding.asylum_office.office_label')}</Label>
-              <Input
-                id="asylumOfficeFiled"
-                {...register('asylumOfficeFiled')}
-                placeholder={t('onboarding.asylum_office.office_placeholder')}
-                className="mt-1"
-              />
-              {errors.asylumOfficeFiled && (
-                <p className="text-sm text-destructive mt-1">{t(errors.asylumOfficeFiled.message!)}</p>
-              )}
-            </div>
-          </div>
-        );
+  const canProceedFromStep2 = () => {
+    return skillsSelected.length > 0;
+  };
 
-      case 4:
-        return (
-          <div className="space-y-6">
-            <div className="text-center">
-              <h2 className="text-2xl font-bold">{t('onboarding.dates.title')}</h2>
-              <p className="text-muted-foreground mt-2">{t('onboarding.dates.subtitle')}</p>
-            </div>
-            
-            <div className="space-y-4">
-              <div>
-                <Label>Date you filed for Asylum</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        'w-full justify-start text-left font-normal mt-1',
-                        !watchedValues.dateFiled && 'text-muted-foreground'
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {watchedValues.dateFiled ? (
-                        format(watchedValues.dateFiled, 'PPP')
-                      ) : (
-                        <span>{t('onboarding.dates.date_filed_placeholder')}</span>
-                      )}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <Calendar
-                      mode="single"
-                      selected={watchedValues.dateFiled}
-                      onSelect={(date) => setValue('dateFiled', date)}
-                      className="pointer-events-auto"
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-                {errors.dateFiled && (
-                  <p className="text-sm text-destructive mt-1">{t(errors.dateFiled.message!)}</p>
-                )}
-              </div>
-            </div>
-          </div>
-        );
+  const handleNext = () => {
+    if (currentStep === 1 && canProceedFromStep1()) {
+      if (storyOption === 'paste') {
+        handlePasteStorySave();
+      } else {
+        setCurrentStep(2);
+      }
+    } else if (currentStep === 2 && canProceedFromStep2()) {
+      setCurrentStep(3);
+    }
+  };
 
-      case 5:
-        return (
-          <div className="space-y-6">
-            <div className="text-center">
-              <h2 className="text-2xl font-bold">{t('onboarding.dates.title')}</h2>
-              <p className="text-muted-foreground mt-2">{t('onboarding.dates.subtitle')}</p>
-            </div>
-            
-            <div>
-              <Label>{t('onboarding.dates.interview_date_label')}</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      'w-full justify-start text-left font-normal mt-1',
-                      !watchedValues.interviewDate && 'text-muted-foreground'
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {watchedValues.interviewDate ? (
-                      format(watchedValues.interviewDate, 'PPP')
-                    ) : (
-                      <span>{t('onboarding.dates.interview_date_placeholder')}</span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={watchedValues.interviewDate}
-                    onSelect={(date) => setValue('interviewDate', date)}
-                    className="pointer-events-auto"
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-          </div>
-        );
+  const handleBack = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
 
-      case 6:
-        return (
-          <div className="space-y-6">
-            <div className="text-center">
-              <Bell className="mx-auto h-16 w-16 text-primary mb-4" />
-              <h2 className="text-2xl font-bold">{t('onboarding.notifications.title')}</h2>
-              <p className="text-muted-foreground mt-2">{t('onboarding.notifications.subtitle')}</p>
-            </div>
-            
-            <div className="bg-muted/50 rounded-lg p-6">
-              <p className="text-sm text-muted-foreground mb-4">
-                {t('onboarding.notifications.description')}
-              </p>
-              
-              <div className="space-y-3">
-                <Button
-                  onClick={() => {
-                    setValue('notificationsOptedIn', true);
-                    handleSubmit(onSubmit)();
-                  }}
-                  className="w-full"
-                  disabled={loading}
-                >
-                  <Check className="mr-2 h-4 w-4" />
-                  {t('onboarding.notifications.allow_button')}
-                </Button>
-                
-                <Button
-                  onClick={() => {
-                    setValue('notificationsOptedIn', false);
-                    handleSubmit(onSubmit)();
-                  }}
-                  variant="outline"
-                  className="w-full"
-                  disabled={loading}
-                >
-                  {t('onboarding.notifications.skip_button')}
-                </Button>
-              </div>
-            </div>
-          </div>
-        );
-
-      default:
-        return null;
+  const handleStartInterview = () => {
+    if (hasStoryData && skillsSelected.length > 0) {
+      navigate('/interview');
+      onComplete?.();
+    } else {
+      toast.error(t('onboarding.validation.complete_all_steps'));
     }
   };
 
   return (
-    <div className="min-h-screen bg-background p-4">
-      <div className="max-w-2xl mx-auto">
-        {/* Language Selector */}
-        <div className="flex justify-end mb-6">
-          <Select value={i18n.language} onValueChange={handleLanguageChange}>
-            <SelectTrigger className="w-48">
-              <Globe className="mr-2 h-4 w-4" />
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {LANGUAGES.map((lang) => (
-                <SelectItem key={lang.code} value={lang.code}>
-                  {lang.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+    <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 py-8 px-4">
+      <div className="max-w-4xl mx-auto">
+        {/* Progress Indicator */}
+        <div className="mb-8">
+          <div className="flex justify-between mb-2">
+            <span className="text-sm text-gray-400">
+              {t('onboarding.progress', { current: currentStep, total: 3 })}
+            </span>
+            <span className="text-sm text-gray-400">{Math.round(progressPercentage)}%</span>
+          </div>
+          <Progress value={progressPercentage} className="h-2" />
+          <div className="flex justify-between mt-2 text-xs text-gray-500">
+            <span>Story</span>
+            <span>Skills</span>
+            <span>Language</span>
+          </div>
         </div>
 
-        <Card>
-          <CardHeader>
-            <div className="space-y-4">
-              <div className="text-center">
-                <CardTitle className="text-3xl">{t('onboarding.title')}</CardTitle>
-                <CardDescription className="text-lg mt-2">
-                  {t('onboarding.subtitle')}
-                </CardDescription>
-              </div>
-              
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm text-muted-foreground">
-                  <span>{t('onboarding.progress', { current: currentStep, total: totalSteps })}</span>
-                  <span>{Math.round(progressPercentage)}%</span>
-                </div>
-                <Progress value={progressPercentage} className="h-2" />
-              </div>
-            </div>
-          </CardHeader>
-          
-          <CardContent>
-            {error && (
-              <Alert variant="destructive" className="mb-6">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-            
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-              {renderStep()}
-              
-              {/* Mobile: Stack buttons vertically, Skip last */}
-              <div className="sm:hidden space-y-3 pt-6">
-                {currentStep < totalSteps && (
-                  <Button
-                    type="button"
-                    onClick={nextStep}
-                    disabled={loading}
-                    className="w-full"
-                  >
-                    {t('onboarding.next')}
-                    <ChevronRight className="ml-2 h-4 w-4" />
-                  </Button>
-                )}
-                {currentStep > 1 && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={prevStep}
-                    disabled={loading}
-                    className="w-full"
-                  >
-                    <ChevronLeft className="mr-2 h-4 w-4" />
-                    {t('onboarding.back')}
-                  </Button>
-                )}
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={skipOnboarding}
-                  disabled={loading}
-                  className="w-full"
-                >
-                  {t('onboarding.skip')}
-                </Button>
+        {/* Step Content */}
+        <Card className="bg-gray-800/50 border-gray-700 p-6 md:p-8">
+          {/* Step 1: Story Selection */}
+          {currentStep === 1 && (
+            <div className="space-y-6">
+              <div className="text-center mb-8">
+                <h2 className="text-3xl font-bold text-white mb-2">
+                  {t('onboarding.step1_title')}
+                </h2>
+                <p className="text-gray-300">
+                  {t('onboarding.step1_subtitle')}
+                </p>
               </div>
 
-              {/* Desktop: Horizontal layout */}
-              <div className="hidden sm:flex justify-between pt-6">
-                <div className="flex gap-2">
-                  {currentStep > 1 && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={prevStep}
-                      disabled={loading}
+              {!storyOption && (
+                <div className="grid md:grid-cols-3 gap-4">
+                  {/* Upload I-589 Option */}
+                  {!isGuest && (
+                    <Card
+                      className="bg-gray-700/30 border-gray-600 p-6 cursor-pointer hover:bg-gray-700/50 transition-colors"
+                      onClick={() => handleStoryOptionSelect('upload')}
                     >
-                      <ChevronLeft className="mr-2 h-4 w-4" />
-                      {t('onboarding.back')}
-                    </Button>
+                      <Upload className="w-12 h-12 text-primary mb-4 mx-auto" />
+                      <h3 className="text-lg font-semibold text-white text-center mb-2">
+                        {t('onboarding.upload_i589')}
+                      </h3>
+                      <p className="text-sm text-gray-400 text-center">
+                        Upload your I-589 form for best results
+                      </p>
+                    </Card>
                   )}
-                  
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    onClick={skipOnboarding}
-                    disabled={loading}
+
+                  {/* Paste Story Option */}
+                  {!isGuest && (
+                    <Card
+                      className="bg-gray-700/30 border-gray-600 p-6 cursor-pointer hover:bg-gray-700/50 transition-colors"
+                      onClick={() => handleStoryOptionSelect('paste')}
+                    >
+                      <FileText className="w-12 h-12 text-primary mb-4 mx-auto" />
+                      <h3 className="text-lg font-semibold text-white text-center mb-2">
+                        {t('onboarding.paste_story')}
+                      </h3>
+                      <p className="text-sm text-gray-400 text-center">
+                        Write or paste your asylum story
+                      </p>
+                    </Card>
+                  )}
+
+                  {/* Mock Story Option */}
+                  <Card
+                    className="bg-gray-700/30 border-gray-600 p-6 cursor-pointer hover:bg-gray-700/50 transition-colors"
+                    onClick={() => handleStoryOptionSelect('mock')}
                   >
-                    {t('onboarding.skip')}
-                  </Button>
+                    <BookOpen className="w-12 h-12 text-primary mb-4 mx-auto" />
+                    <h3 className="text-lg font-semibold text-white text-center mb-2">
+                      {t('onboarding.select_mock')}
+                    </h3>
+                    <p className="text-sm text-gray-400 text-center">
+                      Use a sample story for testing
+                    </p>
+                  </Card>
                 </div>
-                
-                {currentStep < totalSteps && (
+              )}
+
+              {/* Upload Story UI */}
+              {storyOption === 'upload' && (
+                <div>
                   <Button
-                    type="button"
-                    onClick={nextStep}
-                    disabled={loading}
+                    variant="ghost"
+                    onClick={() => setStoryOption(null)}
+                    className="mb-4"
                   >
-                    {t('onboarding.next')}
-                    <ChevronRight className="ml-2 h-4 w-4" />
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    Back to options
                   </Button>
-                )}
+                  <StoryUploader
+                    activeMode="upload"
+                    onStoryAdded={handleStoryUploadComplete}
+                  />
+                </div>
+              )}
+
+              {/* Paste Story UI */}
+              {storyOption === 'paste' && (
+                <div>
+                  <Button
+                    variant="ghost"
+                    onClick={() => setStoryOption(null)}
+                    className="mb-4"
+                  >
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    Back to options
+                  </Button>
+                  <div className="space-y-4">
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="firstName" className="text-white">First Name</Label>
+                        <Input
+                          id="firstName"
+                          value={firstName}
+                          onChange={(e) => setFirstName(e.target.value)}
+                          placeholder="Enter your first name"
+                          className="bg-gray-700/50 border-gray-600 text-white"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="lastName" className="text-white">Last Name</Label>
+                        <Input
+                          id="lastName"
+                          value={lastName}
+                          onChange={(e) => setLastName(e.target.value)}
+                          placeholder="Enter your last name"
+                          className="bg-gray-700/50 border-gray-600 text-white"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <Label htmlFor="storyText" className="text-white">Your Story</Label>
+                      <Textarea
+                        id="storyText"
+                        value={storyText}
+                        onChange={(e) => setStoryText(e.target.value)}
+                        placeholder="Paste or write your asylum story here..."
+                        className="bg-gray-700/50 border-gray-600 text-white min-h-[300px]"
+                        maxLength={10000}
+                      />
+                      <p className="text-sm text-gray-400 mt-2">
+                        {storyText.length} / 10,000 characters
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Mock Story Selector */}
+              {storyOption === 'mock' && (
+                <div>
+                  <Button
+                    variant="ghost"
+                    onClick={() => setStoryOption(null)}
+                    className="mb-4"
+                  >
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    Back to options
+                  </Button>
+                  <GuestTestStorySelector
+                    isOpen={true}
+                    onOpenChange={() => setStoryOption(null)}
+                    onStorySelect={handleTestStorySelect}
+                  />
+                </div>
+              )}
+
+              {isGuest && !storyOption && (
+                <div className="text-center text-gray-400 text-sm mt-4">
+                  Sign up to upload your own I-589 or write your story
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Step 2: Skills Selection */}
+          {currentStep === 2 && (
+            <div className="space-y-6">
+              <div className="text-center mb-8">
+                <h2 className="text-3xl font-bold text-white mb-2">
+                  {t('onboarding.step2_title')}
+                </h2>
+                <p className="text-gray-300">
+                  {t('onboarding.step2_subtitle')}
+                </p>
+                <p className="text-sm text-gray-400 mt-2">
+                  {skillsSelected.length} {skillsSelected.length === 1 ? 'area' : 'areas'} selected
+                </p>
               </div>
-            </form>
-          </CardContent>
+
+              <SkillsScroller />
+            </div>
+          )}
+
+          {/* Step 3: Language & Start */}
+          {currentStep === 3 && (
+            <div className="space-y-6">
+              <div className="text-center mb-8">
+                <h2 className="text-3xl font-bold text-white mb-2">
+                  {t('onboarding.step3_title')}
+                </h2>
+                <p className="text-gray-300 max-w-2xl mx-auto">
+                  {t('onboarding.step3_message')}
+                </p>
+              </div>
+
+              <div className="max-w-md mx-auto space-y-6">
+                <LanguageSelector />
+
+                <Button
+                  size="lg"
+                  onClick={handleStartInterview}
+                  className="w-full"
+                  disabled={!hasStoryData || skillsSelected.length === 0}
+                >
+                  {t('onboarding.start_interview')}
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </div>
+            </div>
+          )}
         </Card>
+
+        {/* Navigation Buttons */}
+        {currentStep < 3 && (
+          <div className="flex justify-between mt-6">
+            <Button
+              variant="ghost"
+              onClick={handleBack}
+              disabled={currentStep === 1}
+              className="text-gray-300"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              {t('onboarding.back')}
+            </Button>
+
+            <Button
+              onClick={handleNext}
+              disabled={
+                (currentStep === 1 && !canProceedFromStep1()) ||
+                (currentStep === 2 && !canProceedFromStep2())
+              }
+            >
+              {t('onboarding.next')}
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );

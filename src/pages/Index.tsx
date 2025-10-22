@@ -54,11 +54,11 @@ const Index = () => {
   const handleOfficerSelect = (personaId: string) => {
     setSelectedPersona(personaId);
     if (user) {
-      navigate('/interview');
+      navigate('/onboarding');
     } else {
       // Guest flow: create session and navigate
       createGuestSession();
-      navigate('/interview');
+      navigate('/onboarding');
     }
   };
 
