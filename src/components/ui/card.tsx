@@ -2,19 +2,31 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-const Card = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn(
-      "rounded-lg border bg-card text-card-foreground shadow-sm",
-      className
-    )}
-    {...props}
-  />
-))
+interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
+  elevation?: 'default' | 'elevated' | 'floating'
+}
+
+const Card = React.forwardRef<HTMLDivElement, CardProps>(
+  ({ className, elevation = 'default', ...props }, ref) => {
+    const elevationStyles = {
+      default: "shadow-sm hover:shadow-md",
+      elevated: "shadow-md hover:shadow-lg",
+      floating: "shadow-xl hover:shadow-2xl"
+    }
+    
+    return (
+      <div
+        ref={ref}
+        className={cn(
+          "rounded-lg border bg-card text-card-foreground transition-all duration-300",
+          elevationStyles[elevation],
+          className
+        )}
+        {...props}
+      />
+    )
+  }
+)
 Card.displayName = "Card"
 
 const CardHeader = React.forwardRef<
@@ -77,3 +89,4 @@ const CardFooter = React.forwardRef<
 CardFooter.displayName = "CardFooter"
 
 export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent }
+export type { CardProps }
