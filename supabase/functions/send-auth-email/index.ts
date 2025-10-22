@@ -59,8 +59,12 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("Processing auth email for:", user.email, "Action:", email_data.email_action_type);
 
-    // Create confirmation URL that goes to our app's verification page
-    const confirmUrl = `${email_data.site_url}/auth/verify?token=${email_data.token_hash}&type=${email_data.email_action_type}&redirect_to=${encodeURIComponent(email_data.redirect_to)}`;
+    // Get Supabase URL and anon key for building the auth verification URL
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") || "";
+
+    // Build the proper Supabase auth verification URL with API key
+    const confirmUrl = `${supabaseUrl}/auth/v1/verify?token=${email_data.token_hash}&type=${email_data.email_action_type}&redirect_to=${encodeURIComponent(email_data.redirect_to)}`;
 
     // Prepare email content based on action type
     let subject = "";
