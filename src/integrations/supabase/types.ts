@@ -249,6 +249,33 @@ export type Database = {
           },
         ]
       }
+      home_page_content: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          section_key: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          section_key: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          section_key?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       interview_sessions: {
         Row: {
           created_at: string
@@ -909,14 +936,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      assign_admin_role: {
-        Args: { _user_id: string }
-        Returns: undefined
-      }
-      backfill_missing_profiles: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      assign_admin_role: { Args: { _user_id: string }; Returns: undefined }
+      backfill_missing_profiles: { Args: never; Returns: undefined }
       check_and_increment_rate_limit: {
         Args: {
           p_limit: number
@@ -945,7 +966,7 @@ export type Database = {
         }[]
       }
       get_admin_stats: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           active_users_7d: number
           avg_minutes_per_user: number
@@ -974,7 +995,7 @@ export type Database = {
         }[]
       }
       get_current_user_role: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: Database["public"]["Enums"]["app_role"]
       }
       get_user_entitlement_status: {
@@ -989,10 +1010,7 @@ export type Database = {
         }
         Returns: undefined
       }
-      has_any_admin: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
+      has_any_admin: { Args: never; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1004,10 +1022,7 @@ export type Database = {
         Args: { prompt_id: string }
         Returns: undefined
       }
-      remove_admin_role: {
-        Args: { _user_id: string }
-        Returns: undefined
-      }
+      remove_admin_role: { Args: { _user_id: string }; Returns: undefined }
       revoke_full_prep_access: {
         Args: { revoke_reason?: string; target_user_id: string }
         Returns: undefined
@@ -1024,10 +1039,7 @@ export type Database = {
         Args: { content: string; required_vars: string[] }
         Returns: boolean
       }
-      validate_session_inputs: {
-        Args: { p_user_id: string }
-        Returns: Json
-      }
+      validate_session_inputs: { Args: { p_user_id: string }; Returns: Json }
     }
     Enums: {
       app_role: "admin" | "user"

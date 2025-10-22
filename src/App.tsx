@@ -32,6 +32,7 @@ const ContactUsForm = lazy(() => import("./components/ContactUsForm"));
 // Admin pages
 const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
+const HomePageContentManagement = lazy(() => import("./pages/admin/HomePageContentManagement"));
 const EnhancedUserManagement = lazy(() => import("./pages/admin/EnhancedUserManagement"));
 const SkillsManagement = lazy(() => import("./pages/admin/SkillsManagement"));
 const PersonasManagement = lazy(() => import("./pages/admin/PersonasManagement"));
@@ -152,6 +153,7 @@ const App = () => (
                   {/* Admin routes - require admin role */}
                   <Route path="/admin" element={<RequireAdminRole><AdminLayout /></RequireAdminRole>}>
                     <Route index element={<AdminDashboard />} />
+                    <Route path="home-page" element={<HomePageContentManagement />} />
                     <Route path="users" element={<EnhancedUserManagement />} />
                     <Route path="skills" element={<SkillsManagement />} />
                     <Route path="personas" element={<PersonasManagement />} />

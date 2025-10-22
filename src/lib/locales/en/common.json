@@ -308,6 +308,12 @@
     "yemen": "Yemen",
     "zimbabwe": "Zimbabwe"
   },
+  "home": {
+    "hero_h1_fallback": "Prepare for Your Asylum Interview",
+    "hero_p1_fallback": "Practice with AI-powered voice coaching to build confidence and improve your asylum interview skills",
+    "officer_picker_title_fallback": "Who do you want to practice with today?",
+    "test_as_guest": "Test AsylumPrep without email"
+  },
   "test_stories": {
     "title": "Choose a Practice Story",
     "subtitle": "Select a sample asylum case to practice with",

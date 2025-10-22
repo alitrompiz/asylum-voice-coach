@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import { Users, Brain, UserCheck, MessageSquare, BarChart3, Shield, ArrowLeft, MessageCircle, Settings, BookOpen } from 'lucide-react';
+import { Users, Brain, UserCheck, MessageSquare, BarChart3, Shield, ArrowLeft, MessageCircle, Settings, BookOpen, Home } from 'lucide-react';
 import {
   Sidebar,
   SidebarContent,
@@ -14,6 +14,11 @@ import {
 } from '@/components/ui/sidebar';
 
 const adminItems = [
+  {
+    title: 'Home Page',
+    url: '/admin/home-page',
+    icon: Home,
+  },
   {
     title: 'Users',
     url: '/admin/users',
