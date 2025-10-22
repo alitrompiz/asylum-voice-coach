@@ -40,8 +40,7 @@ export function SessionFeedbackModal({ open, onOpenChange }: SessionFeedbackModa
       if (error) throw error;
 
       toast({
-        title: "Thank you!",
-        description: "Your feedback has been sent successfully.",
+        title: "Thanks for your feedback!",
       });
 
       // Reset form and close modal
@@ -53,8 +52,8 @@ export function SessionFeedbackModal({ open, onOpenChange }: SessionFeedbackModa
     } catch (error) {
       console.error('Error sending feedback:', error);
       toast({
-        title: "Error",
-        description: "Failed to send feedback. Please try again.",
+        title: "Couldn't send your feedback",
+        description: "Please try again",
         variant: "destructive"
       });
     } finally {

@@ -47,14 +47,13 @@ export const LanguageSelector = ({ selectedLanguage, onLanguageChange }: Languag
       await updateLanguage(newLanguageCode);
       onLanguageChange?.(newLanguageCode);
       toast({
-        title: t('language.updated'),
-        description: t('language.set_to', { language: SUPPORTED_LANGUAGES.find(l => l.code === newLanguageCode)?.name }),
+        title: `Interview language changed to ${SUPPORTED_LANGUAGES.find(l => l.code === newLanguageCode)?.name}`,
       });
     } catch (error) {
       console.error('Error updating language:', error);
       toast({
-        title: t('common.error'),
-        description: t('language.update_failed'),
+        title: "Couldn't change language",
+        description: "Please try again",
         variant: "destructive",
       });
     }

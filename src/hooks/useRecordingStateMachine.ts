@@ -84,7 +84,7 @@ export const useRecordingStateMachine = (): UseRecordingStateMachineReturn => {
       // Show permission error if needed
       if (error instanceof Error && error.message.includes('Permission denied')) {
         toast({
-          title: t('interview.mic_permission_needed'),
+          title: "Please allow microphone access to practice your interview",
           variant: 'destructive',
         });
       } else {
@@ -124,7 +124,8 @@ export const useRecordingStateMachine = (): UseRecordingStateMachineReturn => {
       console.error('Failed to stop recording:', error);
       setState('idle');
       toast({
-        title: t('interview.upload_failed'),
+        title: "We couldn't upload your recording",
+        description: "Please try again",
         variant: 'destructive',
       });
       return null;
@@ -141,7 +142,8 @@ export const useRecordingStateMachine = (): UseRecordingStateMachineReturn => {
       setState('idle');
       setProcessingError('Transcription failed');
       toast({
-        title: t('interview.transcription_failed'),
+        title: "We couldn't understand your answer",
+        description: "Please try speaking again",
         variant: 'destructive',
       });
       return;

@@ -64,8 +64,8 @@ export default function ContactUsForm() {
       });
 
       toast({
-        title: 'Message Sent!',
-        description: 'Thank you for contacting us. We\'ll get back to you soon.',
+        title: 'Thanks! We received your message',
+        description: 'We\'ll get back to you soon.',
       });
 
       // Reset form
@@ -77,8 +77,8 @@ export default function ContactUsForm() {
     } catch (error) {
       console.error('Error sending contact email:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to send message. Please try again.',
+        title: 'Couldn\'t send your message',
+        description: 'Please try again',
         variant: 'destructive',
       });
     } finally {

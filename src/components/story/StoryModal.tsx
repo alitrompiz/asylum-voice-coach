@@ -204,8 +204,8 @@ export const StoryModal = ({
     // Validation
     if (file.size > MAX_FILE_SIZE) {
       toast({
-        title: t('common.error'),
-        description: t('story.file_too_large'),
+        title: "This file is too large",
+        description: "Please choose a PDF under 10MB",
         variant: 'destructive'
       });
       return;
@@ -213,8 +213,8 @@ export const StoryModal = ({
 
     if (file.type !== 'application/pdf') {
       toast({
-        title: t('common.error'),
-        description: t('story.invalid_file_type'),
+        title: "Invalid file type",
+        description: "Please choose a PDF file",
         variant: 'destructive'
       });
       return;
@@ -392,7 +392,7 @@ export const StoryModal = ({
       }
 
       toast({
-        title: t('story.story_saved'),
+        title: mode === 'edit' ? "Your story has been updated" : "Your asylum story is saved",
       });
 
       // Close modal after brief delay
@@ -439,7 +439,7 @@ export const StoryModal = ({
       window.dispatchEvent(new CustomEvent('storyChanged'));
       
       toast({
-        title: t('story.story_deleted'),
+        title: "Your story has been removed",
       });
       
       onOpenChange(false);

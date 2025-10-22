@@ -123,8 +123,8 @@ export function SessionEndDialog({
     } catch (error) {
       console.error('Error generating feedback:', error);
       toast({
-        title: "Error",
-        description: "Failed to generate feedback. Please try again.",
+        title: "Couldn't generate your feedback",
+        description: "Please try again",
         variant: "destructive"
       });
       setIsProcessingFeedback(false);

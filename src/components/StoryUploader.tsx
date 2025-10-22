@@ -90,10 +90,10 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
           throw storyError;
         }
 
-        toast({
-          title: "Success",
-          description: `PDF processed successfully! Extracted ${job.result.pages_processed || 'multiple'} pages.`,
-        });
+      toast({
+        title: "Your asylum story has been loaded!",
+        description: `We read ${job.result.pages_processed || 'multiple'} ${job.result.pages_processed === 1 ? 'page' : 'pages'} from your document`,
+      });
 
         onStoryAdded?.({ ...storyData, source_type: storyData.source_type as 'pdf' | 'text' });
         // Emit story change event for dashboard cache invalidation
@@ -117,8 +117,8 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
         };
 
         toast({
-          title: "Success",
-          description: `PDF processed successfully! Extracted ${job.result.pages_processed || 'multiple'} pages.`,
+          title: "Your asylum story has been loaded!",
+          description: `We read ${job.result.pages_processed || 'multiple'} ${job.result.pages_processed === 1 ? 'page' : 'pages'} from your document`,
         });
 
         onStoryAdded?.(guestStory);
@@ -130,8 +130,8 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
     } catch (error) {
       console.error('Error handling OCR completion:', error);
       toast({
-        title: "Error",
-        description: "OCR completed but failed to load the story",
+        title: "We couldn't load your story",
+        description: "Please try again",
         variant: "destructive"
       });
     }
@@ -139,8 +139,8 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
 
   const handleOcrFailure = (job: any) => {
     toast({
-      title: "OCR processing failed",
-      description: job.error_message || "Failed to process PDF",
+      title: "We couldn't read your document",
+      description: "Please try a clearer PDF or type your story instead",
       variant: "destructive"
     });
     setCurrentJobId(null);
@@ -161,8 +161,8 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
     } catch (error) {
       console.error('Error loading stories:', error);
       toast({
-        title: "Error",
-        description: "Failed to load existing stories",
+        title: "Couldn't load your stories",
+        description: "Please refresh the page",
         variant: "destructive"
       });
     }
@@ -176,8 +176,8 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
 
     if (file.size > MAX_FILE_SIZE) {
       toast({
-        title: "File too large",
-        description: "Please select a file smaller than 10MB",
+        title: "This file is too large",
+        description: "Please choose a PDF under 10MB",
         variant: "destructive"
       });
       return;
@@ -186,7 +186,7 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
     if (file.type !== 'application/pdf') {
       toast({
         title: "Invalid file type",
-        description: "Please select a PDF file",
+        description: "Please choose a PDF file",
         variant: "destructive"
       });
       return;
@@ -230,16 +230,16 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
       setCurrentJobId(ocrData.jobId);
 
       toast({
-        title: "Upload successful",
-        description: "PDF uploaded. Processing will continue in the background.",
+        title: "Your story document is uploaded",
+        description: "We're reading it now...",
       });
 
     } catch (error) {
       console.error('Upload error:', error);
       const errorMsg = "Failed to upload and process PDF";
       toast({
-        title: "Upload failed",
-        description: errorMsg,
+        title: "We couldn't upload your document",
+        description: "Please try again or contact support if this continues",
         variant: "destructive"
       });
       onError?.(errorMsg);
@@ -254,8 +254,7 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
   const handleTextSave = async () => {
     if (!textContent.trim()) {
       toast({
-        title: "Empty content",
-        description: "Please enter some text before saving",
+        title: "Please add your story first",
         variant: "destructive"
       });
       return;
@@ -263,8 +262,8 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
 
     if (wordCount > MAX_WORDS) {
       toast({
-        title: "Text too long",
-        description: `Please limit your text to ${MAX_WORDS} words`,
+        title: "Your story is too long",
+        description: `Please keep it under ${MAX_WORDS.toLocaleString()} words`,
         variant: "destructive"
       });
       return;
@@ -292,8 +291,7 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
         if (error) throw error;
 
         toast({
-          title: "Success",
-          description: "Story updated successfully",
+          title: "Your story has been updated",
         });
 
         onStoryUpdated?.({ ...data, source_type: data.source_type as 'pdf' | 'text' });
@@ -313,8 +311,7 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
         if (error) throw error;
 
         toast({
-          title: "Success",
-          description: "Story saved successfully",
+          title: "Your asylum story is saved",
         });
 
         onStoryAdded?.({ ...data, source_type: data.source_type as 'pdf' | 'text' });
@@ -329,8 +326,8 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
       console.error('Save error:', error);
       const errorMsg = "Failed to save story";
       toast({
-        title: "Save failed",
-        description: errorMsg,
+        title: "We couldn't save your story",
+        description: "Please try again",
         variant: "destructive"
       });
       onError?.(errorMsg);
@@ -349,8 +346,7 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
       if (error) throw error;
 
       toast({
-        title: "Success",
-        description: "Story deleted successfully",
+        title: "Your story has been removed",
       });
 
       onStoryDeleted?.(storyId);
@@ -358,8 +354,8 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
     } catch (error) {
       console.error('Delete error:', error);
       toast({
-        title: "Delete failed",
-        description: "Failed to delete story",
+        title: "Couldn't delete your story",
+        description: "Please try again",
         variant: "destructive"
       });
     }

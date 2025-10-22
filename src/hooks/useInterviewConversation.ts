@@ -196,8 +196,8 @@ export const useInterviewConversation = (setUserTranscript?: (transcript: string
 
       // Display transcription in toast
       toast({
-        title: "Message transcribed",
-        description: transcription,
+        title: "We heard:",
+        description: transcription.substring(0, 100) + (transcription.length > 100 ? '...' : ''),
         duration: 3000
       });
 
@@ -206,8 +206,8 @@ export const useInterviewConversation = (setUserTranscript?: (transcript: string
       // Notify recording state machine of error
       setUserTranscript?.('transcription failed');
       toast({
-        title: "Processing failed",
-        description: error instanceof Error ? error.message : "Failed to process your message",
+        title: "We couldn't process your answer",
+        description: "Please try again",
         variant: "destructive"
       });
     } finally {

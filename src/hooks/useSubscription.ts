@@ -65,8 +65,7 @@ export const useSubscription = () => {
         window.open(data.url, '_blank');
         if (data.attorney_benefit_applied) {
           toast({
-            title: 'Attorney benefit applied',
-            description: 'Your attorney discount has been applied to this subscription.'
+            title: 'Your attorney discount has been applied to your subscription',
           });
         }
       }
@@ -74,8 +73,8 @@ export const useSubscription = () => {
     onError: (error) => {
       console.error('Error creating checkout:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to create checkout session',
+        title: 'Couldn\'t start subscription',
+        description: 'Please try again',
         variant: 'destructive'
       });
     }
@@ -96,8 +95,8 @@ export const useSubscription = () => {
     onError: (error) => {
       console.error('Error getting portal URL:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to open customer portal',
+        title: 'Couldn\'t open billing settings',
+        description: 'Please try again',
         variant: 'destructive'
       });
     }

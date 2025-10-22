@@ -242,14 +242,14 @@ const UserManagement = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-users-enhanced'] });
-      toast({ title: 'Success', description: 'Full Prep access revoked' });
+      toast({ title: 'Full access revoked' });
       setConfirmAction({ type: null, user: null });
     },
     onError: (error) => {
       console.error('Error revoking Full Prep access:', error);
       toast({ 
-        title: 'Error', 
-        description: 'Failed to revoke Full Prep access',
+        title: 'Couldn\'t revoke full access', 
+        description: 'Please try again',
         variant: 'destructive' 
       });
     }
@@ -266,15 +266,14 @@ const UserManagement = () => {
     },
     onSuccess: (data) => {
       toast({ 
-        title: 'Success', 
-        description: data.message 
+        title: 'Password reset email sent', 
       });
     },
     onError: (error) => {
       console.error('Error sending reset:', error);
       toast({ 
-        title: 'Error', 
-        description: 'Failed to send authentication email',
+        title: 'Couldn\'t send password reset email', 
+        description: 'Please try again',
         variant: 'destructive' 
       });
     }

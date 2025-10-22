@@ -59,14 +59,13 @@ export const useUserActions = () => {
       });
 
       toast({
-        title: 'Success',
-        description: 'User has been banned successfully',
+        title: 'User account suspended',
       });
     } catch (error) {
       console.error('Error banning user:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to ban user',
+        title: 'Couldn\'t suspend user account',
+        description: 'Please try again',
         variant: 'destructive',
       });
     } finally {
@@ -99,14 +98,13 @@ export const useUserActions = () => {
       });
 
       toast({
-        title: 'Success',
-        description: 'User has been unbanned successfully',
+        title: 'User account reactivated',
       });
     } catch (error) {
       console.error('Error unbanning user:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to unban user',
+        title: 'Couldn\'t reactivate user account',
+        description: 'Please try again',
         variant: 'destructive',
       });
     } finally {
@@ -162,14 +160,13 @@ export const useUserActions = () => {
       });
 
       toast({
-        title: 'Success',
-        description: `Minutes ${minutesChange > 0 ? 'granted' : 'refunded'} successfully`,
+        title: minutesChange > 0 ? 'Practice time added to user account' : 'Practice time refunded',
       });
     } catch (error) {
       console.error('Error adjusting minutes:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to adjust minutes',
+        title: 'Couldn\'t adjust practice time',
+        description: 'Please try again',
         variant: 'destructive',
       });
     } finally {
