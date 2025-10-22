@@ -234,9 +234,12 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                     onClick={() => handleStoryOptionSelect('upload')}
                   >
                     <Upload className="w-12 h-12 text-primary mb-4 mx-auto" />
-                    <h3 className="text-lg font-semibold text-white text-center mb-2">
+                    <h3 className="text-lg font-semibold text-white text-center">
                       {t('onboarding.upload_i589')}
                     </h3>
+                    <p className="text-xs text-muted-foreground text-center mt-1">
+                      {t('onboarding.upload_i589_quality')}
+                    </p>
                     <div className="text-center mt-2">
                       <span className="text-xs bg-primary text-white px-2 py-1 rounded">
                         Recommended
@@ -250,9 +253,12 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                     onClick={() => handleStoryOptionSelect('paste')}
                   >
                     <FileText className="w-12 h-12 text-primary mb-4 mx-auto" />
-                    <h3 className="text-lg font-semibold text-white text-center mb-2">
+                    <h3 className="text-lg font-semibold text-white text-center">
                       {t('onboarding.paste_story')}
                     </h3>
+                    <p className="text-xs text-muted-foreground text-center mt-1">
+                      {t('onboarding.paste_story_quality')}
+                    </p>
                   </Card>
 
                   {/* Mock Story Option */}
@@ -261,10 +267,12 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                     onClick={() => handleStoryOptionSelect('mock')}
                   >
                     <BookOpen className="w-12 h-12 text-primary mb-4 mx-auto" />
-                    <h3 className="text-lg font-semibold text-white text-center mb-2">
+                    <h3 className="text-lg font-semibold text-white text-center">
                       {t('onboarding.select_mock')}
-                      <br />
                     </h3>
+                    <p className="text-xs text-muted-foreground text-center mt-1">
+                      {t('onboarding.select_mock_quality')}
+                    </p>
                   </Card>
                 </div>
               )}
