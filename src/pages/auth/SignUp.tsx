@@ -53,17 +53,11 @@ export default function SignUp() {
 
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle>Check your email</CardTitle>
-            <CardDescription>
-              We've sent you a verification link. Please check your email and click the link to complete your registration.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground text-center">
-              Once you click the verification link in your email, you'll be automatically signed in.
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900">
+        <Card className="w-full max-w-md bg-gray-900/50 border-gray-800">
+          <CardContent className="pt-6">
+            <p className="text-gray-200 text-center">
+              Check your email for the verification link.
             </p>
           </CardContent>
         </Card>
@@ -72,15 +66,9 @@ export default function SignUp() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Create Account</CardTitle>
-          <CardDescription>
-            Sign up for AsylumPrep to start your interview preparation
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900">
+      <Card className="w-full max-w-md bg-gray-900/50 border-gray-800">
+        <CardContent className="pt-6">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             {error && (
               <Alert variant="destructive">
@@ -89,13 +77,14 @@ export default function SignUp() {
             )}
             
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="text-gray-200">Email</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="Enter your email"
+                placeholder="Email"
                 {...register('email')}
                 disabled={isLoading}
+                className="bg-gray-800/50 border-gray-700 text-white placeholder:text-gray-500"
               />
               {errors.email && (
                 <p className="text-sm text-destructive">{errors.email.message}</p>
@@ -103,13 +92,14 @@ export default function SignUp() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password" className="text-gray-200">Password</Label>
               <Input
                 id="password"
                 type="password"
-                placeholder="Enter your password"
+                placeholder="Password"
                 {...register('password')}
                 disabled={isLoading}
+                className="bg-gray-800/50 border-gray-700 text-white placeholder:text-gray-500"
               />
               {errors.password && (
                 <p className="text-sm text-destructive">{errors.password.message}</p>
@@ -117,13 +107,14 @@ export default function SignUp() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <Label htmlFor="confirmPassword" className="text-gray-200">Confirm Password</Label>
               <Input
                 id="confirmPassword"
                 type="password"
-                placeholder="Confirm your password"
+                placeholder="Confirm Password"
                 {...register('confirmPassword')}
                 disabled={isLoading}
+                className="bg-gray-800/50 border-gray-700 text-white placeholder:text-gray-500"
               />
               {errors.confirmPassword && (
                 <p className="text-sm text-destructive">{errors.confirmPassword.message}</p>
@@ -138,17 +129,16 @@ export default function SignUp() {
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Creating Account...
+                  ...
                 </>
               ) : (
-                'Create Account'
+                'Sign Up'
               )}
             </Button>
           </form>
 
-          <div className="mt-4 text-center text-sm">
-            Already have an account?{' '}
-            <Link to="/auth/login" className="text-primary hover:underline">
+          <div className="mt-6 text-center text-sm">
+            <Link to="/auth/login" className="text-gray-400 hover:text-gray-200">
               Sign in
             </Link>
           </div>
