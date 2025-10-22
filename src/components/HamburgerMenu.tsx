@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Menu, User, MessageSquare, Heart } from 'lucide-react';
+import { Menu, User, MessageSquare, Heart, Shield } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useAdminAccess } from '@/hooks/useAdminAccess';
 
 interface HamburgerMenuProps {
   onHelpClick: () => void;
@@ -13,6 +14,7 @@ export function HamburgerMenu({ onHelpClick }: HamburgerMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { isAdmin, loading } = useAdminAccess();
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -57,6 +59,11 @@ export function HamburgerMenu({ onHelpClick }: HamburgerMenuProps) {
     navigate('/profile');
   };
 
+  const handleAdminPanelClick = () => {
+    setIsOpen(false);
+    navigate('/admin');
+  };
+
   return (
     <div className="relative" ref={menuRef}>
       {/* Hamburger Toggle Button */}
@@ -93,6 +100,17 @@ export function HamburgerMenu({ onHelpClick }: HamburgerMenuProps) {
               <Heart className="w-4 h-4 flex-shrink-0" />
               <span className="text-sm">Help us improve this project 🙏🏼</span>
             </button>
+
+            {/* Admin Panel - only for admin users */}
+            {!loading && isAdmin && (
+              <button
+                onClick={handleAdminPanelClick}
+                className="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-300 hover:bg-gray-700/50 hover:text-white transition-colors border-t border-gray-600"
+              >
+                <Shield className="w-4 h-4 flex-shrink-0" />
+                <span className="text-sm">Admin Panel</span>
+              </button>
+            )}
 
             {/* My Profile */}
             <button
