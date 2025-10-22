@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface GuestSessionData {
   guestToken: string;
@@ -96,7 +97,7 @@ export const useGuestSession = () => {
     }
   };
 
-  const setStoryData = (
+  const setStoryData = async (
     storyText: string, 
     firstName: string, 
     lastName: string, 
@@ -115,8 +116,38 @@ export const useGuestSession = () => {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
       setGuestData(updated);
       console.log('[useGuestSession] Story data saved for guest');
+      
+      // Sync to database
+      await syncToDatabase(updated);
     } catch (error) {
       console.error('[useGuestSession] Failed to set story data:', error);
+    }
+  };
+
+  const syncToDatabase = async (data: Partial<GuestSessionData>) => {
+    if (!guestData?.guestToken) return;
+
+    try {
+      const { error } = await supabase.functions.invoke('guest-session-sync', {
+        body: {
+          guestToken: guestData.guestToken,
+          guestName: data.guestName || guestData.guestName,
+          expiresAt: data.expiresAt || guestData.expiresAt,
+          storySource: data.storySource || guestData.storySource,
+          storyText: data.storyText || guestData.storyText,
+          storyFirstName: data.storyFirstName || guestData.storyFirstName,
+          storyLastName: data.storyLastName || guestData.storyLastName,
+          selectedTestStoryId: data.selectedTestStoryId || guestData.selectedTestStoryId,
+        }
+      });
+
+      if (error) {
+        console.error('[useGuestSession] Failed to sync to database:', error);
+      } else {
+        console.log('[useGuestSession] Successfully synced to database');
+      }
+    } catch (error) {
+      console.error('[useGuestSession] Database sync error:', error);
     }
   };
 
@@ -140,6 +171,7 @@ export const useGuestSession = () => {
     setTestStory,
     setStoryData,
     clearGuestSession,
+    syncToDatabase,
     remainingSeconds: isValid 
       ? Math.max(0, guestData.sessionSecondsLimit - guestData.sessionSecondsUsed)
       : 0,

@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import { Users, Brain, UserCheck, MessageSquare, BarChart3, Shield, ArrowLeft, MessageCircle, Settings, BookOpen, Home } from 'lucide-react';
+import { Users, Brain, UserCheck, MessageSquare, BarChart3, Shield, ArrowLeft, MessageCircle, Settings, BookOpen, Home, UserCog } from 'lucide-react';
 import {
   Sidebar,
   SidebarContent,
@@ -23,6 +23,11 @@ const adminItems = [
     title: 'Users',
     url: '/admin/users',
     icon: Users,
+  },
+  {
+    title: 'Guest Sessions',
+    url: '/admin/guest-sessions',
+    icon: UserCog,
   },
   {
     title: 'Focus Areas',

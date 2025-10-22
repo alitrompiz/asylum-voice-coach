@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
+import { useGuestSession } from '@/hooks/useGuestSession';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -44,6 +45,7 @@ export function GuestSignUpPrompt({
   const [success, setSuccess] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { guestData } = useGuestSession();
 
   const form = useForm<GuestSignUpFormData>({
     resolver: zodResolver(guestSignUpSchema),
@@ -54,7 +56,7 @@ export function GuestSignUpPrompt({
     setError(null);
 
     try {
-      const { error: signUpError } = await supabase.auth.signUp({
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
         options: {
@@ -69,6 +71,22 @@ export function GuestSignUpPrompt({
           setError(signUpError.message);
         }
         return;
+      }
+
+      // Link guest session to new user account
+      if (guestData?.guestToken && signUpData.user) {
+        try {
+          await supabase.functions.invoke('link-guest-to-user', {
+            body: {
+              guestToken: guestData.guestToken,
+              conversionEmail: data.email
+            }
+          });
+          console.log('Guest session linked to new user account');
+        } catch (linkError) {
+          console.error('Error linking guest session:', linkError);
+          // Don't block signup if linking fails
+        }
       }
 
       setSuccess(true);

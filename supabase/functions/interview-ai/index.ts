@@ -53,6 +53,7 @@ serve(async (req) => {
     const skills: string[] = Array.isArray(body?.skills) ? body.skills : [];
     const sessionId = body?.sessionId;
     const guestStoryData = body?.guestStoryData; // { storyText, firstName, lastName }
+    const guestToken = body?.guestToken; // For tracking guest transcripts
 
     // Input validation
     if (!Array.isArray(messages) || messages.length === 0) {
@@ -290,6 +291,21 @@ serve(async (req) => {
     const aiResponse = result.choices[0]?.message?.content;
     if (!aiResponse) {
       throw new Error('No response from AI');
+    }
+
+    // If guest user, update transcript in guest_sessions
+    if (guestToken && !userId) {
+      const fullTranscript = messages.map((m: any) => 
+        `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.text}`
+      ).join('\n\n') + `\n\nAssistant: ${aiResponse}`;
+
+      await supabase
+        .from('guest_sessions')
+        .update({ 
+          full_transcript: fullTranscript,
+          session_started_at: new Date().toISOString()
+        })
+        .eq('guest_token', guestToken);
     }
 
     return new Response(

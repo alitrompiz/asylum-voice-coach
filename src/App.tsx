@@ -34,6 +34,7 @@ const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const HomePageContentManagement = lazy(() => import("./pages/admin/HomePageContentManagement"));
 const EnhancedUserManagement = lazy(() => import("./pages/admin/EnhancedUserManagement"));
+const GuestSessionsManagement = lazy(() => import("./pages/admin/GuestSessionsManagement"));
 const SkillsManagement = lazy(() => import("./pages/admin/SkillsManagement"));
 const PersonasManagement = lazy(() => import("./pages/admin/PersonasManagement"));
 const PromptsManagement = lazy(() => import("./pages/admin/PromptsManagement"));
@@ -155,6 +156,7 @@ const App = () => (
                     <Route index element={<AdminDashboard />} />
                     <Route path="home-page" element={<HomePageContentManagement />} />
                     <Route path="users" element={<EnhancedUserManagement />} />
+                    <Route path="guest-sessions" element={<GuestSessionsManagement />} />
                     <Route path="skills" element={<SkillsManagement />} />
                     <Route path="personas" element={<PersonasManagement />} />
                     <Route path="prompts" element={<PromptsManagement />} />

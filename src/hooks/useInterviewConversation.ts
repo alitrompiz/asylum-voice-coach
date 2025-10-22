@@ -122,6 +122,7 @@ export const useInterviewConversation = (setUserTranscript?: (transcript: string
           firstName: guestData.storyFirstName,
           lastName: guestData.storyLastName
         };
+        requestBody.guestToken = guestData.guestToken;
         console.log('Including guest story data in AI request');
       }
       

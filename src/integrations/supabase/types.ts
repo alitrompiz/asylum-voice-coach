@@ -249,6 +249,105 @@ export type Database = {
           },
         ]
       }
+      guest_sessions: {
+        Row: {
+          ai_feedback: Json | null
+          conversion_email: string | null
+          converted_at: string | null
+          converted_to_user_id: string | null
+          created_at: string
+          expires_at: string
+          feedback_email: string | null
+          feedback_requested: boolean | null
+          feedback_sent_at: string | null
+          full_transcript: string | null
+          guest_name: string | null
+          guest_token: string
+          id: string
+          selected_language: string | null
+          selected_persona_id: string | null
+          selected_skills: string[] | null
+          selected_test_story_id: string | null
+          session_duration_seconds: number | null
+          session_ended_at: string | null
+          session_started_at: string | null
+          story_file_path: string | null
+          story_first_name: string | null
+          story_last_name: string | null
+          story_source: string | null
+          story_text: string | null
+        }
+        Insert: {
+          ai_feedback?: Json | null
+          conversion_email?: string | null
+          converted_at?: string | null
+          converted_to_user_id?: string | null
+          created_at?: string
+          expires_at: string
+          feedback_email?: string | null
+          feedback_requested?: boolean | null
+          feedback_sent_at?: string | null
+          full_transcript?: string | null
+          guest_name?: string | null
+          guest_token: string
+          id?: string
+          selected_language?: string | null
+          selected_persona_id?: string | null
+          selected_skills?: string[] | null
+          selected_test_story_id?: string | null
+          session_duration_seconds?: number | null
+          session_ended_at?: string | null
+          session_started_at?: string | null
+          story_file_path?: string | null
+          story_first_name?: string | null
+          story_last_name?: string | null
+          story_source?: string | null
+          story_text?: string | null
+        }
+        Update: {
+          ai_feedback?: Json | null
+          conversion_email?: string | null
+          converted_at?: string | null
+          converted_to_user_id?: string | null
+          created_at?: string
+          expires_at?: string
+          feedback_email?: string | null
+          feedback_requested?: boolean | null
+          feedback_sent_at?: string | null
+          full_transcript?: string | null
+          guest_name?: string | null
+          guest_token?: string
+          id?: string
+          selected_language?: string | null
+          selected_persona_id?: string | null
+          selected_skills?: string[] | null
+          selected_test_story_id?: string | null
+          session_duration_seconds?: number | null
+          session_ended_at?: string | null
+          session_started_at?: string | null
+          story_file_path?: string | null
+          story_first_name?: string | null
+          story_last_name?: string | null
+          story_source?: string | null
+          story_text?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guest_sessions_selected_persona_id_fkey"
+            columns: ["selected_persona_id"]
+            isOneToOne: false
+            referencedRelation: "personas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "guest_sessions_selected_test_story_id_fkey"
+            columns: ["selected_test_story_id"]
+            isOneToOne: false
+            referencedRelation: "test_stories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       home_page_content: {
         Row: {
           content: string
@@ -968,6 +1067,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      convert_to_est: { Args: { utc_timestamp: string }; Returns: string }
       exec_admin_user_query: {
         Args: { query_params?: Json; query_text: string }
         Returns: Json

@@ -25,5 +25,14 @@ verify_jwt = false
 [functions.send-auth-email]
 verify_jwt = false
 
+[functions.guest-session-sync]
+verify_jwt = false
+
+[functions.link-guest-to-user]
+verify_jwt = true
+
+[functions.admin-guest-sessions]
+verify_jwt = true
+
 [auth.email]
 template = "send-auth-email"
