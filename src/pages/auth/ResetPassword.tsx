@@ -27,20 +27,17 @@ export default function ResetPassword() {
   });
 
   useEffect(() => {
-    // Check if we have the required parameters
-    const accessToken = searchParams.get('access_token');
-    const refreshToken = searchParams.get('refresh_token');
+    // Check if user has a valid session after being redirected from the email link
+    const checkSession = async () => {
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session) {
+        setError('Auth session missing!');
+        return;
+      }
+    };
     
-    if (!accessToken || !refreshToken) {
-      setError('Invalid reset link. Please request a new password reset.');
-      return;
-    }
-
-    // Set the session with the tokens from the URL
-    supabase.auth.setSession({
-      access_token: accessToken,
-      refresh_token: refreshToken,
-    });
+    checkSession();
   }, [searchParams]);
 
   const onSubmit = async (data: ResetPasswordFormData) => {
