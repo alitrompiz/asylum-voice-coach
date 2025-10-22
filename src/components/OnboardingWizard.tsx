@@ -236,12 +236,12 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                     <Upload className="w-12 h-12 text-primary mb-4 mx-auto" />
                     <h3 className="text-lg font-semibold text-white text-center mb-2">
                       {t('onboarding.upload_i589')}
-                      <br />
-                      <br />
+                    </h3>
+                    <div className="text-center mt-2">
                       <span className="text-xs bg-primary text-white px-2 py-1 rounded">
                         Recommended
                       </span>
-                    </h3>
+                    </div>
                   </Card>
 
                   {/* Paste Story Option */}
