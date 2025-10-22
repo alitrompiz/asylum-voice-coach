@@ -102,7 +102,7 @@ const Index = () => {
         <div className="relative z-10 container mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-32">
           <div className="text-center max-w-5xl mx-auto">
             {/* Main Headline */}
-            <h1 className="font-display text-3xl sm:text-3xl md:text-4xl lg:text-4xl font-extrabold mb-6 leading-tight">
+            <h1 className="font-display text-4xl sm:text-4xl md:text-5xl lg:text-5xl font-extrabold mb-6 leading-tight">
               <span className="bg-gradient-to-r from-white via-blue-50 to-white bg-clip-text text-transparent drop-shadow-lg">
                 {content?.hero_h1 || 'Welcome to AsylumPrep'}
               </span>
