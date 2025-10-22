@@ -66,6 +66,13 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   }, [user, isGuest]);
 
   const handleStoryOptionSelect = (option: StoryOption) => {
+    // Clear previous option's data to prevent confusion when switching
+    setFirstName('');
+    setLastName('');
+    setStoryText('');
+    setSelectedTestStoryId(null);
+    setUploadError(null);
+    
     setStoryOption(option);
   };
 
@@ -181,6 +188,11 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   const handleBack = () => {
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
+      
+      // Reset story option when going back to step 1
+      if (currentStep === 2) {
+        setStoryOption(null);
+      }
     }
   };
 
