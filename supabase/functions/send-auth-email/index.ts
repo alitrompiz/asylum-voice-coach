@@ -6,8 +6,6 @@ import { Resend } from "npm:resend@2.0.0";
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 const WEBHOOK_SECRET = Deno.env.get("AUTH_WEBHOOK_SECRET");
 
-const resend = new Resend(RESEND_API_KEY);
-
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -33,6 +31,22 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    // Validate RESEND_API_KEY exists
+    if (!RESEND_API_KEY) {
+      console.error("RESEND_API_KEY is not configured");
+      return new Response(
+        JSON.stringify({ 
+          error: "Email service not configured. Please add RESEND_API_KEY secret." 
+        }),
+        { 
+          status: 500, 
+          headers: { "Content-Type": "application/json", ...corsHeaders } 
+        }
+      );
+    }
+
+    const resend = new Resend(RESEND_API_KEY);
+    
     const payload = await req.text();
     const headers = Object.fromEntries(req.headers);
     
