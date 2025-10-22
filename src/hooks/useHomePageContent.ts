@@ -31,7 +31,7 @@ export const useHomePageContent = () => {
       
       return { ...fallbackContent, ...content } as HomePageContent;
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 30 * 1000, // 30 seconds - allows quick reflection of admin changes
     placeholderData: fallbackContent,
   });
 };
