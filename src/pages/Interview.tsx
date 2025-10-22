@@ -138,7 +138,6 @@ export default function Interview() {
         voice: selectedPersonaData.tts_voice,
         timestamp: Date.now()
       });
-      lastSpokenSubtitle.current = currentSubtitle;
 
       // Ensure AudioContext is ready before TTS
       ensureAudioContextReady().then(() => {
@@ -168,6 +167,9 @@ export default function Interview() {
           console.error('❌ TTS ERROR:', error);
           setIsAiSpeaking(false);
           setAudioActuallyPlaying(false);
+          
+          // Reset dedupe to allow retry
+          lastSpokenSubtitle.current = '';
 
           // Check if audio is blocked and show appropriate feedback
           if (error.message.includes('Audio blocked') || error.message.includes('user interaction')) {
@@ -178,6 +180,8 @@ export default function Interview() {
         onAudioPlaying: () => {
           console.log('🔊 AUDIO ACTUALLY PLAYING - Subtitles can now show');
           setAudioActuallyPlaying(true);
+          // Mark as spoken only when audio actually plays
+          lastSpokenSubtitle.current = currentSubtitle;
         }
       });
     } else if (currentSubtitle === lastSpokenSubtitle.current) {

@@ -136,13 +136,27 @@ export const useTextToSpeech = () => {
       });
 
       performance.mark?.('tts:invoke:start');
-      const { data, error } = await supabase.functions.invoke('text-to-speech', {
+      let result = await supabase.functions.invoke('text-to-speech', {
         body: {
           text,
           voice,
           language: languageCode,
         },
       });
+      
+      // Retry with 'alloy' if voice is invalid
+      if (result.error && (result.error.message?.includes('Invalid voice') || result.error.message?.includes('voice selection'))) {
+        console.warn('⚠️ Invalid voice detected, retrying with alloy:', voice);
+        result = await supabase.functions.invoke('text-to-speech', {
+          body: {
+            text,
+            voice: 'alloy',
+            language: languageCode,
+          },
+        });
+      }
+      
+      const { data, error } = result;
       performance.mark?.('tts:invoke:end');
       performance.measure?.('tts:invoke', 'tts:invoke:start', 'tts:invoke:end');
       

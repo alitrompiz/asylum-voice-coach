@@ -39,7 +39,7 @@ serve(async (req) => {
     const language: string = body?.language ?? 'en';
 
     // Input validation
-    const allowedVoices = new Set(['alloy', 'verse', 'aria', 'sage', 'amber']);
+    const allowedVoices = new Set(['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer', 'verse', 'aria', 'sage', 'amber']);
     if (typeof text !== 'string' || !text.trim() || text.length > 2000) {
       return new Response(JSON.stringify({ error: 'Invalid text. Max length 2000.' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
