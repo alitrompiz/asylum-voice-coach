@@ -27,13 +27,15 @@ interface StoryUploaderProps {
   onStoryUpdated?: (story: Story) => void;
   onStoryDeleted?: (storyId: string) => void;
   activeMode?: 'upload' | 'text';
+  onError?: (errorMessage: string) => void;
 }
 
 export const StoryUploader: React.FC<StoryUploaderProps> = ({
   onStoryAdded,
   onStoryUpdated,
   onStoryDeleted,
-  activeMode = 'upload'
+  activeMode = 'upload',
+  onError
 }) => {
   const { t } = useTranslation();
   const { toast } = useToast();
@@ -210,11 +212,13 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
 
     } catch (error) {
       console.error('Upload error:', error);
+      const errorMsg = "Failed to upload and process PDF";
       toast({
         title: "Upload failed",
-        description: "Failed to upload and process PDF",
+        description: errorMsg,
         variant: "destructive"
       });
+      onError?.(errorMsg);
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) {
@@ -299,11 +303,13 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
 
     } catch (error) {
       console.error('Save error:', error);
+      const errorMsg = "Failed to save story";
       toast({
         title: "Save failed",
-        description: "Failed to save story",
+        description: errorMsg,
         variant: "destructive"
       });
+      onError?.(errorMsg);
     } finally {
       setIsSaving(false);
     }

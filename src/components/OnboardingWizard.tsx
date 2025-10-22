@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
 import { useLanguagePreference } from '@/hooks/useLanguagePreference';
 import { useSkillsStore } from '@/stores/personaStore';
+import { useGuestSession } from '@/hooks/useGuestSession';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -15,7 +16,7 @@ import { LanguageSelector } from '@/components/LanguageSelector';
 import { SkillsScroller } from '@/components/SkillsScroller';
 import { GuestTestStorySelector } from '@/components/story/GuestTestStorySelector';
 import { StoryUploader } from '@/components/StoryUploader';
-import { Upload, FileText, BookOpen, ArrowLeft, ArrowRight } from 'lucide-react';
+import { Upload, FileText, BookOpen, ArrowLeft, ArrowRight, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 type StoryOption = 'upload' | 'paste' | 'mock' | null;
@@ -30,6 +31,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   const { user, isGuest } = useAuth();
   const { languageCode } = useLanguagePreference();
   const { skillsSelected } = useSkillsStore();
+  const guestSession = useGuestSession();
 
   const [currentStep, setCurrentStep] = useState(1);
   const [storyOption, setStoryOption] = useState<StoryOption>(null);
@@ -39,6 +41,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   const [selectedTestStoryId, setSelectedTestStoryId] = useState<string | null>(null);
   const [hasStoryData, setHasStoryData] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const progressPercentage = (currentStep / 3) * 100;
 
@@ -84,21 +87,30 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
 
     setIsLoading(true);
     try {
-      const { error } = await supabase
-        .from('stories')
-        .insert({
-          user_id: user?.id,
-          story_text: storyText,
-          source_type: 'text',
-          is_active: true,
-          metadata: { first_name: firstName, last_name: lastName }
-        });
+      if (isGuest) {
+        // For guests: Store in localStorage
+        guestSession.setStoryData(storyText, firstName, lastName, 'paste');
+        setHasStoryData(true);
+        toast.success('Story saved locally');
+        setCurrentStep(2);
+      } else {
+        // For authenticated users: Save to database
+        const { error } = await supabase
+          .from('stories')
+          .insert({
+            user_id: user?.id,
+            story_text: storyText,
+            source_type: 'text',
+            is_active: true,
+            metadata: { first_name: firstName, last_name: lastName }
+          });
 
-      if (error) throw error;
+        if (error) throw error;
 
-      setHasStoryData(true);
-      toast.success('Story saved successfully');
-      setCurrentStep(2);
+        setHasStoryData(true);
+        toast.success('Story saved successfully');
+        setCurrentStep(2);
+      }
     } catch (error) {
       console.error('Error saving story:', error);
       toast.error('Failed to save story');
@@ -128,8 +140,19 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
 
   const handleStoryUploadComplete = (story: any) => {
     setHasStoryData(true);
+    setUploadError(null);
+    
+    // For guests, also store in localStorage
+    if (isGuest && story.story_text) {
+      guestSession.setStoryData(story.story_text, '', '', 'upload');
+    }
+    
     toast.success('Story uploaded successfully');
     setCurrentStep(2);
+  };
+
+  const handleUploadError = (errorMessage: string) => {
+    setUploadError(errorMessage);
   };
 
   const canProceedFromStep1 = () => {
@@ -206,40 +229,39 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
               {!storyOption && (
                 <div className="grid md:grid-cols-3 gap-4">
                   {/* Upload I-589 Option */}
-                  {!isGuest && (
-                    <Card
-                      className="bg-gray-700/30 border-gray-600 p-6 cursor-pointer hover:bg-gray-700/50 transition-colors"
-                      onClick={() => handleStoryOptionSelect('upload')}
-                    >
-                      <Upload className="w-12 h-12 text-primary mb-4 mx-auto" />
-                      <h3 className="text-lg font-semibold text-white text-center mb-2">
-                        {t('onboarding.upload_i589')}
-                      </h3>
-                      <p className="text-sm text-gray-400 text-center">
-                        Upload your I-589 form for best results
-                      </p>
-                    </Card>
-                  )}
+                  <Card
+                    className="bg-primary/10 border-primary/50 p-6 cursor-pointer hover:bg-primary/20 transition-colors min-h-[180px] flex flex-col justify-center"
+                    onClick={() => handleStoryOptionSelect('upload')}
+                  >
+                    <Upload className="w-12 h-12 text-primary mb-4 mx-auto" />
+                    <h3 className="text-lg font-semibold text-white text-center mb-2">
+                      {t('onboarding.upload_i589')}
+                      <span className="ml-2 text-xs bg-primary text-white px-2 py-1 rounded">
+                        Recommended
+                      </span>
+                    </h3>
+                    <p className="text-sm text-gray-400 text-center">
+                      Upload your I-589 form for best results
+                    </p>
+                  </Card>
 
                   {/* Paste Story Option */}
-                  {!isGuest && (
-                    <Card
-                      className="bg-gray-700/30 border-gray-600 p-6 cursor-pointer hover:bg-gray-700/50 transition-colors"
-                      onClick={() => handleStoryOptionSelect('paste')}
-                    >
-                      <FileText className="w-12 h-12 text-primary mb-4 mx-auto" />
-                      <h3 className="text-lg font-semibold text-white text-center mb-2">
-                        {t('onboarding.paste_story')}
-                      </h3>
-                      <p className="text-sm text-gray-400 text-center">
-                        Write or paste your asylum story
-                      </p>
-                    </Card>
-                  )}
+                  <Card
+                    className="bg-gray-700/30 border-gray-600 p-6 cursor-pointer hover:bg-gray-700/50 transition-colors min-h-[180px] flex flex-col justify-center"
+                    onClick={() => handleStoryOptionSelect('paste')}
+                  >
+                    <FileText className="w-12 h-12 text-primary mb-4 mx-auto" />
+                    <h3 className="text-lg font-semibold text-white text-center mb-2">
+                      {t('onboarding.paste_story')}
+                    </h3>
+                    <p className="text-sm text-gray-400 text-center">
+                      Write or paste your asylum story
+                    </p>
+                  </Card>
 
                   {/* Mock Story Option */}
                   <Card
-                    className="bg-gray-700/30 border-gray-600 p-6 cursor-pointer hover:bg-gray-700/50 transition-colors"
+                    className="bg-gray-700/30 border-gray-600 p-6 cursor-pointer hover:bg-gray-700/50 transition-colors min-h-[180px] flex flex-col justify-center"
                     onClick={() => handleStoryOptionSelect('mock')}
                   >
                     <BookOpen className="w-12 h-12 text-primary mb-4 mx-auto" />
@@ -258,15 +280,45 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                 <div>
                   <Button
                     variant="ghost"
-                    onClick={() => setStoryOption(null)}
+                    onClick={() => {
+                      setStoryOption(null);
+                      setUploadError(null);
+                    }}
                     className="mb-4"
                   >
                     <ArrowLeft className="w-4 h-4 mr-2" />
                     Back to options
                   </Button>
+                  
+                  {uploadError && (
+                    <Card className="bg-red-900/20 border-red-700 p-4 mb-4">
+                      <div className="flex items-center gap-2 text-red-400 mb-3">
+                        <AlertCircle className="w-5 h-5" />
+                        <span>{uploadError}</span>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button 
+                          variant="outline" 
+                          onClick={() => setUploadError(null)}
+                        >
+                          Try Again
+                        </Button>
+                        <Button 
+                          onClick={() => {
+                            setUploadError(null);
+                            setStoryOption('paste');
+                          }}
+                        >
+                          Paste Story Instead
+                        </Button>
+                      </div>
+                    </Card>
+                  )}
+                  
                   <StoryUploader
                     activeMode="upload"
                     onStoryAdded={handleStoryUploadComplete}
+                    onError={handleUploadError}
                   />
                 </div>
               )}
@@ -342,11 +394,6 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                 </div>
               )}
 
-              {isGuest && !storyOption && (
-                <div className="text-center text-gray-400 text-sm mt-4">
-                  Sign up to upload your own I-589 or write your story
-                </div>
-              )}
             </div>
           )}
 

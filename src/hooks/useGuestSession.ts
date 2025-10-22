@@ -8,6 +8,10 @@ interface GuestSessionData {
   createdAt: string;
   expiresAt: string;
   selectedTestStoryId?: string;
+  storyText?: string;
+  storyFirstName?: string;
+  storyLastName?: string;
+  storySource?: 'upload' | 'paste' | 'mock';
 }
 
 const STORAGE_KEY = 'guest_session';
@@ -92,6 +96,30 @@ export const useGuestSession = () => {
     }
   };
 
+  const setStoryData = (
+    storyText: string, 
+    firstName: string, 
+    lastName: string, 
+    source: 'upload' | 'paste' | 'mock'
+  ) => {
+    if (!guestData) return;
+    
+    try {
+      const updated = { 
+        ...guestData, 
+        storyText, 
+        storyFirstName: firstName, 
+        storyLastName: lastName,
+        storySource: source 
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      setGuestData(updated);
+      console.log('[useGuestSession] Story data saved for guest');
+    } catch (error) {
+      console.error('[useGuestSession] Failed to set story data:', error);
+    }
+  };
+
   const clearGuestSession = () => {
     console.log('[useGuestSession] Clearing guest session');
     try {
@@ -110,6 +138,7 @@ export const useGuestSession = () => {
     createGuestSession,
     updateSessionTime,
     setTestStory,
+    setStoryData,
     clearGuestSession,
     remainingSeconds: isValid 
       ? Math.max(0, guestData.sessionSecondsLimit - guestData.sessionSecondsUsed)
