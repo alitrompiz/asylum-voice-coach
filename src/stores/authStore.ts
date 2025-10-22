@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -14,6 +14,26 @@ interface AuthState {
   setInitialized: (initialized: boolean) => void;
   signOut: () => Promise<void>;
   initialize: () => Promise<void>;
+}
+
+function safeGetStorage(): Storage {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const test = '__zstd_test__';
+      window.localStorage.setItem(test, '1');
+      window.localStorage.removeItem(test);
+      return window.localStorage;
+    }
+  } catch (_) {}
+  const memory: Record<string, string> = {};
+  return {
+    getItem: (name: string) => memory[name] ?? null,
+    setItem: (name: string, value: string) => { memory[name] = value; },
+    removeItem: (name: string) => { delete memory[name]; },
+    clear: () => { Object.keys(memory).forEach(k => delete memory[k]); },
+    key: (index: number) => Object.keys(memory)[index] ?? null,
+    get length() { return Object.keys(memory).length; }
+  } as Storage;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -67,6 +87,7 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'auth-storage',
+      storage: createJSONStorage(() => safeGetStorage()),
       partialize: (state) => ({
         user: state.user,
         session: state.session,
