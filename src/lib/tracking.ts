@@ -1,27 +1,56 @@
-import mixpanel from 'mixpanel-browser';
-
 // Configuration
 const MIXPANEL_TOKEN = 'your-mixpanel-token-here'; // Replace with actual token or use runtime config
 
-// Initialize Mixpanel
-const isInitialized = MIXPANEL_TOKEN && MIXPANEL_TOKEN !== 'your-mixpanel-token-here';
+// Dynamic Mixpanel instance
+let mixpanelInstance: any = null;
+let isInitialized = false;
 
-if (isInitialized) {
-  mixpanel.init(MIXPANEL_TOKEN, {
-    debug: import.meta.env.MODE === 'development',
-    track_pageview: true,
-    persistence: 'localStorage',
-  });
-}
+// Safe initialization - only load if token is valid
+const initMixpanel = async () => {
+  if (MIXPANEL_TOKEN && MIXPANEL_TOKEN !== 'your-mixpanel-token-here') {
+    try {
+      const { default: mixpanel } = await import('mixpanel-browser');
+      
+      // Check if localStorage is available
+      let persistence: 'localStorage' | 'cookie' = 'cookie';
+      try {
+        const test = '__mp_test__';
+        window.localStorage.setItem(test, '1');
+        window.localStorage.removeItem(test);
+        persistence = 'localStorage';
+      } catch {
+        // Use cookie persistence in private/incognito mode
+      }
+      
+      mixpanel.init(MIXPANEL_TOKEN, {
+        debug: import.meta.env.MODE === 'development',
+        track_pageview: true,
+        persistence,
+      });
+      
+      mixpanelInstance = mixpanel;
+      isInitialized = true;
+    } catch (error) {
+      console.warn('[Mixpanel] Failed to initialize:', error);
+    }
+  }
+};
+
+// Start initialization (non-blocking)
+initMixpanel();
 
 // Base tracking function
 export const trackEvent = (eventName: string, properties?: Record<string, any>) => {
-  if (isInitialized) {
-    mixpanel.track(eventName, {
-      ...properties,
-      timestamp: new Date().toISOString(),
-      page: window.location.pathname,
-    });
+  if (isInitialized && mixpanelInstance) {
+    try {
+      mixpanelInstance.track(eventName, {
+        ...properties,
+        timestamp: new Date().toISOString(),
+        page: window.location.pathname,
+      });
+    } catch (error) {
+      console.log(`[Mixpanel] ${eventName}`, properties);
+    }
   } else {
     console.log(`[Mixpanel] ${eventName}`, properties);
   }
@@ -29,10 +58,14 @@ export const trackEvent = (eventName: string, properties?: Record<string, any>) 
 
 // User identification
 export const identifyUser = (userId: string, properties?: Record<string, any>) => {
-  if (isInitialized) {
-    mixpanel.identify(userId);
-    if (properties) {
-      mixpanel.people.set(properties);
+  if (isInitialized && mixpanelInstance) {
+    try {
+      mixpanelInstance.identify(userId);
+      if (properties) {
+        mixpanelInstance.people.set(properties);
+      }
+    } catch (error) {
+      console.log(`[Mixpanel] Identify: ${userId}`, properties);
     }
   } else {
     console.log(`[Mixpanel] Identify: ${userId}`, properties);
@@ -67,4 +100,4 @@ export const track = {
     }),
 };
 
-export default mixpanel;
+export default mixpanelInstance;

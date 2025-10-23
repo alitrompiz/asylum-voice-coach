@@ -42,16 +42,63 @@
     </style>
     <div id="boot-overlay">Loading AsylumPrep…</div>
     
-    <!-- Pre-boot SW/caches purge for staging + mount watchdog -->
+    <!-- Pre-boot SW/caches purge for staging + mount watchdog + early error capture -->
     <script>
       (function(){
         const isStaging = location.hostname.endsWith('.lovable.app');
+        
+        // Early error capture - catch synchronous errors during module evaluation
+        let earlyErrorCaught = false;
+        
+        const handleEarlyError = async (errorMsg) => {
+          if (earlyErrorCaught) return;
+          earlyErrorCaught = true;
+          
+          console.error('[Boot] Early error caught:', errorMsg);
+          
+          if (!sessionStorage.getItem('early-error-reload')) {
+            sessionStorage.setItem('early-error-reload', '1');
+            try {
+              if ('serviceWorker' in navigator) {
+                const regs = await navigator.serviceWorker.getRegistrations();
+                await Promise.all(regs.map(r => r.unregister()));
+              }
+              if ('caches' in window) {
+                const keys = await caches.keys();
+                await Promise.all(keys.map(k => caches.delete(k)));
+              }
+            } catch (e) {}
+            location.reload();
+          } else {
+            sessionStorage.removeItem('early-error-reload');
+            const overlay = document.getElementById('boot-overlay');
+            if (overlay) {
+              overlay.innerHTML = '<div style="text-align:center;max-width:440px;padding:16px">' +
+                '<div style="font-size:18px;font-weight:700;margin-bottom:8px">We couldn\'t start the app</div>' +
+                '<div style="opacity:.8;margin-bottom:12px">Error: ' + errorMsg + '</div>' +
+                '<div style="opacity:.8;margin-bottom:12px">Please click Reload. If this keeps happening, try another browser or contact support.</div>' +
+                '<button onclick="location.reload()" style="background:#0ea5e9;color:#fff;border:none;border-radius:8px;padding:10px 14px;cursor:pointer;width:100%;font-weight:600">Reload</button>' +
+                '</div>';
+            }
+          }
+        };
+        
+        window.addEventListener('error', (e) => {
+          handleEarlyError(e.message || 'Unknown error');
+        });
+        
+        window.addEventListener('unhandledrejection', (e) => {
+          handleEarlyError(e.reason?.message || 'Promise rejection');
+        });
+        
+        // Initial SW/cache purge for staging
         if (isStaging && 'serviceWorker' in navigator) {
           navigator.serviceWorker.getRegistrations().then(rs => rs.forEach(r => r.unregister()));
         }
         if (isStaging && 'caches' in window) {
           caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
         }
+        
         // Mount watchdog: if app hasn't mounted in 6s, purge again and hard-reload once
         setTimeout(async () => {
           if (!window.__APP_MOUNTED__) {
