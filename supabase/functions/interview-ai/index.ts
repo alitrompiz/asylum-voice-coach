@@ -48,6 +48,7 @@ serve(async (req) => {
   try {
     const body = await req.json();
     const messages = body?.messages;
+    const fullTranscript = body?.fullTranscript; // NEW: Full transcript for storage
     const personaId = body?.personaId;
     const language: string = body?.language ?? 'en';
     const skills: string[] = Array.isArray(body?.skills) ? body.skills : [];
@@ -232,8 +233,12 @@ serve(async (req) => {
         });
     }
       
-    // Store session context if sessionId provided
+    // Store session context if sessionId provided (logged-in users)
     if (sessionId && userId) {
+      const transcriptToSave = fullTranscript || messages.map((m: any) => 
+        `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.text}`
+      ).join('\n\n');
+      
       await supabase
         .from('interview_sessions')
         .upsert({
@@ -242,6 +247,7 @@ serve(async (req) => {
           persona_id: personaId,
           skills_selected: skills || [],
           language: language || 'en',
+          full_transcript: transcriptToSave, // Store initial transcript
           user_context: {
             profile: userContext.profile,
             story: userContext.userStory,
@@ -249,6 +255,8 @@ serve(async (req) => {
           },
           prompt_version_used: promptData.id
         });
+        
+      console.log(`📝 Stored initial transcript (${transcriptToSave.length} chars) to interview_sessions`);
     }
 
     // Format messages for OpenAI
@@ -295,17 +303,41 @@ serve(async (req) => {
 
     // If guest user, update transcript in guest_sessions
     if (guestToken && !userId) {
-      const fullTranscript = messages.map((m: any) => 
+      // Use the full transcript provided by client, NOT the trimmed messages
+      const transcriptToSave = fullTranscript || messages.map((m: any) => 
         `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.text}`
-      ).join('\n\n') + `\n\nAssistant: ${aiResponse}`;
+      ).join('\n\n');
+      
+      // Append the new AI response
+      const completeTranscript = transcriptToSave + `\n\nAssistant: ${aiResponse}`;
 
       await supabase
         .from('guest_sessions')
         .update({ 
-          full_transcript: fullTranscript,
+          full_transcript: completeTranscript,  // Full untrimmed transcript
           session_started_at: new Date().toISOString()
         })
         .eq('guest_token', guestToken);
+        
+      console.log(`📝 Saved full transcript (${completeTranscript.length} chars) to guest_sessions`);
+    }
+    
+    // Update session with AI response for logged-in users
+    if (sessionId && userId) {
+      const transcriptToSave = fullTranscript || messages.map((m: any) => 
+        `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.text}`
+      ).join('\n\n');
+      
+      const completeTranscript = transcriptToSave + `\n\nAssistant: ${aiResponse}`;
+      
+      await supabase
+        .from('interview_sessions')
+        .update({
+          full_transcript: completeTranscript,  // Full untrimmed transcript
+        })
+        .eq('id', sessionId);
+        
+      console.log(`📝 Updated full transcript (${completeTranscript.length} chars) in interview_sessions`);
     }
 
     return new Response(

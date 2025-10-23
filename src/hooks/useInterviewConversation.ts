@@ -47,7 +47,7 @@ export const useInterviewConversation = (setUserTranscript?: (transcript: string
       console.log('Initializing interview with language:', languageCode);
       
       // Get initial AI greeting
-      const aiResponse = await sendToAI([]);
+      const aiResponse = await sendToAI([], []); // Empty for both on init
       
       // Add AI greeting to conversation
       const aiMessage: ConversationMessage = {
@@ -65,6 +65,44 @@ export const useInterviewConversation = (setUserTranscript?: (transcript: string
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  const trimConversationHistory = (messages: ConversationMessage[]): ConversationMessage[] => {
+    // Calculate total character count
+    const totalChars = messages.reduce((sum, msg) => sum + msg.text.length, 0);
+    
+    // If under 6000 chars (buffer before 8000 limit), return as-is
+    if (totalChars < 6000) {
+      console.log(`✅ Conversation length (${totalChars} chars) under limit, no trimming needed`);
+      return messages;
+    }
+    
+    // Keep first 2 messages (greeting + first response) for context
+    const keepFirst = Math.min(2, messages.length);
+    // Keep last 4 messages (most recent context)
+    const keepLast = Math.min(4, messages.length - keepFirst);
+    
+    if (keepFirst + keepLast >= messages.length) {
+      return messages;
+    }
+    
+    const trimmedLength = keepFirst + 1 + keepLast; // +1 for context marker
+    console.log(`✂️ Trimming conversation: ${messages.length} messages → ${trimmedLength} messages (${totalChars} chars → API processing only)`);
+    console.log(`📝 Full ${messages.length}-message transcript will still be saved to database`);
+    
+    // Create trimmed conversation with context marker
+    const contextMarker: ConversationMessage = {
+      id: `context_${Date.now()}`,
+      role: 'assistant',
+      text: '[Previous conversation context omitted for brevity]',
+      timestamp: Date.now()
+    };
+    
+    return [
+      ...messages.slice(0, keepFirst),
+      contextMarker,
+      ...messages.slice(-keepLast)
+    ];
   };
 
   const formatTime = (seconds: number): string => {
@@ -102,13 +140,22 @@ export const useInterviewConversation = (setUserTranscript?: (transcript: string
     }
   };
 
-  const sendToAI = async (conversationMessages: ConversationMessage[]): Promise<string> => {
+  const sendToAI = async (
+    conversationMessages: ConversationMessage[], 
+    fullMessages: ConversationMessage[]
+  ): Promise<string> => {
     try {
       console.log('Sending to AI with language:', languageCode);
+      console.log(`Trimmed messages: ${conversationMessages.length}, Full messages: ${fullMessages.length}`);
       
-      // Include guest story data if user is a guest
+      // Build full transcript for storage (NOT for AI processing)
+      const fullTranscript = fullMessages.map(m => 
+        `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.text}`
+      ).join('\n\n');
+      
       const requestBody: any = {
-        messages: conversationMessages,
+        messages: conversationMessages, // Trimmed for AI
+        fullTranscript: fullTranscript,  // Full for storage
         personaId: selectedPersona,
         language: languageCode || 'en',
         skills: [], // Could be passed as props if needed
@@ -187,9 +234,10 @@ export const useInterviewConversation = (setUserTranscript?: (transcript: string
       setMessages(prev => [...prev, userMessage]);
       setCurrentSubtitle('Processing your message...');
 
-      // Step 3: Send to AI
+      // Step 3: Send to AI with trimmed history but keep full for storage
       const updatedMessages = [...messages, userMessage];
-      const aiResponse = await sendToAI(updatedMessages);
+      const trimmedMessages = trimConversationHistory(updatedMessages);
+      const aiResponse = await sendToAI(trimmedMessages, updatedMessages); // Pass both!
 
       // Step 4: Add AI response to conversation
       const aiMessage: ConversationMessage = {
@@ -221,13 +269,31 @@ export const useInterviewConversation = (setUserTranscript?: (transcript: string
 
     } catch (error) {
       console.error('Error processing audio message:', error);
-      // Notify recording state machine of error
+      
+      // Check for specific error types
+      if (error instanceof Error) {
+        if (error.message.includes('Conversation too long')) {
+          toast({
+            title: "Interview session is very long",
+            description: "Consider ending this session and starting a new one for better performance",
+            variant: "destructive"
+          });
+        } else if (error.message.includes('quota') || error.message.includes('429')) {
+          toast({
+            title: "Service temporarily unavailable",
+            description: "Please try again in a moment",
+            variant: "destructive"
+          });
+        } else {
+          toast({
+            title: "We couldn't process your answer",
+            description: "Please try again",
+            variant: "destructive"
+          });
+        }
+      }
+      
       setUserTranscript?.('transcription failed');
-      toast({
-        title: "We couldn't process your answer",
-        description: "Please try again",
-        variant: "destructive"
-      });
     } finally {
       setIsProcessing(false);
     }
