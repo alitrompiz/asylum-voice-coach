@@ -181,15 +181,12 @@ const Index = () => {
       </div>
 
       {/* Officer Selection Section */}
-      <div id="persona-carousel" className="bg-[hsl(var(--dashboard-blue))] py-20">
+      <div id="persona-carousel" className="bg-[hsl(var(--dashboard-blue))] py-6">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold mb-4 text-white">
-              {content?.officer_picker_title || 'Choose Your Interview Officer'}
+          <div className="text-center mb-3">
+            <h2 className="font-display text-base sm:text-lg md:text-xl font-bold text-white">
+              Which officer do you want to practice with today?
             </h2>
-            <p className="text-lg text-blue-100 max-w-2xl mx-auto">
-              Select an AI officer to practice with and get personalized feedback on your performance
-            </p>
           </div>
           {carouselError ? (
             <div className="text-center py-12">
