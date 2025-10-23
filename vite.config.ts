@@ -7,6 +7,7 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
+  base: mode === 'production' ? './' : '/',
   server: {
     host: "::",
     port: 8080,
@@ -17,14 +18,17 @@ export default defineConfig(({ mode }) => ({
       registerType: 'autoUpdate',
       injectRegister: 'auto',
       workbox: {
+        clientsClaim: true,
+        skipWaiting: true,
+        cleanupOutdatedCaches: true,
         globPatterns: ['**/*.{js,css,html,png,svg,ico,json}'],
         runtimeCaching: [
           {
             urlPattern: /.*\/assets\/.*\.(?:js|css)$/, // hashed bundles
-            handler: 'CacheFirst',
+            handler: 'StaleWhileRevalidate',
             options: {
               cacheName: 'assets-cache',
-              expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 * 365 },
+              expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 * 14 },
             },
           },
           {
@@ -48,7 +52,7 @@ export default defineConfig(({ mode }) => ({
       manifest: {
         name: 'AsylumPrep',
         short_name: 'AsylumPrep',
-        start_url: '/',
+        start_url: './',
         display: 'standalone',
         background_color: '#ffffff',
         theme_color: '#0ea5e9',

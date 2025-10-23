@@ -11,9 +11,26 @@ window.addEventListener('error', (event) => {
   if (event.message?.includes('Failed to fetch dynamically imported module')) {
     const hasReloaded = sessionStorage.getItem('chunk-reload-attempted');
     if (!hasReloaded) {
-      console.log('[main.tsx] Chunk load error detected, reloading...');
+      console.log('[main.tsx] Chunk load error detected, purging SW/caches and reloading...');
       sessionStorage.setItem('chunk-reload-attempted', 'true');
-      window.location.reload();
+      (async () => {
+        try {
+          if ('serviceWorker' in navigator) {
+            const regs = await navigator.serviceWorker.getRegistrations();
+            await Promise.all(regs.map(r => r.unregister()));
+          }
+          if ('caches' in window) {
+            const keys = await caches.keys();
+            await Promise.all(keys.map(k => caches.delete(k)));
+          }
+        } catch (e) {
+          console.error('[main.tsx] Failed to purge SW/caches:', e);
+        } finally {
+          window.location.reload();
+        }
+      })();
+    } else {
+      sessionStorage.removeItem('chunk-reload-attempted');
     }
   }
 });

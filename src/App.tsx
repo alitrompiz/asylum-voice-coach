@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, HashRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { RequireAdminRole } from "@/components/RequireAdminRole";
@@ -22,9 +22,24 @@ const lazyWithRetry = (componentImport: () => Promise<any>) => {
         const hasReloaded = sessionStorage.getItem('chunk-reload-attempted');
         
         if (!hasReloaded) {
-          // Store flag and reload
+          // Store flag and purge SW/caches before reload
           sessionStorage.setItem('chunk-reload-attempted', 'true');
-          window.location.reload();
+          (async () => {
+            try {
+              if ('serviceWorker' in navigator) {
+                const regs = await navigator.serviceWorker.getRegistrations();
+                await Promise.all(regs.map(r => r.unregister()));
+              }
+              if ('caches' in window) {
+                const keys = await caches.keys();
+                await Promise.all(keys.map(k => caches.delete(k)));
+              }
+            } catch (e) {
+              console.error('[lazyWithRetry] Failed to purge SW/caches:', e);
+            } finally {
+              window.location.reload();
+            }
+          })();
           // Return a never-resolving promise to prevent rendering
           return new Promise(() => {});
         } else {
@@ -157,13 +172,15 @@ class ErrorBoundary extends Component<
   }
 }
 
+const RouterImpl = import.meta.env?.VITE_USE_HASH_ROUTER === 'true' ? HashRouter : BrowserRouter;
+
 const App = () => (
   <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter>
+        <RouterImpl>
           <AuthProvider>
             <LanguageProvider>
               <Suspense fallback={<LandingSkeleton />}>
@@ -210,7 +227,7 @@ const App = () => (
               </Suspense>
             </LanguageProvider>
           </AuthProvider>
-        </BrowserRouter>
+        </RouterImpl>
       </TooltipProvider>
     </QueryClientProvider>
   </ErrorBoundary>
