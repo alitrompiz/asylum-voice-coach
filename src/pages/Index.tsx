@@ -103,9 +103,9 @@ const Index = () => {
       navigate('/onboarding');
     }
   };
-  return <main className="min-h-screen bg-background">
+  return <main className="min-h-screen bg-[hsl(var(--dashboard-blue))]">
       {/* Navigation Bar */}
-      <nav className="fixed top-0 left-0 right-0 z-50 backdrop-blur-lg bg-gray-900/95 border-b border-gray-700/50">
+      <nav className="fixed top-0 left-0 right-0 z-50 backdrop-blur-lg bg-[hsl(var(--dashboard-blue))]/95 border-b border-blue-800/30">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo/Brand */}
@@ -116,7 +116,7 @@ const Index = () => {
             </div>
             
             {/* Login Button */}
-            <Button variant="outline" onClick={() => navigate('/auth')} className="border-white text-gray-900 hover:bg-white hover:text-gray-900">
+            <Button variant="outline" onClick={() => navigate('/auth')} className="border-white/20 text-white hover:bg-white/10 hover:text-white">
               Login
             </Button>
           </div>
@@ -189,13 +189,13 @@ const Index = () => {
       </div>
 
       {/* Officer Selection Section */}
-      <div id="persona-carousel" className="bg-background py-20">
+      <div id="persona-carousel" className="bg-[hsl(var(--dashboard-blue))] py-20">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <h2 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold mb-4 text-foreground">
+            <h2 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold mb-4 text-white">
               {content?.officer_picker_title || 'Choose Your Interview Officer'}
             </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-lg text-blue-100 max-w-2xl mx-auto">
               Select an AI officer to practice with and get personalized feedback on your performance
             </p>
           </div>
@@ -222,9 +222,9 @@ const Index = () => {
       </div>
 
       {/* Footer */}
-      <footer className="bg-surface py-12 border-t">
+      <footer className="bg-[hsl(var(--dashboard-blue))] py-12 border-t border-blue-800/30">
         <div className="container mx-auto px-4 text-center">
-          <p className="text-muted-foreground">© 2024 AsylumPrep. All rights reserved.</p>
+          <p className="text-blue-100">© 2024 AsylumPrep. All rights reserved.</p>
         </div>
       </footer>
     </main>;
