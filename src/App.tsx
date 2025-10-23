@@ -172,7 +172,15 @@ class ErrorBoundary extends Component<
   }
 }
 
-const RouterImpl = import.meta.env?.VITE_USE_HASH_ROUTER === 'true' ? HashRouter : BrowserRouter;
+// Use HashRouter on staging (*.lovable.app) or when explicitly configured
+const shouldUseHash =
+  import.meta.env?.VITE_USE_HASH_ROUTER === 'true' ||
+  (typeof window !== 'undefined' && window.location.hostname.endsWith('.lovable.app'));
+
+const RouterImpl = shouldUseHash ? HashRouter : BrowserRouter;
+
+console.log('[App.tsx] Using router:', shouldUseHash ? 'HashRouter' : 'BrowserRouter', 
+  '(hostname:', typeof window !== 'undefined' ? window.location.hostname : 'SSR', ')');
 
 const App = () => (
   <ErrorBoundary>

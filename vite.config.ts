@@ -6,15 +6,18 @@ import { visualizer } from "rollup-plugin-visualizer";
 import { VitePWA } from 'vite-plugin-pwa';
 
 // https://vitejs.dev/config/
-export default defineConfig(({ mode }) => ({
-  base: mode === 'production' ? './' : '/',
-  server: {
-    host: "::",
-    port: 8080,
-  },
-  plugins: [
-    react(),
-    VitePWA({
+export default defineConfig(({ mode }) => {
+  const enablePwa = process.env.VITE_ENABLE_PWA !== 'false';
+  
+  return {
+    base: mode === 'production' ? './' : '/',
+    server: {
+      host: "::",
+      port: 8080,
+    },
+    plugins: [
+      react(),
+      ...(enablePwa ? [VitePWA({
       registerType: 'autoUpdate',
       injectRegister: 'auto',
       workbox: {
@@ -60,7 +63,7 @@ export default defineConfig(({ mode }) => ({
           { src: '/favicon.ico', sizes: '64x64 32x32 24x24 16x16', type: 'image/x-icon' }
         ],
       },
-    }),
+    })] : []),
     ...(mode === 'development' ? [componentTagger()] : []),
     ...((mode === 'development' || !!process.env.ANALYZE) ? [visualizer({
       open: !!process.env.ANALYZE,
@@ -94,9 +97,10 @@ export default defineConfig(({ mode }) => ({
       },
     },
   },
-  test: {
-    globals: true,
-    environment: 'jsdom',
-    setupFiles: ['./src/test/setup.ts'],
-  },
-}));
+    test: {
+      globals: true,
+      environment: 'jsdom',
+      setupFiles: ['./src/test/setup.ts'],
+    },
+  };
+});

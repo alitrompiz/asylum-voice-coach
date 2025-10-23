@@ -55,6 +55,36 @@ window.addEventListener('error', (event) => {
   }
 });
 
+// Global unhandled rejection handler for promise-based chunk failures
+window.addEventListener('unhandledrejection', (event) => {
+  const msg = String(event.reason?.message || event.reason || '');
+  if (msg.includes('Failed to fetch dynamically imported module') || msg.includes('Loading chunk') || msg.includes('ChunkLoadError')) {
+    const hasReloaded = sessionStorage.getItem('chunk-reload-attempted');
+    if (!hasReloaded) {
+      console.log('[main.tsx] Chunk load error (promise) detected, purging SW/caches and reloading...');
+      sessionStorage.setItem('chunk-reload-attempted', 'true');
+      (async () => {
+        try {
+          if ('serviceWorker' in navigator) {
+            const regs = await navigator.serviceWorker.getRegistrations();
+            await Promise.all(regs.map(r => r.unregister()));
+          }
+          if ('caches' in window) {
+            const keys = await caches.keys();
+            await Promise.all(keys.map(k => caches.delete(k)));
+          }
+        } catch (e) {
+          console.error('[main.tsx] Failed to purge SW/caches:', e);
+        } finally {
+          window.location.reload();
+        }
+      })();
+    } else {
+      sessionStorage.removeItem('chunk-reload-attempted');
+    }
+  }
+});
+
 // Initialize monitoring before React renders
 try {
   initializeMonitoring();
@@ -70,3 +100,7 @@ createRoot(document.getElementById("root")!).render(
     <App />
   </MixpanelProvider>
 );
+
+// Mark app as mounted and hide boot overlay
+(window as any).__APP_MOUNTED__ = true;
+document.getElementById('boot-overlay')?.classList.add('hidden');

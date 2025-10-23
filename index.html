@@ -34,6 +34,48 @@
         This site requires JavaScript to run. Please enable JavaScript and reload.
       </div>
     </noscript>
+    
+    <!-- Boot rescue overlay -->
+    <style>
+      #boot-overlay{position:fixed;inset:0;background:#0b1220;color:#fff;display:flex;align-items:center;justify-content:center;font:600 16px/1.5 system-ui,Arial;z-index:2147483647}
+      #boot-overlay.hidden{display:none}
+    </style>
+    <div id="boot-overlay">Loading AsylumPrep…</div>
+    
+    <!-- Pre-boot SW/caches purge for staging + mount watchdog -->
+    <script>
+      (function(){
+        const isStaging = location.hostname.endsWith('.lovable.app');
+        if (isStaging && 'serviceWorker' in navigator) {
+          navigator.serviceWorker.getRegistrations().then(rs => rs.forEach(r => r.unregister()));
+        }
+        if (isStaging && 'caches' in window) {
+          caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+        }
+        // Mount watchdog: if app hasn't mounted in 6s, purge again and hard-reload once
+        setTimeout(async () => {
+          if (!window.__APP_MOUNTED__) {
+            if (!sessionStorage.getItem('sw-rescue-reload')) {
+              sessionStorage.setItem('sw-rescue-reload', '1');
+              try {
+                if ('serviceWorker' in navigator) {
+                  const regs = await navigator.serviceWorker.getRegistrations();
+                  await Promise.all(regs.map(r => r.unregister()));
+                }
+                if ('caches' in window) {
+                  const keys = await caches.keys();
+                  await Promise.all(keys.map(k => caches.delete(k)));
+                }
+              } catch (e) {}
+              location.reload();
+            } else {
+              sessionStorage.removeItem('sw-rescue-reload');
+            }
+          }
+        }, 6000);
+      })();
+    </script>
+    
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
