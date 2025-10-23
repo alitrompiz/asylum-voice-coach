@@ -75,11 +75,6 @@ export default defineConfig(({ mode }) => {
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
-      // Force React to single ESM source everywhere
-      react: path.resolve(__dirname, "node_modules/react/index.js"),
-      "react/jsx-runtime": path.resolve(__dirname, "node_modules/react/jsx-runtime.js"),
-      "react-dom": path.resolve(__dirname, "node_modules/react-dom/index.js"),
-      "react-dom/client": path.resolve(__dirname, "node_modules/react-dom/client.js"),
     },
     // Prevent duplicate React instances in the graph
     dedupe: ["react", "react-dom"],

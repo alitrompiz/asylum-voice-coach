@@ -83,15 +83,16 @@ window.addEventListener('unhandledrejection', (event) => {
 
 console.log('[main.tsx] Rendering React app');
 
-// Dynamically import ReactDOM and the App to guarantee React is resolved first
+// Dynamically import React, ReactDOM and the App to guarantee React is resolved first
 (async () => {
   try {
-    const [{ createRoot }, { default: App }] = await Promise.all([
+    const [{ default: React }, { createRoot }, { default: App }] = await Promise.all([
+      import('react'),
       import('react-dom/client'),
       import('./App.tsx'),
     ]);
     const rootEl = document.getElementById('root')!;
-    createRoot(rootEl).render(<App />);
+    createRoot(rootEl).render(React.createElement(App));
     // Mark app as mounted and hide boot overlay
     (window as any).__APP_MOUNTED__ = true;
     document.getElementById('boot-overlay')?.classList.add('hidden');
