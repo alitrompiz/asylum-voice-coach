@@ -11,38 +11,64 @@ import { LanguageProvider } from "@/components/LanguageProvider";
 import '@/lib/i18n';
 import { Suspense, lazy, Component, ErrorInfo, ReactNode } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
-// Import pages (lazy-loaded)
-const Index = lazy(() => import("./pages/Index"));
-const NotFound = lazy(() => import("./pages/NotFound"));
+
+// Lazy load wrapper with automatic retry for chunk load errors
+const lazyWithRetry = (componentImport: () => Promise<any>) => {
+  return lazy(() =>
+    componentImport().catch((error) => {
+      // Check if it's a chunk load error
+      if (error.name === 'TypeError' && error.message.includes('Failed to fetch dynamically imported module')) {
+        // Check if we've already tried to reload
+        const hasReloaded = sessionStorage.getItem('chunk-reload-attempted');
+        
+        if (!hasReloaded) {
+          // Store flag and reload
+          sessionStorage.setItem('chunk-reload-attempted', 'true');
+          window.location.reload();
+          // Return a never-resolving promise to prevent rendering
+          return new Promise(() => {});
+        } else {
+          // Clear flag and show error
+          sessionStorage.removeItem('chunk-reload-attempted');
+        }
+      }
+      throw error;
+    })
+  );
+};
+
+// Import pages (lazy-loaded with retry)
+const Index = lazyWithRetry(() => import("./pages/Index"));
+const NotFound = lazyWithRetry(() => import("./pages/NotFound"));
 
 // Auth pages
-const Auth = lazy(() => import("./pages/auth/Auth"));
-const ForgotPassword = lazy(() => import("./pages/auth/ForgotPassword"));
-const ResetPassword = lazy(() => import("./pages/auth/ResetPassword"));
-const Verify = lazy(() => import("./pages/auth/Verify"));
+const Auth = lazyWithRetry(() => import("./pages/auth/Auth"));
+const ForgotPassword = lazyWithRetry(() => import("./pages/auth/ForgotPassword"));
+const ResetPassword = lazyWithRetry(() => import("./pages/auth/ResetPassword"));
+const Verify = lazyWithRetry(() => import("./pages/auth/Verify"));
 
 // Main app pages
-const Onboarding = lazy(() => import("./pages/Onboarding"));
-const Dashboard = lazy(() => import("./pages/Dashboard"));
-const Interview = lazy(() => import("./pages/Interview"));
-const Settings = lazy(() => import("./pages/Settings"));
-const Profile = lazy(() => import("./pages/Profile"));
-const ContactUsForm = lazy(() => import("./components/ContactUsForm"));
+const Onboarding = lazyWithRetry(() => import("./pages/Onboarding"));
+const Dashboard = lazyWithRetry(() => import("./pages/Dashboard"));
+const Interview = lazyWithRetry(() => import("./pages/Interview"));
+const Settings = lazyWithRetry(() => import("./pages/Settings"));
+const Profile = lazyWithRetry(() => import("./pages/Profile"));
+const ContactUsForm = lazyWithRetry(() => import("./components/ContactUsForm"));
 
 // Admin pages
-const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
-const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
-const HomePageContentManagement = lazy(() => import("./pages/admin/HomePageContentManagement"));
-const EnhancedUserManagement = lazy(() => import("./pages/admin/EnhancedUserManagement"));
-const GuestSessionsManagement = lazy(() => import("./pages/admin/GuestSessionsManagement"));
-const SkillsManagement = lazy(() => import("./pages/admin/SkillsManagement"));
-const PersonasManagement = lazy(() => import("./pages/admin/PersonasManagement"));
-const PromptsManagement = lazy(() => import("./pages/admin/PromptsManagement"));
-const RoleManagement = lazy(() => import("./pages/admin/RoleManagement"));
-const UsageAnalytics = lazy(() => import("./pages/admin/UsageAnalytics"));
-const PhrasesManagement = lazy(() => import("./pages/admin/PhrasesManagement"));
-const SessionLimitsManagement = lazy(() => import("./pages/admin/SessionLimitsManagement"));
-const TestStoriesManagement = lazy(() => import("./pages/admin/TestStoriesManagement"));
+const AdminLayout = lazyWithRetry(() => import("./pages/admin/AdminLayout"));
+const AdminDashboard = lazyWithRetry(() => import("./pages/admin/AdminDashboard"));
+const HomePageContentManagement = lazyWithRetry(() => import("./pages/admin/HomePageContentManagement"));
+const EnhancedUserManagement = lazyWithRetry(() => import("./pages/admin/EnhancedUserManagement"));
+const GuestSessionsManagement = lazyWithRetry(() => import("./pages/admin/GuestSessionsManagement"));
+const SkillsManagement = lazyWithRetry(() => import("./pages/admin/SkillsManagement"));
+const PersonasManagement = lazyWithRetry(() => import("./pages/admin/PersonasManagement"));
+const PromptsManagement = lazyWithRetry(() => import("./pages/admin/PromptsManagement"));
+const RoleManagement = lazyWithRetry(() => import("./pages/admin/RoleManagement"));
+const UsageAnalytics = lazyWithRetry(() => import("./pages/admin/UsageAnalytics"));
+const PhrasesManagement = lazyWithRetry(() => import("./pages/admin/PhrasesManagement"));
+const SessionLimitsManagement = lazyWithRetry(() => import("./pages/admin/SessionLimitsManagement"));
+const TestStoriesManagement = lazyWithRetry(() => import("./pages/admin/TestStoriesManagement"));
 
 const queryClient = new QueryClient();
 
@@ -94,12 +120,19 @@ class ErrorBoundary extends Component<
 
   render() {
     if (this.state.hasError) {
+      const isChunkError = this.state.error?.message?.includes('Failed to fetch dynamically imported module');
+      
       return (
         <div className="min-h-screen flex items-center justify-center bg-background p-4">
           <div className="max-w-md w-full bg-card border border-border rounded-lg p-6 space-y-4">
-            <h1 className="text-2xl font-bold text-destructive">Something went wrong</h1>
+            <h1 className="text-2xl font-bold text-destructive">
+              {isChunkError ? 'Update Required' : 'Something went wrong'}
+            </h1>
             <p className="text-muted-foreground">
-              The application encountered an error. Please try refreshing the page.
+              {isChunkError 
+                ? 'The application has been updated. Please reload the page to get the latest version.'
+                : 'The application encountered an error. Please try refreshing the page.'
+              }
             </p>
             <details className="text-sm">
               <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
