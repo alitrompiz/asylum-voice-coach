@@ -116,7 +116,7 @@ const Index = () => {
             </div>
             
             {/* Login Button */}
-            <Button variant="outline" onClick={() => navigate('/auth')} className="border-white/30 text-white hover:bg-white/10 hover:text-white hover:border-white/50">
+            <Button variant="outline" onClick={() => navigate('/auth')} className="border-white/30 text-foreground hover:bg-white/10 hover:text-white hover:border-white/50">
               Login
             </Button>
           </div>
