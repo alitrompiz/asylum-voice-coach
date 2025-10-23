@@ -82,12 +82,12 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
       return;
     }
 
-    if (storyText.length < 100) {
+    if (storyText.trim().length < 100) {
       toast.error(t('onboarding.validation.story_too_short'));
       return;
     }
 
-    if (storyText.length > 10000) {
+    if (storyText.trim().length > 10000) {
       toast.error(t('onboarding.validation.story_too_long'));
       return;
     }
@@ -164,7 +164,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
 
   const canProceedFromStep1 = () => {
     if (storyOption === 'upload') return hasStoryData;
-    if (storyOption === 'paste') return firstName.trim() && lastName.trim() && storyText.trim().length >= 100;
+    if (storyOption === 'paste') return firstName.trim() && lastName.trim() && storyText.trim().length >= 100 && storyText.trim().length <= 10000;
     if (storyOption === 'mock') return hasStoryData;
     return hasStoryData; // Allow proceeding if already has story from before
   };
@@ -186,7 +186,16 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   };
 
   const handleBack = () => {
-    if (currentStep > 1) {
+    if (currentStep === 1) {
+      if (storyOption) {
+        // User is in a nested option view, go back to option selection
+        setStoryOption(null);
+        setUploadError(null);
+      } else {
+        // User is on main option selection, exit to dashboard
+        navigate('/dashboard');
+      }
+    } else if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
       
       // Reset story option when going back to step 1
@@ -381,9 +390,11 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                         className="bg-gray-700/50 border-gray-600 text-white min-h-[300px]"
                         maxLength={10000}
                       />
-                      <p className="text-sm text-gray-400 mt-2">
-                        {storyText.length} / 10,000 characters
-                      </p>
+                      <div className="flex items-center justify-between mt-2">
+                        <p className={`text-sm ${storyText.trim().length >= 100 ? 'text-green-400' : 'text-red-400'}`}>
+                          {storyText.trim().length >= 100 ? '✓' : '⚠'} {storyText.trim().length} / 10,000 characters (minimum 100)
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -465,11 +476,10 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
             <Button
               variant="ghost"
               onClick={handleBack}
-              disabled={currentStep === 1}
               className="text-gray-300"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
-              {t('onboarding.back')}
+              {currentStep === 1 && !storyOption ? 'Back to Dashboard' : t('onboarding.back')}
             </Button>
 
             <Button
@@ -480,6 +490,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                 isLoading
               }
             >
+              {isLoading ? 'Saving...' : t('onboarding.next')}
               {isLoading ? 'Saving...' : t('onboarding.next')}
               <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
