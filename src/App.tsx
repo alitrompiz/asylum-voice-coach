@@ -9,8 +9,10 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { RequireAdminRole } from "@/components/RequireAdminRole";
 import { LanguageProvider } from "@/components/LanguageProvider";
 import '@/lib/i18n';
-import { Suspense, lazy, Component, ErrorInfo, ReactNode } from "react";
+import { Suspense, lazy, Component, ErrorInfo, ReactNode, useEffect } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { MixpanelProvider } from "@/lib/mixpanel";
+import { initializeMonitoring } from "@/lib/monitoring";
 
 // Lazy load wrapper with automatic retry for chunk load errors
 const lazyWithRetry = (componentImport: () => Promise<any>) => {
@@ -182,63 +184,75 @@ const RouterImpl = shouldUseHash ? HashRouter : BrowserRouter;
 console.log('[App.tsx] Using router:', shouldUseHash ? 'HashRouter' : 'BrowserRouter', 
   '(hostname:', typeof window !== 'undefined' ? window.location.hostname : 'SSR', ')');
 
-const App = () => (
-  <ErrorBoundary>
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <RouterImpl>
-          <AuthProvider>
-            <LanguageProvider>
-              <Suspense fallback={<LandingSkeleton />}>
-                <Routes>
-                  {/* Public routes */}
-                  <Route path="/" element={<Index />} />
-                  
-                  {/* Auth routes */}
-                  <Route path="/auth" element={<Auth />} />
-                  <Route path="/auth/login" element={<Auth />} />
-                  <Route path="/auth/signup" element={<Auth />} />
-                  <Route path="/auth/register" element={<Auth />} />
-                  <Route path="/auth/forgot-password" element={<ForgotPassword />} />
-                  <Route path="/auth/reset-password" element={<ResetPassword />} />
-                  <Route path="/auth/verify" element={<Verify />} />
-                  
-                  {/* Protected routes */}
-          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-          <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
-          <Route path="/interview" element={<ProtectedRoute><Interview /></ProtectedRoute>} />
-          <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-                  <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-                  <Route path="/settings/contact" element={<ProtectedRoute><ContactUsForm /></ProtectedRoute>} />
-                  
-                  {/* Admin routes - require admin role */}
-                  <Route path="/admin" element={<RequireAdminRole><AdminLayout /></RequireAdminRole>}>
-                    <Route index element={<AdminDashboard />} />
-                    <Route path="home-page" element={<HomePageContentManagement />} />
-                    <Route path="users" element={<EnhancedUserManagement />} />
-                    <Route path="guest-sessions" element={<GuestSessionsManagement />} />
-                    <Route path="skills" element={<SkillsManagement />} />
-                    <Route path="personas" element={<PersonasManagement />} />
-                    <Route path="prompts" element={<PromptsManagement />} />
-                    <Route path="roles" element={<RoleManagement />} />
-                    <Route path="usage" element={<UsageAnalytics />} />
-                    <Route path="phrases" element={<PhrasesManagement />} />
-                    <Route path="session-limits" element={<SessionLimitsManagement />} />
-                    <Route path="test-stories" element={<TestStoriesManagement />} />
-                  </Route>
-                  
-                  {/* 404 catch-all */}
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </Suspense>
-            </LanguageProvider>
-          </AuthProvider>
-        </RouterImpl>
-      </TooltipProvider>
-    </QueryClientProvider>
-  </ErrorBoundary>
-);
+const App = () => {
+  // Initialize monitoring after React is available
+  useEffect(() => {
+    console.log('[App] Initializing monitoring');
+    initializeMonitoring().catch((error) => {
+      console.error('[App] Failed to initialize monitoring:', error);
+    });
+  }, []);
+
+  return (
+    <ErrorBoundary>
+      <MixpanelProvider>
+        <QueryClientProvider client={queryClient}>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <RouterImpl>
+              <AuthProvider>
+                <LanguageProvider>
+                  <Suspense fallback={<LandingSkeleton />}>
+                    <Routes>
+                      {/* Public routes */}
+                      <Route path="/" element={<Index />} />
+                      
+                      {/* Auth routes */}
+                      <Route path="/auth" element={<Auth />} />
+                      <Route path="/auth/login" element={<Auth />} />
+                      <Route path="/auth/signup" element={<Auth />} />
+                      <Route path="/auth/register" element={<Auth />} />
+                      <Route path="/auth/forgot-password" element={<ForgotPassword />} />
+                      <Route path="/auth/reset-password" element={<ResetPassword />} />
+                      <Route path="/auth/verify" element={<Verify />} />
+                      
+                      {/* Protected routes */}
+                      <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                      <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
+                      <Route path="/interview" element={<ProtectedRoute><Interview /></ProtectedRoute>} />
+                      <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+                      <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+                      <Route path="/settings/contact" element={<ProtectedRoute><ContactUsForm /></ProtectedRoute>} />
+                      
+                      {/* Admin routes - require admin role */}
+                      <Route path="/admin" element={<RequireAdminRole><AdminLayout /></RequireAdminRole>}>
+                        <Route index element={<AdminDashboard />} />
+                        <Route path="home-page" element={<HomePageContentManagement />} />
+                        <Route path="users" element={<EnhancedUserManagement />} />
+                        <Route path="guest-sessions" element={<GuestSessionsManagement />} />
+                        <Route path="skills" element={<SkillsManagement />} />
+                        <Route path="personas" element={<PersonasManagement />} />
+                        <Route path="prompts" element={<PromptsManagement />} />
+                        <Route path="roles" element={<RoleManagement />} />
+                        <Route path="usage" element={<UsageAnalytics />} />
+                        <Route path="phrases" element={<PhrasesManagement />} />
+                        <Route path="session-limits" element={<SessionLimitsManagement />} />
+                        <Route path="test-stories" element={<TestStoriesManagement />} />
+                      </Route>
+                      
+                      {/* 404 catch-all */}
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </Suspense>
+                </LanguageProvider>
+              </AuthProvider>
+            </RouterImpl>
+          </TooltipProvider>
+        </QueryClientProvider>
+      </MixpanelProvider>
+    </ErrorBoundary>
+  );
+};
 
 export default App;

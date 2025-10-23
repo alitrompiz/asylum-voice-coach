@@ -1,8 +1,6 @@
 import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
-import { MixpanelProvider } from './lib/mixpanel'
-import { initializeMonitoring } from './lib/monitoring'
 
 console.log('[main.tsx] Starting application initialization');
 
@@ -85,21 +83,9 @@ window.addEventListener('unhandledrejection', (event) => {
   }
 });
 
-// Initialize monitoring before React renders
-try {
-  initializeMonitoring();
-  console.log('[main.tsx] Monitoring initialized');
-} catch (error) {
-  console.error('[main.tsx] Failed to initialize monitoring:', error);
-}
-
 console.log('[main.tsx] Rendering React app');
 
-createRoot(document.getElementById("root")!).render(
-  <MixpanelProvider>
-    <App />
-  </MixpanelProvider>
-);
+createRoot(document.getElementById("root")!).render(<App />);
 
 // Mark app as mounted and hide boot overlay
 (window as any).__APP_MOUNTED__ = true;

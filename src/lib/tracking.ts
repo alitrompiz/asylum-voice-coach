@@ -36,11 +36,15 @@ const initMixpanel = async () => {
   }
 };
 
-// Start initialization (non-blocking)
-initMixpanel();
+// Lazy initialization - will be called on first use
 
-// Base tracking function
+// Base tracking function with lazy initialization
 export const trackEvent = (eventName: string, properties?: Record<string, any>) => {
+  // Lazy init on first use
+  if (!isInitialized && !mixpanelInstance) {
+    initMixpanel();
+  }
+  
   if (isInitialized && mixpanelInstance) {
     try {
       mixpanelInstance.track(eventName, {
@@ -56,8 +60,13 @@ export const trackEvent = (eventName: string, properties?: Record<string, any>) 
   }
 };
 
-// User identification
+// User identification with lazy initialization
 export const identifyUser = (userId: string, properties?: Record<string, any>) => {
+  // Lazy init on first use
+  if (!isInitialized && !mixpanelInstance) {
+    initMixpanel();
+  }
+  
   if (isInitialized && mixpanelInstance) {
     try {
       mixpanelInstance.identify(userId);

@@ -10,7 +10,7 @@ export default defineConfig(({ mode }) => {
   const enablePwa = process.env.VITE_ENABLE_PWA !== 'false';
   
   return {
-    base: mode === 'production' ? './' : '/',
+    base: '/',
     server: {
       host: "::",
       port: 8080,
@@ -79,6 +79,9 @@ export default defineConfig(({ mode }) => {
   },
   build: {
     sourcemap: !!process.env.ANALYZE,
+    modulePreload: {
+      polyfill: true,
+    },
     rollupOptions: {
       output: {
         manualChunks(id) {
