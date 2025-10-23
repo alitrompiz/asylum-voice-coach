@@ -71,11 +71,25 @@ export const useLanguagePreference = () => {
   const getVoiceForTTS = (ttsProvider: 'polly' | 'google' | 'openai' | 'elevenlabs' = 'elevenlabs') => {
     switch (ttsProvider) {
       case 'elevenlabs':
-        // Use ElevenLabs voices - default to Aria for most languages
-        if (languageCode === 'es') return 'EXAVITQu4vr4xnSDxMaL'; // Sarah - good for Spanish
-        if (languageCode === 'fr') return 'pFZP5JQG7iQjIQuC4Bku'; // Lily - good for French
-        if (languageCode === 'pt') return 'cgSgspJ2msm6clMCkdW9'; // Jessica - good for Portuguese
-        return '9BWtsMINqrJLrRacOk9x'; // Aria - default for English and others
+        // Comprehensive language-to-voice mapping for ElevenLabs
+        // Using multilingual voices (Sarah, Lily, Jessica) that adapt to language
+        if (languageCode === 'es') return 'EXAVITQu4vr4xnSDxMaL'; // Sarah - Spanish
+        if (languageCode === 'fr') return 'pFZP5JQG7iQjIQuC4Bku'; // Lily - French
+        if (languageCode === 'pt') return 'cgSgspJ2msm6clMCkdW9'; // Jessica - Portuguese
+        if (languageCode === 'ar') return 'EXAVITQu4vr4xnSDxMaL'; // Sarah - Arabic
+        if (languageCode === 'zh') return 'cgSgspJ2msm6clMCkdW9'; // Jessica - Chinese
+        if (languageCode === 'hi') return 'pFZP5JQG7iQjIQuC4Bku'; // Lily - Hindi
+        if (languageCode === 'ru') return 'EXAVITQu4vr4xnSDxMaL'; // Sarah - Russian
+        if (languageCode === 'am') return 'pFZP5JQG7iQjIQuC4Bku'; // Lily - Amharic
+        if (languageCode === 'bn') return 'cgSgspJ2msm6clMCkdW9'; // Jessica - Bengali
+        if (languageCode === 'fa') return 'EXAVITQu4vr4xnSDxMaL'; // Sarah - Farsi
+        if (languageCode === 'ht') return 'pFZP5JQG7iQjIQuC4Bku'; // Lily - Haitian Creole
+        if (languageCode === 'so') return 'cgSgspJ2msm6clMCkdW9'; // Jessica - Somali
+        if (languageCode === 'sw') return 'EXAVITQu4vr4xnSDxMaL'; // Sarah - Swahili
+        if (languageCode === 'ti') return 'pFZP5JQG7iQjIQuC4Bku'; // Lily - Tigrinya
+        if (languageCode === 'uk') return 'cgSgspJ2msm6clMCkdW9'; // Jessica - Ukrainian
+        if (languageCode === 'ur') return 'EXAVITQu4vr4xnSDxMaL'; // Sarah - Urdu
+        return '9BWtsMINqrJLrRacOk9x'; // Aria - English default
       case 'polly':
         return language.pollyVoice || language.googleVoice || language.openaiVoice || 'alloy';
       case 'google':

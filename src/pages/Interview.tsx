@@ -46,7 +46,8 @@ export default function Interview() {
   const {
     language,
     languageCode,
-    isLoading: languageLoading
+    isLoading: languageLoading,
+    getVoiceForTTS
   } = useLanguagePreference();
 
   // Enhanced recording and TTS state machines
@@ -146,9 +147,10 @@ export default function Interview() {
         console.warn('⚠️ AudioContext preparation failed:', err);
       });
 
-      // Use TTS state machine
+      // Use TTS state machine with language-appropriate voice
+      const languageVoice = getVoiceForTTS('elevenlabs');
       ttsMachine.speak(currentSubtitle, {
-        voice: selectedPersonaData.tts_voice,
+        voice: languageVoice,
         onStart: () => {
           console.log('✅ TTS STARTED - Request sent, loading audio...');
           // Track first TTS start for accurate session timing
@@ -413,8 +415,9 @@ export default function Interview() {
       setIsAiSpeaking(false);
       setAudioActuallyPlaying(false);
     } else if (currentSubtitle && !currentSubtitle.includes("Processing your message") && !currentSubtitle.includes("Transcribing your message") && selectedPersonaData?.tts_voice) {
+      const languageVoice = getVoiceForTTS('elevenlabs');
       ttsMachine.speak(currentSubtitle, {
-        voice: selectedPersonaData.tts_voice,
+        voice: languageVoice,
         onStart: () => {
           setIsAiSpeaking(true);
         },

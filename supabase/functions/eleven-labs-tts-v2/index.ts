@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { text, voice = '9BWtsMINqrJLrRacOk9x', model = 'eleven_turbo_v2_5' } = await req.json();
+    const { text, voice = '9BWtsMINqrJLrRacOk9x', model = 'eleven_turbo_v2_5', language = 'en' } = await req.json();
     
     // Add a unique request ID for tracking
     const requestId = `${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
@@ -30,6 +30,7 @@ serve(async (req) => {
       textLength: text.length, 
       voice, 
       model,
+      language,
       textPreview: text.substring(0, 100) + (text.length > 100 ? '...' : '')
     });
 
@@ -81,6 +82,7 @@ serve(async (req) => {
     console.log(`[${requestId}] ElevenLabs TTS Success:`, { 
       voice, 
       model,
+      language,
       audioSize: audioBuffer.byteLength,
       base64Size: base64Audio.length,
       firstBytes: Array.from(uint8Array.slice(0, 5)).map(b => b.toString(16)).join(' ')
@@ -92,6 +94,7 @@ serve(async (req) => {
         contentType: 'audio/mpeg',
         voice,
         model,
+        language,
         requestId
       }),
       {
