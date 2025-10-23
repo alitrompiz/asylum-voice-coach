@@ -75,7 +75,14 @@ export default defineConfig(({ mode }) => {
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      // Force React to single ESM source everywhere
+      react: path.resolve(__dirname, "node_modules/react/index.js"),
+      "react/jsx-runtime": path.resolve(__dirname, "node_modules/react/jsx-runtime.js"),
+      "react-dom": path.resolve(__dirname, "node_modules/react-dom/index.js"),
+      "react-dom/client": path.resolve(__dirname, "node_modules/react-dom/client.js"),
     },
+    // Prevent duplicate React instances in the graph
+    dedupe: ["react", "react-dom"],
   },
   build: {
     sourcemap: !!process.env.ANALYZE,
@@ -86,7 +93,7 @@ export default defineConfig(({ mode }) => {
       output: {
         manualChunks(id) {
           if (!id.includes('node_modules')) return;
-          if (id.includes('react') || id.includes('react-dom') || id.includes('/react-router-dom/')) return 'vendor-react';
+          // Don't force React into a special chunk to avoid edge ordering issues
           if (id.includes('@supabase/supabase-js')) return 'vendor-supabase';
           if (id.includes('recharts')) return 'vendor-charts';
           if (id.includes('i18next') || id.includes('react-i18next') || id.includes('i18next-browser-languagedetector')) return 'vendor-i18n';

@@ -1,5 +1,3 @@
-import { createRoot } from 'react-dom/client'
-import App from './App.tsx'
 import './index.css'
 
 console.log('[main.tsx] Starting application initialization');
@@ -85,8 +83,21 @@ window.addEventListener('unhandledrejection', (event) => {
 
 console.log('[main.tsx] Rendering React app');
 
-createRoot(document.getElementById("root")!).render(<App />);
-
-// Mark app as mounted and hide boot overlay
-(window as any).__APP_MOUNTED__ = true;
-document.getElementById('boot-overlay')?.classList.add('hidden');
+// Dynamically import ReactDOM and the App to guarantee React is resolved first
+(async () => {
+  try {
+    const [{ createRoot }, { default: App }] = await Promise.all([
+      import('react-dom/client'),
+      import('./App.tsx'),
+    ]);
+    const rootEl = document.getElementById('root')!;
+    createRoot(rootEl).render(<App />);
+    // Mark app as mounted and hide boot overlay
+    (window as any).__APP_MOUNTED__ = true;
+    document.getElementById('boot-overlay')?.classList.add('hidden');
+  } catch (e) {
+    console.error('[main.tsx] Failed to bootstrap React app:', e);
+    // Let global listeners handle purge/reload path
+    throw e;
+  }
+})();
