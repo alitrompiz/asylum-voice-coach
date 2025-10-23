@@ -8,6 +8,7 @@ interface GuestSessionData {
   sessionSecondsLimit: number;
   createdAt: string;
   expiresAt: string;
+  languagePreference?: string;
   selectedTestStoryId?: string;
   storyText?: string;
   storyFirstName?: string;
@@ -124,6 +125,19 @@ export const useGuestSession = () => {
     }
   };
 
+  const setLanguagePreference = (languageCode: string) => {
+    if (!guestData) return;
+    
+    try {
+      const updated = { ...guestData, languagePreference: languageCode };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      setGuestData(updated);
+      console.log('[useGuestSession] Language preference updated to:', languageCode);
+    } catch (error) {
+      console.error('[useGuestSession] Failed to set language preference:', error);
+    }
+  };
+
   const syncToDatabase = async (data: Partial<GuestSessionData>) => {
     if (!guestData?.guestToken) return;
 
@@ -170,6 +184,7 @@ export const useGuestSession = () => {
     updateSessionTime,
     setTestStory,
     setStoryData,
+    setLanguagePreference,
     clearGuestSession,
     syncToDatabase,
     remainingSeconds: isValid 

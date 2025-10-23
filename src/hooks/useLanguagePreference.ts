@@ -3,14 +3,24 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { SUPPORTED_LANGUAGES, type Language } from '@/components/LanguageSelector';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '@/hooks/useAuth';
+import { useGuestSession } from '@/hooks/useGuestSession';
 
 export const useLanguagePreference = () => {
   const queryClient = useQueryClient();
   const { i18n } = useTranslation();
+  const { isGuest } = useAuth();
+  const guestSession = useGuestSession();
 
   const { data: languageCode, isLoading } = useQuery({
     queryKey: ['user-language'],
     queryFn: async () => {
+      // For guest users, get language from localStorage
+      if (isGuest && guestSession.guestData?.languagePreference) {
+        return guestSession.guestData.languagePreference;
+      }
+      
+      // For authenticated users, get from database
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return 'en';
 
@@ -26,6 +36,13 @@ export const useLanguagePreference = () => {
 
   const updateLanguage = useMutation({
     mutationFn: async (newLanguageCode: string) => {
+      // For guest users, store in localStorage
+      if (isGuest) {
+        guestSession.setLanguagePreference(newLanguageCode);
+        return newLanguageCode;
+      }
+      
+      // For authenticated users, update database
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
@@ -42,7 +59,7 @@ export const useLanguagePreference = () => {
       queryClient.setQueryData(['user-language'], newLanguageCode);
       queryClient.invalidateQueries({ queryKey: ['user-language'] });
       
-      // Update i18n language
+      // Update i18n language (works for both guest and authenticated)
       console.log('Changing i18n language to:', newLanguageCode, 'from:', i18n.language);
       i18n.changeLanguage(newLanguageCode);
       console.log('i18n language after change:', i18n.language);

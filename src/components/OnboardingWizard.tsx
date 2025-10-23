@@ -491,7 +491,6 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
               }
             >
               {isLoading ? 'Saving...' : t('onboarding.next')}
-              {isLoading ? 'Saving...' : t('onboarding.next')}
               <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           </div>
