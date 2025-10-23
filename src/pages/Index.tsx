@@ -134,15 +134,15 @@ const Index = () => {
             {/* Main Headline */}
             <h1 className="font-display text-4xl sm:text-4xl md:text-5xl font-extrabold mb-4 leading-tight lg:text-7xl">
               <span className="bg-gradient-to-r from-white via-blue-50 to-white bg-clip-text text-transparent drop-shadow-lg">
-                {content?.hero_h1 || 'Welcome to AsylumPrep'}
+                {content?.hero_h1 || 'Practice your asylum interview.'}
               </span>
             </h1>
             
             {/* Subheadline with bullet points */}
             <ul className="text-sm sm:text-sm md:text-base text-blue-50 max-w-3xl mx-auto mb-6 leading-snug font-medium drop-shadow-md list-disc list-inside space-y-0.5 text-left rounded-sm">
               <li>Simulate real USCIS asylum interviews tailored to your story</li>
+              <li>Practice describing your past harm, relocation, and fear of future persecution</li>
               <li>Get feedback to improve your asylum interviewing skills</li>
-              <li>Practice describing past harm, relocation and your fear of future persecution</li>
               <li>Build the confidence you need to tell your story — and get your asylum granted</li>
             </ul>
             
