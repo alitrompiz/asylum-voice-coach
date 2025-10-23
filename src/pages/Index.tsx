@@ -123,39 +123,31 @@ const Index = () => {
         </div>
       </nav>
 
-      {/* Hero Section with Gradient Background */}
+      {/* Hero Section */}
       <div className="relative overflow-hidden pt-20">
-        {/* Animated Gradient Background */}
-        <div className="absolute inset-0 bg-gradient-brand opacity-100" style={{
-        backgroundSize: '200% 200%'
-      }}>
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.1),transparent_50%)]" />
-        </div>
-        
         {/* Decorative Grid Pattern */}
         <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:64px_64px] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000,transparent)]" />
         
         {/* Hero Content */}
-        <div className="relative z-10 container mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-32">
+        <div className="relative z-10 container mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-16">
           <div className="text-center max-w-5xl mx-auto">
             {/* Main Headline */}
-            <h1 className="font-display text-4xl sm:text-4xl md:text-5xl font-extrabold mb-6 leading-tight lg:text-7xl">
+            <h1 className="font-display text-4xl sm:text-4xl md:text-5xl font-extrabold mb-4 leading-tight lg:text-7xl">
               <span className="bg-gradient-to-r from-white via-blue-50 to-white bg-clip-text text-transparent drop-shadow-lg">
                 {content?.hero_h1 || 'Welcome to AsylumPrep'}
               </span>
             </h1>
             
             {/* Subheadline with bullet points */}
-            <ul className="text-sm sm:text-sm md:text-base text-blue-50 max-w-3xl mx-auto mb-10 leading-relaxed font-medium drop-shadow-md list-disc list-inside space-y-2 text-left rounded-sm">
-              <li>Simulate real USCIS interviews</li>
-              <li>Answer authentic questions tailored to your I-589 story</li>
-              <li>Get AI-powered feedback trained by attorneys and asylum officers</li>
-              <li>Find inconsistencies before they do</li>
+            <ul className="text-sm sm:text-sm md:text-base text-blue-50 max-w-3xl mx-auto mb-6 leading-snug font-medium drop-shadow-md list-disc list-inside space-y-0.5 text-left rounded-sm">
+              <li>Simulate real USCIS asylum interviews tailored to your story</li>
+              <li>Get feedback to improve your asylum interviewing skills</li>
+              <li>Practice describing past harm, relocation and your fear of future persecution</li>
               <li>Build the confidence you need to tell your story — and get your asylum granted</li>
             </ul>
             
             {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
               <Button size="xl" variant="brand" className="bg-white text-primary hover:bg-blue-50 hover:text-primary-hover shadow-2xl group" onClick={() => {
               const carousel = document.getElementById('persona-carousel');
               carousel?.scrollIntoView({
