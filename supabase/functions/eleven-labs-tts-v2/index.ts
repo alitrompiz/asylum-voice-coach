@@ -35,7 +35,7 @@ serve(async (req) => {
     });
 
     // Call ElevenLabs TTS API
-    const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voice}`, {
+    let response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voice}`, {
       method: 'POST',
       headers: {
         'Accept': 'audio/mpeg',
@@ -51,6 +51,29 @@ serve(async (req) => {
         },
       }),
     });
+
+    // Fallback to safe default voice if the requested voice fails
+    if (!response.ok && (response.status === 404 || response.status === 422)) {
+      const errorText = await response.text();
+      console.warn(`[${requestId}] Voice ${voice} not found, retrying with default voice (Rachel):`, errorText);
+      
+      response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/21m00Tcm4TlvDq8ikWAM`, {
+        method: 'POST',
+        headers: {
+          'Accept': 'audio/mpeg',
+          'Content-Type': 'application/json',
+          'xi-api-key': elevenLabsApiKey,
+        },
+        body: JSON.stringify({
+          text: text,
+          model_id: model,
+          voice_settings: {
+            stability: 0.5,
+            similarity_boost: 0.5,
+          },
+        }),
+      });
+    }
 
     if (!response.ok) {
       const errorText = await response.text();

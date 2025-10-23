@@ -147,8 +147,8 @@ export default function Interview() {
         console.warn('⚠️ AudioContext preparation failed:', err);
       });
 
-      // Use TTS state machine with language-appropriate voice
-      const languageVoice = getVoiceForTTS('elevenlabs');
+      // Use TTS state machine with OpenAI voice for stability
+      const languageVoice = getVoiceForTTS('openai');
       ttsMachine.speak(currentSubtitle, {
         voice: languageVoice,
         onStart: () => {
@@ -170,8 +170,8 @@ export default function Interview() {
           setIsAiSpeaking(false);
           setAudioActuallyPlaying(false);
           
-          // Reset dedupe to allow retry
-          lastSpokenSubtitle.current = '';
+          // Set dedupe guard to prevent infinite retry loop on same subtitle
+          lastSpokenSubtitle.current = currentSubtitle;
 
           // Check if audio is blocked and show appropriate feedback
           if (error.message.includes('Audio blocked') || error.message.includes('user interaction')) {
@@ -415,7 +415,7 @@ export default function Interview() {
       setIsAiSpeaking(false);
       setAudioActuallyPlaying(false);
     } else if (currentSubtitle && !currentSubtitle.includes("Processing your message") && !currentSubtitle.includes("Transcribing your message") && selectedPersonaData?.tts_voice) {
-      const languageVoice = getVoiceForTTS('elevenlabs');
+      const languageVoice = getVoiceForTTS('openai');
       ttsMachine.speak(currentSubtitle, {
         voice: languageVoice,
         onStart: () => {
@@ -429,6 +429,8 @@ export default function Interview() {
           console.error('TTS error:', error);
           setIsAiSpeaking(false);
           setAudioActuallyPlaying(false);
+          // Prevent retry loop
+          lastSpokenSubtitle.current = currentSubtitle;
         },
         onAudioPlaying: () => {
           console.log('🔊 AUDIO ACTUALLY PLAYING - Subtitles can now show');

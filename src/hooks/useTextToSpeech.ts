@@ -6,6 +6,7 @@ import { useLanguagePreference } from './useLanguagePreference';
 import { ensureAudioContextReady, getOrCreateAudioElement, playAudioWithContext } from '@/utils/audioContext';
 
 interface TTSOptions {
+  provider?: 'openai' | 'elevenlabs';
   voice?: string;
   onStart?: () => void;
   onEnd?: () => void;
@@ -126,34 +127,76 @@ export const useTextToSpeech = () => {
       setIsLoading(true);
       options.onStart?.();
 
-      const voice = options.voice || getVoiceForTTS('openai');
+      const provider = options.provider || 'openai';
+      const voice = options.voice || getVoiceForTTS(provider);
 
-      console.log('📞 Calling OpenAI TTS function:', { 
+      console.log('📞 Calling TTS function:', { 
         requestId,
+        provider,
         textLength: text.length, 
         voice, 
         languageCode
       });
 
       performance.mark?.('tts:invoke:start');
-      let result = await supabase.functions.invoke('text-to-speech', {
-        body: {
-          text,
-          voice,
-          language: languageCode,
-        },
-      });
+      let result;
       
-      // Retry with 'alloy' if voice is invalid
-      if (result.error && (result.error.message?.includes('Invalid voice') || result.error.message?.includes('voice selection'))) {
-        console.warn('⚠️ Invalid voice detected, retrying with alloy:', voice);
-        result = await supabase.functions.invoke('text-to-speech', {
+      if (provider === 'elevenlabs') {
+        // Call ElevenLabs TTS v2 function
+        result = await supabase.functions.invoke('eleven-labs-tts-v2', {
           body: {
             text,
-            voice: 'alloy',
+            voice,
+            model: 'eleven_turbo_v2_5',
             language: languageCode,
           },
         });
+        
+        // Fallback to safe ElevenLabs voice if the requested one fails
+        if (result.error && (result.error.message?.includes('voice') || result.error.message?.includes('404') || result.error.message?.includes('422'))) {
+          console.warn('⚠️ ElevenLabs voice error, retrying with default voice (Rachel):', voice);
+          result = await supabase.functions.invoke('eleven-labs-tts-v2', {
+            body: {
+              text,
+              voice: '21m00Tcm4TlvDq8ikWAM', // Rachel - safe default
+              model: 'eleven_turbo_v2_5',
+              language: languageCode,
+            },
+          });
+        }
+        
+        // Final fallback to OpenAI if ElevenLabs completely fails
+        if (result.error) {
+          console.warn('⚠️ ElevenLabs failed completely, falling back to OpenAI');
+          result = await supabase.functions.invoke('text-to-speech', {
+            body: {
+              text,
+              voice: 'alloy',
+              language: languageCode,
+            },
+          });
+        }
+      } else {
+        // Call OpenAI TTS function
+        result = await supabase.functions.invoke('text-to-speech', {
+          body: {
+            text,
+            voice,
+            language: languageCode,
+          },
+        });
+        
+        // Retry with 'alloy' if voice is invalid
+        if (result.error && (result.error.message?.includes('Invalid voice') || result.error.message?.includes('voice selection'))) {
+          console.warn('⚠️ Invalid voice detected, retrying with alloy:', voice);
+          result = await supabase.functions.invoke('text-to-speech', {
+            body: {
+              text,
+              voice: 'alloy',
+              language: languageCode,
+            },
+          });
+        }
       }
       
       const { data, error } = result;
