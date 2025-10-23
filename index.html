@@ -70,6 +70,14 @@
               location.reload();
             } else {
               sessionStorage.removeItem('sw-rescue-reload');
+              const overlay = document.getElementById('boot-overlay');
+              if (overlay) {
+                overlay.innerHTML = '<div style="text-align:center;max-width:440px;padding:16px">' +
+                  '<div style="font-size:18px;font-weight:700;margin-bottom:8px">We couldn\'t start the app</div>' +
+                  '<div style="opacity:.8;margin-bottom:12px">Please click Reload. If this keeps happening, try another browser or contact support.</div>' +
+                  '<button onclick="location.reload()" style="background:#0ea5e9;color:#fff;border:none;border-radius:8px;padding:10px 14px;cursor:pointer;width:100%;font-weight:600">Reload</button>' +
+                  '</div>';
+              }
             }
           }
         }, 6000);

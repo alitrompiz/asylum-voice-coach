@@ -40,6 +40,20 @@ const resources = {
   bn: { common: bn },
 };
 
+// Check if localStorage is available (fails in incognito/private browsing)
+function isStorageAvailable(): boolean {
+  try {
+    const test = '__i18n_test__';
+    localStorage.setItem(test, '1');
+    localStorage.removeItem(test);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+const canUseStorage = isStorageAvailable();
+
 i18n
   .use(LanguageDetector)
   .use(initReactI18next)
@@ -54,8 +68,8 @@ i18n
     },
     
     detection: {
-      order: ['localStorage', 'navigator', 'htmlTag'],
-      caches: ['localStorage'],
+      order: [...(canUseStorage ? ['localStorage'] : []), 'navigator', 'htmlTag'],
+      caches: canUseStorage ? ['localStorage'] : [],
     },
   });
 
