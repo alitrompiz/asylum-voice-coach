@@ -49,7 +49,9 @@ export const PersonaCarousel = ({
   const {
     t
   } = useTranslation();
-  const { toast } = useToast();
+  const {
+    toast
+  } = useToast();
   const {
     data: personas,
     isLoading,
@@ -59,7 +61,10 @@ export const PersonaCarousel = ({
     selectedPersona,
     setSelectedPersona
   } = usePersonaStore();
-  const { entitlementStatus, isLoading: entitlementLoading } = useEntitlementStatus();
+  const {
+    entitlementStatus,
+    isLoading: entitlementLoading
+  } = useEntitlementStatus();
 
   // Function to translate mood names
   const translateMood = (mood: string) => {
@@ -74,19 +79,16 @@ export const PersonaCarousel = ({
     if (entitlementStatus === 'full_prep') return true;
     return persona.tier_access.includes('free');
   };
-
   const handlePersonaSelect = (personaId: string) => {
     const persona = personas?.find(p => p.id === personaId);
     if (!persona) return;
-    
     if (!isPersonaAccessible(persona)) {
       toast({
         title: t('personas.unlock_with_full_prep', 'Unlock this with Full Prep'),
-        variant: 'default',
+        variant: 'default'
       });
       return;
     }
-    
     setSelectedPersona(personaId);
     onSelect?.(personaId);
   };
@@ -126,7 +128,6 @@ export const PersonaCarousel = ({
         <p className="text-gray-400">{error instanceof Error ? error.message : t('personas.no_officers')}</p>
       </div>;
   }
-  
   if (!personas || personas.length === 0) {
     return <div>
         <h3 className="text-lg font-semibold mb-2 text-white">{t('personas.title')}</h3>
@@ -137,67 +138,36 @@ export const PersonaCarousel = ({
       <div className="mb-3">
         <div className="flex items-baseline flex-wrap gap-3">
           <h3 className="text-xl font-bold text-white">{t('personas.title')}</h3>
-          {entitlementStatus === 'free_trial' && (
-            <button 
-              className="text-xs text-gray-400 hover:text-gray-300 transition-colors"
-              aria-label={t('personas.upgrade_nudge', 'Upgrade to get fully prepared')}
-            >
-              {t('personas.upgrade_nudge', 'Upgrade to get fully prepared')}
-            </button>
-          )}
+          {entitlementStatus === 'free_trial'}
         </div>
       </div>
       <ScrollArea className="w-full p-1">
         <div className="flex gap-6 pt-2 pb-0 snap-x snap-mandatory overflow-x-auto py-[4px] my-0">
           {personas.map(persona => {
-            const isAccessible = isPersonaAccessible(persona);
-            const isLocked = !isAccessible;
-            
-            return (
-              <div 
-                key={persona.id} 
-                className={cn(
-                  "flex flex-col items-center min-w-[160px] snap-center pb-0 transition-all duration-200",
-                  isAccessible ? "cursor-pointer" : "cursor-not-allowed opacity-60"
-                )} 
-                onClick={() => handlePersonaSelect(persona.id)} 
-                data-testid={`persona-${persona.id}`}
-              >
+          const isAccessible = isPersonaAccessible(persona);
+          const isLocked = !isAccessible;
+          return <div key={persona.id} className={cn("flex flex-col items-center min-w-[160px] snap-center pb-0 transition-all duration-200", isAccessible ? "cursor-pointer" : "cursor-not-allowed opacity-60")} onClick={() => handlePersonaSelect(persona.id)} data-testid={`persona-${persona.id}`}>
                 {/* Officer's photo */}
                 <div className="relative mb-2">
-                  <div className={cn(
-                    "w-32 h-32 sm:w-36 sm:h-36 rounded-full flex items-center justify-center overflow-hidden", 
-                    "transition-all duration-200", 
-                    selectedPersona === persona.id && "ring-4 ring-green-500",
-                    isLocked && "grayscale"
-                  )}>
+                  <div className={cn("w-32 h-32 sm:w-36 sm:h-36 rounded-full flex items-center justify-center overflow-hidden", "transition-all duration-200", selectedPersona === persona.id && "ring-4 ring-green-500", isLocked && "grayscale")}>
                     <img src={persona.image_url} alt={persona.alt_text} className="w-32 h-32 sm:w-36 sm:h-36 object-cover rounded-full" loading="lazy" />
-                    {isLocked && (
-                      <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center">
+                    {isLocked && <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center">
                         <Lock className="w-6 h-6 text-white" />
-                      </div>
-                    )}
+                      </div>}
                   </div>
                 </div>
                 
                 {/* Officer's info */}
                 <div className="text-center">
-                  <h4 className={cn(
-                    "font-bold text-base mb-1",
-                    isAccessible ? "text-white" : "text-gray-400"
-                  )}>
+                  <h4 className={cn("font-bold text-base mb-1", isAccessible ? "text-white" : "text-gray-400")}>
                     {persona.name}
                   </h4>
-                  <p className={cn(
-                    "text-sm",
-                    isAccessible ? "text-gray-300" : "text-gray-500"
-                  )}>
+                  <p className={cn("text-sm", isAccessible ? "text-gray-300" : "text-gray-500")}>
                     {translateMood(persona.mood)}
                   </p>
                 </div>
-              </div>
-            );
-          })}
+              </div>;
+        })}
         </div>
       </ScrollArea>
     </div>;
