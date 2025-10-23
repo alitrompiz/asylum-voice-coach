@@ -1,6 +1,7 @@
 
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
+import { ThemeProvider } from "next-themes";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, HashRouter, Routes, Route } from "react-router-dom";
@@ -197,14 +198,15 @@ const App = () => {
     <ErrorBoundary>
       <MixpanelProvider>
         <QueryClientProvider client={queryClient}>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <RouterImpl>
-              <AuthProvider>
-                <LanguageProvider>
-                  <Suspense fallback={<LandingSkeleton />}>
-                    <Routes>
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <RouterImpl>
+                <AuthProvider>
+                  <LanguageProvider>
+                    <Suspense fallback={<LandingSkeleton />}>
+                      <Routes>
                       {/* Public routes */}
                       <Route path="/" element={<Index />} />
                       
@@ -243,12 +245,13 @@ const App = () => {
                       
                       {/* 404 catch-all */}
                       <Route path="*" element={<NotFound />} />
-                    </Routes>
-                  </Suspense>
-                </LanguageProvider>
-              </AuthProvider>
-            </RouterImpl>
-          </TooltipProvider>
+                      </Routes>
+                    </Suspense>
+                  </LanguageProvider>
+                </AuthProvider>
+              </RouterImpl>
+            </TooltipProvider>
+          </ThemeProvider>
         </QueryClientProvider>
       </MixpanelProvider>
     </ErrorBoundary>
