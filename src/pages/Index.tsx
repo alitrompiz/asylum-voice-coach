@@ -116,7 +116,7 @@ const Index = () => {
             </div>
             
             {/* Login Button */}
-            <Button variant="outline" onClick={() => navigate('/auth')} className="border-white/20 text-white hover:bg-white/10 hover:text-white">
+            <Button variant="outline" onClick={() => navigate('/auth')} className="border-white/30 text-white hover:bg-white/10 hover:text-white hover:border-white/50">
               Login
             </Button>
           </div>
@@ -132,10 +132,8 @@ const Index = () => {
         <div className="relative z-10 container mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-16">
           <div className="text-center max-w-5xl mx-auto">
             {/* Main Headline */}
-            <h1 className="font-display text-4xl sm:text-4xl md:text-5xl font-extrabold mb-4 leading-tight lg:text-7xl">
-              <span className="bg-gradient-to-r from-white via-blue-50 to-white bg-clip-text text-transparent drop-shadow-lg">
-                {content?.hero_h1 || 'Practice your asylum interview.'}
-              </span>
+            <h1 className="font-display text-4xl sm:text-4xl md:text-5xl font-extrabold mb-4 leading-tight lg:text-7xl text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
+              {content?.hero_h1 || 'Practice your asylum interview.'}
             </h1>
             
             {/* Subheadline with bullet points */}
@@ -148,7 +146,7 @@ const Index = () => {
             
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
-              <Button size="xl" variant="brand" className="bg-white text-primary hover:bg-blue-50 hover:text-primary-hover shadow-2xl group" onClick={() => {
+              <Button size="xl" variant="brand" className="bg-white text-primary hover:bg-blue-50 hover:text-primary-hover shadow-2xl group focus-visible:ring-4 focus-visible:ring-white/50" onClick={() => {
               const carousel = document.getElementById('persona-carousel');
               carousel?.scrollIntoView({
                 behavior: 'smooth'

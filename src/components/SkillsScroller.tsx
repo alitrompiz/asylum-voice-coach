@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ChevronLeft, ChevronRight, Lock } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Lock, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useEntitlementStatus } from '@/hooks/useEntitlementStatus';
 import { useSkillsStore } from '@/stores/personaStore';
@@ -144,7 +144,9 @@ export const SkillsScroller = () => {
             {row1Skills.map(skill => {
             const isAccessible = isSkillAccessible(skill);
             const isLocked = !isAccessible;
-            return <Badge key={skill.id} variant={skillsSelected.includes(skill.id) ? "default" : "outline"} className={cn("snap-center transition-all duration-200 focus:ring-2 focus:ring-primary focus:ring-offset-2", "px-3 py-2 text-xs font-medium whitespace-nowrap rounded-full min-w-fit flex items-center gap-1", isAccessible ? "cursor-pointer hover:scale-105" : "cursor-not-allowed opacity-60", skillsSelected.includes(skill.id) ? "bg-primary text-primary-foreground" : isAccessible ? "hover:bg-gray-700 border-gray-600 text-gray-300 bg-gray-800/50" : "border-gray-700 text-gray-500 bg-gray-900/50")} onClick={() => handleSkillToggle(skill.id)} onKeyDown={e => handleKeyDown(e, skill.id)} tabIndex={0} role="button" aria-pressed={skillsSelected.includes(skill.id)} data-testid={`skill-chip-${skill.id}`}>
+            const isSelected = skillsSelected.includes(skill.id);
+            return <Badge key={skill.id} variant={isSelected ? "default" : "outline"} className={cn("snap-center transition-all duration-200 focus:ring-2 focus:ring-primary focus:ring-offset-2", "px-3 py-2 text-xs font-medium whitespace-nowrap rounded-full min-w-fit flex items-center gap-1", isAccessible ? "cursor-pointer hover:scale-105" : "cursor-not-allowed opacity-60", isSelected ? "bg-primary text-primary-foreground border-2 border-white shadow-lg" : isAccessible ? "hover:bg-gray-700 border-gray-600 text-gray-300 bg-gray-800/50" : "border-gray-700 text-gray-500 bg-gray-900/50")} onClick={() => handleSkillToggle(skill.id)} onKeyDown={e => handleKeyDown(e, skill.id)} tabIndex={0} role="button" aria-pressed={isSelected} data-testid={`skill-chip-${skill.id}`}>
+                  {isSelected && <Check className="w-3 h-3" />}
                   {isLocked && <Lock className="w-3 h-3" />}
                   {translateSkillName(skill.name)}
                 </Badge>;
@@ -158,7 +160,9 @@ export const SkillsScroller = () => {
             {row2Skills.map(skill => {
             const isAccessible = isSkillAccessible(skill);
             const isLocked = !isAccessible;
-            return <Badge key={skill.id} variant={skillsSelected.includes(skill.id) ? "default" : "outline"} className={cn("snap-center transition-all duration-200 focus:ring-2 focus:ring-primary focus:ring-offset-2", "px-3 py-2 text-xs font-medium whitespace-nowrap rounded-full min-w-fit flex items-center gap-1", isAccessible ? "cursor-pointer hover:scale-105" : "cursor-not-allowed opacity-60", skillsSelected.includes(skill.id) ? "bg-primary text-primary-foreground" : isAccessible ? "hover:bg-gray-700 border-gray-600 text-gray-300 bg-gray-800/50" : "border-gray-700 text-gray-500 bg-gray-900/50")} onClick={() => handleSkillToggle(skill.id)} onKeyDown={e => handleKeyDown(e, skill.id)} tabIndex={0} role="button" aria-pressed={skillsSelected.includes(skill.id)} data-testid={`skill-chip-${skill.id}`}>
+            const isSelected = skillsSelected.includes(skill.id);
+            return <Badge key={skill.id} variant={isSelected ? "default" : "outline"} className={cn("snap-center transition-all duration-200 focus:ring-2 focus:ring-primary focus:ring-offset-2", "px-3 py-2 text-xs font-medium whitespace-nowrap rounded-full min-w-fit flex items-center gap-1", isAccessible ? "cursor-pointer hover:scale-105" : "cursor-not-allowed opacity-60", isSelected ? "bg-primary text-primary-foreground border-2 border-white shadow-lg" : isAccessible ? "hover:bg-gray-700 border-gray-600 text-gray-300 bg-gray-800/50" : "border-gray-700 text-gray-500 bg-gray-900/50")} onClick={() => handleSkillToggle(skill.id)} onKeyDown={e => handleKeyDown(e, skill.id)} tabIndex={0} role="button" aria-pressed={isSelected} data-testid={`skill-chip-${skill.id}`}>
+                  {isSelected && <Check className="w-3 h-3" />}
                   {isLocked && <Lock className="w-3 h-3" />}
                   {translateSkillName(skill.name)}
                 </Badge>;
@@ -172,7 +176,9 @@ export const SkillsScroller = () => {
             {row3Skills.map(skill => {
             const isAccessible = isSkillAccessible(skill);
             const isLocked = !isAccessible;
-            return <Badge key={skill.id} variant={skillsSelected.includes(skill.id) ? "default" : "outline"} className={cn("snap-center transition-all duration-200 focus:ring-2 focus:ring-primary focus:ring-offset-2", "px-3 py-2 text-xs font-medium whitespace-nowrap rounded-full min-w-fit flex items-center gap-1", isAccessible ? "cursor-pointer hover:scale-105" : "cursor-not-allowed opacity-60", skillsSelected.includes(skill.id) ? "bg-primary text-primary-foreground" : isAccessible ? "hover:bg-gray-700 border-gray-600 text-gray-300 bg-gray-800/50" : "border-gray-700 text-gray-500 bg-gray-900/50")} onClick={() => handleSkillToggle(skill.id)} onKeyDown={e => handleKeyDown(e, skill.id)} tabIndex={0} role="button" aria-pressed={skillsSelected.includes(skill.id)} data-testid={`skill-chip-${skill.id}`}>
+            const isSelected = skillsSelected.includes(skill.id);
+            return <Badge key={skill.id} variant={isSelected ? "default" : "outline"} className={cn("snap-center transition-all duration-200 focus:ring-2 focus:ring-primary focus:ring-offset-2", "px-3 py-2 text-xs font-medium whitespace-nowrap rounded-full min-w-fit flex items-center gap-1", isAccessible ? "cursor-pointer hover:scale-105" : "cursor-not-allowed opacity-60", isSelected ? "bg-primary text-primary-foreground border-2 border-white shadow-lg" : isAccessible ? "hover:bg-gray-700 border-gray-600 text-gray-300 bg-gray-800/50" : "border-gray-700 text-gray-500 bg-gray-900/50")} onClick={() => handleSkillToggle(skill.id)} onKeyDown={e => handleKeyDown(e, skill.id)} tabIndex={0} role="button" aria-pressed={isSelected} data-testid={`skill-chip-${skill.id}`}>
+                  {isSelected && <Check className="w-3 h-3" />}
                   {isLocked && <Lock className="w-3 h-3" />}
                   {translateSkillName(skill.name)}
                 </Badge>;

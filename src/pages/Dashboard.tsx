@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Play, Shield } from 'lucide-react';
+import { Play, Shield, Lock } from 'lucide-react';
 import { useEffect, useState, lazy, Suspense } from 'react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { LanguageSelector } from '@/components/LanguageSelector';
@@ -104,12 +104,19 @@ export default function Dashboard() {
 
       {/* Fixed Start Interview Button */}
       <div className="fixed bottom-2 left-2 right-2 md:relative md:bottom-auto md:left-auto md:right-auto md:max-w-6xl md:mx-auto">
-        <Button size="lg" onClick={handleStartInterview} className="w-full shadow-lg bg-primary hover:bg-primary/90" disabled={skillsSelected.length === 0}>
+        <Button 
+          size="lg" 
+          onClick={handleStartInterview} 
+          className="w-full shadow-lg bg-primary hover:bg-primary/90" 
+          disabled={skillsSelected.length === 0}
+          aria-label={skillsSelected.length === 0 ? t('interview.select_areas') : t('interview.start')}
+        >
           <Play className="w-5 h-5 mr-2" />
           {t('interview.start')}
           {skillsSelected.length > 0 && <span className="ml-2 text-xs">({t('interview.areas_count', {
             count: skillsSelected.length
           })})</span>}
+          {skillsSelected.length === 0 && <Lock className="w-4 h-4 ml-2" />}
         </Button>
         {skillsSelected.length === 0 && <p className="text-sm text-gray-400 text-center mt-1">
             {t('interview.select_areas')}

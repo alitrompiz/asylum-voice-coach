@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Lock, Shield, UserCheck } from 'lucide-react';
+import { Lock, Shield, UserCheck, Check } from 'lucide-react';
 import { useEntitlementStatus } from '@/hooks/useEntitlementStatus';
 import { usePersonaStore } from '@/stores/personaStore';
 import { cn } from '@/lib/utils';
@@ -149,17 +149,23 @@ export const PersonaCarousel = ({
           return <div key={persona.id} className={cn("flex flex-col items-center min-w-[160px] snap-center pb-0 transition-all duration-200", isAccessible ? "cursor-pointer" : "cursor-not-allowed opacity-60")} onClick={() => handlePersonaSelect(persona.id)} data-testid={`persona-${persona.id}`}>
                 {/* Officer's photo */}
                 <div className="relative mb-2">
-                  <div className={cn("w-32 h-32 sm:w-36 sm:h-36 rounded-full flex items-center justify-center overflow-hidden", "transition-all duration-200", selectedPersona === persona.id && "ring-4 ring-green-500", isLocked && "grayscale")}>
+                  <div className={cn("w-32 h-32 sm:w-36 sm:h-36 rounded-full flex items-center justify-center overflow-hidden", "transition-all duration-200", selectedPersona === persona.id && "ring-4 ring-green-500 scale-105 border-4 border-white shadow-lg", isLocked && "grayscale")}>
                     <img src={persona.image_url} alt={persona.alt_text} className="w-32 h-32 sm:w-36 sm:h-36 object-cover rounded-full" loading="lazy" />
-                    {isLocked && <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center">
-                        <Lock className="w-6 h-6 text-white" />
+                    {selectedPersona === persona.id && (
+                      <div className="absolute top-0 right-0 bg-green-500 rounded-full p-1">
+                        <Check className="w-4 h-4 text-white" />
+                      </div>
+                    )}
+                    {isLocked && <div className="absolute inset-0 bg-black/50 rounded-full flex flex-col items-center justify-center">
+                        <Lock className="w-6 h-6 text-white mb-1" />
+                        <span className="text-xs text-white font-medium">Locked</span>
                       </div>}
                   </div>
                 </div>
                 
                 {/* Officer's info */}
                 <div className="text-center">
-                  <h4 className={cn("font-bold text-base mb-1", isAccessible ? "text-white" : "text-gray-400")}>
+                  <h4 className={cn("font-bold text-base mb-1", isAccessible ? "text-white" : "text-gray-400 line-through")}>
                     {persona.name}
                   </h4>
                   <p className={cn("text-sm", isAccessible ? "text-gray-300" : "text-gray-500")}>
