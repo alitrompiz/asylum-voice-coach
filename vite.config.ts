@@ -7,7 +7,7 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
-  const enablePwa = process.env.VITE_ENABLE_PWA !== 'false';
+  const enablePwa = false; // Disabled to eliminate service worker caching issues
   
   return {
     base: '/',
@@ -88,7 +88,8 @@ export default defineConfig(({ mode }) => {
       output: {
         manualChunks(id) {
           if (!id.includes('node_modules')) return;
-          // Don't force React into a special chunk to avoid edge ordering issues
+          // Split react-query separately for better caching
+          if (id.includes('@tanstack/react-query')) return 'vendor-query';
           if (id.includes('@supabase/supabase-js')) return 'vendor-supabase';
           if (id.includes('recharts')) return 'vendor-charts';
           if (id.includes('i18next') || id.includes('react-i18next') || id.includes('i18next-browser-languagedetector')) return 'vendor-i18n';

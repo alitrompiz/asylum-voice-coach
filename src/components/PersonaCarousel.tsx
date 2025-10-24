@@ -39,7 +39,9 @@ const usePersonas = () => {
       });
       if (error) throw error;
       return data as Persona[];
-    }
+    },
+    placeholderData: [], // Show empty state immediately
+    staleTime: 60 * 1000, // 1 minute - reduce refetching
   });
 };
 export const PersonaCarousel = ({

@@ -1,5 +1,7 @@
+import React from 'react';
 import './index.css'
 
+performance.mark('app-start');
 console.log('[main.tsx] Starting application initialization');
 
 // Clear service worker and caches on first production load (prevents blank screens from stale cache)
@@ -83,19 +85,25 @@ window.addEventListener('unhandledrejection', (event) => {
 
 console.log('[main.tsx] Rendering React app');
 
-// Dynamically import React, ReactDOM and the App to guarantee React is resolved first
+// Dynamically import ReactDOM and App (React is imported statically above)
 (async () => {
   try {
-    const [{ default: React }, { createRoot }, { default: App }] = await Promise.all([
-      import('react'),
+    const [{ createRoot }, { default: App }] = await Promise.all([
       import('react-dom/client'),
       import('./App.tsx'),
     ]);
     const rootEl = document.getElementById('root')!;
     createRoot(rootEl).render(React.createElement(App));
+    
     // Mark app as mounted and hide boot overlay
     (window as any).__APP_MOUNTED__ = true;
     document.getElementById('boot-overlay')?.classList.add('hidden');
+    
+    // Performance monitoring
+    performance.mark('app-rendered');
+    performance.measure('app-boot-time', 'app-start', 'app-rendered');
+    const bootTime = performance.getEntriesByName('app-boot-time')[0];
+    console.log('[Perf] App boot time:', bootTime.duration.toFixed(0), 'ms');
   } catch (e) {
     console.error('[main.tsx] Failed to bootstrap React app:', e);
     // Let global listeners handle purge/reload path

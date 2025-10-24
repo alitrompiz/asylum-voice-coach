@@ -32,6 +32,8 @@ export const useLanguagePreference = () => {
 
       return profile?.language_preference || 'en';
     },
+    staleTime: 5 * 60 * 1000, // 5 minutes - reduce unnecessary queries
+    refetchOnWindowFocus: false, // Don't refetch on tab switch
   });
 
   const updateLanguage = useMutation({

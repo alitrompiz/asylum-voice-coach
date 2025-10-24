@@ -24,27 +24,16 @@ const Index = () => {
   } = useHomePageContent();
   const [carouselError, setCarouselError] = useState<Error | null>(null);
 
-  // Show loading state while auth is initializing
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="space-y-4 w-full max-w-2xl px-4">
-          <Skeleton className="h-12 w-3/4 mx-auto" />
-          <Skeleton className="h-6 w-1/2 mx-auto" />
-          <div className="grid grid-cols-3 gap-4 mt-8">
-            <Skeleton className="h-48 w-full" />
-            <Skeleton className="h-48 w-full" />
-            <Skeleton className="h-48 w-full" />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   // Log content errors for debugging
   if (contentError) {
     console.error('[Index] Failed to load home page content:', contentError);
   }
+  
+  // Performance mark when homepage loads
+  useEffect(() => {
+    performance.mark('homepage-loaded');
+  }, []);
+  
   useEffect(() => {
     // Check for error parameters in URL hash (from failed verification)
     const hashParams = new URLSearchParams(window.location.hash.substring(1));

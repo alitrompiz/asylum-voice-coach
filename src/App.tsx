@@ -186,12 +186,14 @@ console.log('[App.tsx] Using router:', shouldUseHash ? 'HashRouter' : 'BrowserRo
   '(hostname:', typeof window !== 'undefined' ? window.location.hostname : 'SSR', ')');
 
 const App = () => {
-  // Initialize monitoring after React is available
+  // Initialize monitoring after React is available (only in production or if explicitly enabled)
   useEffect(() => {
-    console.log('[App] Initializing monitoring');
-    initializeMonitoring().catch((error) => {
-      console.error('[App] Failed to initialize monitoring:', error);
-    });
+    if (import.meta.env.PROD || import.meta.env.VITE_ENABLE_MONITORING) {
+      console.log('[App] Initializing monitoring');
+      initializeMonitoring().catch((error) => {
+        console.error('[App] Failed to initialize monitoring:', error);
+      });
+    }
   }, []);
 
   return (
