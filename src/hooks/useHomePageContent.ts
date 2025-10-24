@@ -8,9 +8,9 @@ interface HomePageContent {
 }
 
 const fallbackContent: HomePageContent = {
-  hero_h1: 'Prepare for Your Asylum Interview',
-  hero_p1: 'Practice with AI-powered voice coaching to build confidence and improve your asylum interview skills',
-  officer_picker_title: 'Who do you want to practice with today?'
+  hero_h1: 'Turn Your Asylum Story Into a Winning Interview',
+  hero_p1: '- Simulate real USCIS interviews.\n- Answer authentic questions tailored to your I-589 story.\n- Get AI-powered feedback trained by attorneys and asylum officers.\n- Find inconsistencies before they do.\n- Build the confidence you need to tell your story — and get your asylum granted.',
+  officer_picker_title: 'Which officer do you want to practice with today?'
 };
 
 export const useHomePageContent = () => {
